@@ -1,0 +1,32 @@
+{
+  "name": "societyapp",
+  "version": "1.0.0",
+  "description": "A modern, responsive, and PWA-ready management system for housing societies. This application is a rebuild of the original SocietyApp, modernized with Plain PHP, Tailwind CSS, and offline capabilities.",
+  "main": "tailwind.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css",
+    "watch": "tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mahankals/societyapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mahankals/societyapp/issues"
+  },
+  "homepage": "https://github.com/mahankals/societyapp#readme",
+  "devDependencies": {
+    "tailwindcss": "^4.2.2"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2"
+  }
+}

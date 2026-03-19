@@ -39,6 +39,9 @@ A modern, responsive, and PWA-ready management system for housing societies. Thi
 3. **Setup Tailwind CSS:**
    ```bash
    npm install
+   # Run build once
+   npx tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css
+   # Or watch for changes
    npx tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css --watch
    ```
 4. **Configure Database:**
