@@ -21,5 +21,11 @@
 4. **[Completed] UI Layout Setup**
    - Established `templates/base.html.twig` as the master layout for inheritance.
 
-5. **[To Do] Initial Commit of Infrastructure**
-   - Commit the functional setup files.
+5. **[Completed] Centralized Routing Setup**
+   - Implemented `index.php` as a front-controller for the application.
+   - Configured allowed routes: `/`, `/auth`, `/admin`, `/client`, `/api`.
+   - Added `.htaccess` for clean URL rewriting.
+   - Unauthorized routes are handled with a 404 response.
+
+6. **[To Do] Initial Commit of Routing Infrastructure**
+   - Commit the functional router and `.htaccess` files.
