@@ -1,56 +1,12 @@
 <?php
-// SocietyApp Landing Page
-$pageTitle = "Modern Society Management";
-$basePath = "./";
-include 'includes/header.php';
-?>
+require_once __DIR__ . '/vendor/autoload.php';
 
-    <main>
-        <!-- Hero Section -->
-        <section class="py-20 bg-gradient-to-br from-indigo-50 to-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
-                    Manage Your Society <span class="text-indigo-600">Smarter.</span>
-                </h1>
-                <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
-                    The ultimate platform for residents and administrators. Secure, responsive, and available even offline.
-                </p>
-                <div class="flex justify-center gap-4">
-                    <a href="auth/register.php" class="bg-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-indigo-700 shadow-lg transition">Join Your Society</a>
-                    <a href="#features" class="bg-white text-indigo-600 border border-indigo-100 px-8 py-4 rounded-xl text-lg font-bold hover:bg-indigo-50 transition">Learn More</a>
-                </div>
-            </div>
-        </section>
+$loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
+$twig = new \Twig\Environment($loader, [
+    // 'cache' => __DIR__ . '/cache', // Enable in production
+    'debug' => true,
+]);
 
-        <!-- Features -->
-        <section id="features" class="py-24 bg-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-3xl font-bold mb-16">Everything You Need</h2>
-                <div class="grid md:grid-cols-3 gap-12">
-                    <div class="p-8 rounded-2xl bg-gray-50 hover:shadow-xl transition text-center">
-                        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="smartphone" class="w-8 h-8"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mb-4">Mobile Ready (PWA)</h3>
-                        <p class="text-gray-600">Install SocietyApp on your phone and use it like a native app with a seamless experience.</p>
-                    </div>
-                    <div class="p-8 rounded-2xl bg-gray-50 hover:shadow-xl transition text-center">
-                        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="wifi-off" class="w-8 h-8"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mb-4">Offline Access</h3>
-                        <p class="text-gray-600">Access your digital ID and notices even without an active internet connection.</p>
-                    </div>
-                    <div class="p-8 rounded-2xl bg-gray-50 hover:shadow-xl transition text-center">
-                        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="shield-check" class="w-8 h-8"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mb-4">Secure & Fast</h3>
-                        <p class="text-gray-600">State-of-the-art security with support for biometric and secure PIN authentication.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-<?php include 'includes/footer.php'; ?>
+echo $twig->render('index.html.twig', [
+    'basePath' => './',
+]);

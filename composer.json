@@ -1,0 +1,13 @@
+{
+    "name": "mahankals/societyapp",
+    "description": "SocietyApp Rebirth with Twig and Tailwind",
+    "authors": [
+        {
+            "name": "Himan",
+            "email": "himanshu@example.com"
+        }
+    ],
+    "require": {
+        "twig/twig": "3.19"
+    }
+}

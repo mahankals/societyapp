@@ -11,6 +11,7 @@
    - Define User schema (id, email, password_hash, google_id, role, created_at).
 
 2. **Traditional Auth (`/auth`)**
+   - Implement Twig templates for `login.html.twig`, `register.html.twig`, and `reset-password.html.twig`.
    - `login.php`: Email/Password verification.
    - `register.php`: New user signup with validation.
    - `logout.php`: Session destruction.
