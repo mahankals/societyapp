@@ -1,24 +1,24 @@
 # Phase 1: Setup & Infrastructure
 
-## Completed Tasks
-1. **Directory Structure**
-   - Created root directories: `admin`, `auth`, `client`, `api`, `includes`, `assets`.
-   - Setup asset subdirectories for CSS and JS.
+## Goals
+- Initialize the project with a clean, modular structure.
+- Configure Tailwind CSS for modern UI development.
+- Establish a base landing page and database connectivity.
 
-2. **Tailwind CSS Configuration**
-   - Initialized `tailwind.config.js` with content paths for PHP files.
-   - Created `assets/src/input.css` with `@tailwind` directives.
+## Tasks
+1. **[Completed] Directory Structure**
+   - Created: `admin`, `auth`, `client`, `api`, `includes`, `assets/src`, `assets/dist`, `assets/js`.
 
-3. **Landing Page**
-   - Developed a responsive `index.php` using Tailwind CSS classes.
-   - Included sections for Hero, Features, and Navigation.
+2. **[Completed] Base Configuration**
+   - `tailwind.config.js`: Setup content paths.
+   - `assets/src/input.css`: Initialized with Tailwind directives.
+   - `includes/db_config.php`: Established PDO connection template.
 
-4. **Database Foundation**
-   - Created `includes/db_config.php` with a PDO connection template.
+3. **[Completed] Landing Page (`index.php`)**
+   - Created a responsive landing page with Hero and Feature sections using Tailwind CSS.
 
-5. **Project Documentation**
-   - Created `README.md` with installation instructions.
-   - Initialized `docs/plans/index.md` for progress tracking.
+4. **[In Progress] UI Assets Setup**
+   - Setup a basic `header.php` and `footer.php` in `includes/` for reusability across pages.
 
-## Next Steps
-- Transition to Phase 2: Core Logic & Authentication (including Google Auth).
+5. **[To Do] Initial Commit of Infrastructure**
+   - Commit the functional setup files.
