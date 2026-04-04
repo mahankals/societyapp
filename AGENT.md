@@ -74,6 +74,9 @@ docker compose -f docker-compose.prod.yml up -d     # Production
 2. All routes go through `public/index.php`
 3. Use `Session::` and `Database::` static methods, not raw PHP
 4. CSRF tokens required for all POST forms
+   - Generate in PHP route: `'csrfToken' => generateCSRFToken()`
+   - Use in Twig: `{{ csrfToken }}` (variable, NOT function)
+   - Never call `csrfToken()` in Twig templates - it won't work
 5. Password hashing: `password_hash()` with cost 12
 6. Twig templates extend `layouts/base.html.twig`
 7. Use `redirect()` helper for redirects, never echo Location header
