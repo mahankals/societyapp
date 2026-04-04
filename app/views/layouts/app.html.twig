@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SocietyApp — The premium digital platform for modern residential communities.">
+    <title>{% block title %}SocietyApp{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="/assets/dist/output.css?v=5" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .glass-panel { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .noise-overlay { position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); opacity: 0.015; pointer-events: none; z-index: 9999; }
+    </style>
+</head>
+<body class="min-h-screen bg-surface-950">
+    <div class="noise-overlay"></div>
+
+    <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950 border-b border-white/10 shadow-lg">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/tenant" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/25">
+                        <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="text-lg font-bold text-white tracking-tight">SocietyApp</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/tenant/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    {% if unreadNotifications is defined and unreadNotifications > 0 %}
+                    <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">{{ unreadNotifications }}</span>
+                    {% endif %}
+                </a>
+                <div class="relative" id="profile-menu-wrapper">
+                    <button type="button" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all" id="profile-menu-btn">
+                        {% if profile.profile_photo %}
+                        <img src="{{ profile.profile_photo }}" alt="{{ user.name }}" class="w-8 h-8 rounded-lg object-cover">
+                        {% else %}
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+                            <span class="text-sm font-semibold text-white">{{ user.name|first|upper }}</span>
+                        </div>
+                        {% endif %}
+                        <span class="text-sm font-medium text-white hidden sm:block">{{ user.name }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
+                    </button>
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 glass-panel rounded-xl overflow-hidden shadow-xl shadow-black/20">
+                        <div class="p-3 border-b border-white/5">
+                            <p class="text-sm font-semibold text-white">{{ user.name }}</p>
+                            <p class="text-xs text-surface-200/40">{{ user.email }}</p>
+                        </div>
+                        <div class="p-1.5">
+                            {% if user.role == 'admin' %}
+                            {% if currentRoute starts with '/tenant' %}
+                            <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                Admin View
+                            </a>
+                            {% else %}
+                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                Tenant View
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                Profile
+                            </a>
+                            <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="pt-20">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        lucide.createIcons();
+        const profileBtn = document.getElementById('profile-menu-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', () => {
+                profileDropdown.classList.add('hidden');
+            });
+            profileDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

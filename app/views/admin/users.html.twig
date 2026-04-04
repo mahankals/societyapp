@@ -1,24 +1,20 @@
-{% extends "layouts/base.html.twig" %}
+{% extends "layouts/app.html.twig" %}
 
 {% block title %}Manage Users | SocietyApp{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen px-4">
-    <nav class="glass-panel mx-4 mt-4 rounded-2xl px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <a href="/admin" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
-            </a>
-            <div>
-                <h1 class="text-lg font-bold text-white">Manage Users</h1>
-                <p class="text-sm text-surface-200/40">{{ users|length }} residents</p>
-            </div>
+<div class="px-4 py-4">
+    <div class="flex items-center gap-4 mb-4">
+        <a href="/admin" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
+        </a>
+        <div>
+            <h1 class="text-lg font-bold text-white">Manage Users</h1>
+            <p class="text-sm text-surface-200/40">{{ users|length }} residents</p>
         </div>
-    </nav>
+    </div>
 
-    <div class="mx-4 mt-4 overflow-x-auto">
+    <div class="overflow-x-auto">
         <table class="w-full glass-panel rounded-2xl overflow-hidden">
             <thead class="bg-white/5">
                 <tr>

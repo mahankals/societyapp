@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     emergency_contact_name VARCHAR(100) NULL,
     emergency_contact_phone VARCHAR(20) NULL,
     date_of_birth DATE NULL,
+    profile_photo VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

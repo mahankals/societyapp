@@ -1,0 +1,82 @@
+{% extends "layouts/app.html.twig" %}
+
+{% block title %}Dashboard | SocietyApp{% endblock %}
+
+{% block content %}
+<div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="/tenant/bills" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <i data-lucide="receipt" class="w-6 h-6 text-blue-400"></i>
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Maintenance Bills</h3>
+        <p class="text-sm text-surface-200/40">View and pay your monthly bills</p>
+    </a>
+
+    <a href="/tenant/documents" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <i data-lucide="file-text" class="w-6 h-6 text-purple-400"></i>
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">My Documents</h3>
+        <p class="text-sm text-surface-200/40">Upload and manage documents</p>
+    </a>
+
+    <a href="/tenant/requests" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                <i data-lucide="wrench" class="w-6 h-6 text-orange-400"></i>
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Service Requests</h3>
+        <p class="text-sm text-surface-200/40">Submit and track requests</p>
+    </a>
+
+    <a href="/tenant/notifications" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center relative">
+                <i data-lucide="bell" class="w-6 h-6 text-green-400"></i>
+                {% if unreadNotifications > 0 %}
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">{{ unreadNotifications }}</span>
+                {% endif %}
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Notifications</h3>
+        <p class="text-sm text-surface-200/40">View society announcements</p>
+    </a>
+
+    <a href="/tenant/profile" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                <i data-lucide="user" class="w-6 h-6 text-cyan-400"></i>
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">My Profile</h3>
+        <p class="text-sm text-surface-200/40">Update your personal info</p>
+    </a>
+
+    <div class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                <i data-lucide="calendar" class="w-6 h-6 text-pink-400"></i>
+            </div>
+            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Events</h3>
+        <p class="text-sm text-surface-200/40">Upcoming society events</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

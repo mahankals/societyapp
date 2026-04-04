@@ -42,6 +42,16 @@ function getUser(): ?array {
     );
 }
 
+function getUserProfile(): ?array {
+    if (!isLoggedIn()) {
+        return null;
+    }
+    return Database::fetchOne(
+        "SELECT * FROM user_profiles WHERE user_id = ?",
+        [Session::get('user_id')]
+    );
+}
+
 function loginUser(int $userId, string $role, string $email): void {
     Session::put('user_id', $userId);
     Session::put('role', $role);
