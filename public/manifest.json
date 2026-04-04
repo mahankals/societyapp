@@ -20,36 +20,22 @@
             "sizes": "512x512",
             "type": "image/svg+xml",
             "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/assets/screenshots/dashboard-desktop.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Dashboard on Desktop"
         },
         {
-            "src": "/assets/icons/logo.svg",
-            "sizes": "192x192",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "/assets/icons/logo.svg",
-            "sizes": "144x144",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "/assets/icons/logo.svg",
-            "sizes": "96x96",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "/assets/icons/logo.svg",
-            "sizes": "72x72",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "/assets/icons/logo.svg",
-            "sizes": "48x48",
-            "type": "image/svg+xml",
-            "purpose": "any"
+            "src": "/assets/screenshots/dashboard-mobile.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Dashboard on Mobile"
         }
     ],
     "categories": ["business", "productivity"],
