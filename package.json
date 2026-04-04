@@ -7,8 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css",
-    "watch": "tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css --watch",
+    "build": "tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css",
+    "watch": "tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

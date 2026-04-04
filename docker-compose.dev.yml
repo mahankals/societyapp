@@ -1,0 +1,68 @@
+# Docker Compose - Development
+# Usage: docker compose -f docker-compose.dev.yml up -d
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: societyapp-dev
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:${APP_PORT:-8080}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-societyapp}
+      - DB_USER=${DB_USER:-societyapp}
+      - DB_PASS=${DB_PASS:-societyapp}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - societyapp-dev
+
+  db:
+    image: mysql:8.0
+    container_name: societyapp-dev-db
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:-root}
+      - MYSQL_DATABASE=${DB_NAME:-societyapp}
+      - MYSQL_USER=${DB_USER:-societyapp}
+      - MYSQL_PASSWORD=${DB_PASS:-societyapp}
+    volumes:
+      - db-data-dev:/var/lib/mysql
+      - ./includes/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - societyapp-dev
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: societyapp-dev-mail
+    ports:
+      - "${MAIL_PORT:-1025}:1025"
+      - "${MAIL_UI_PORT:-8025}:8025"
+    networks:
+      - societyapp-dev
+
+volumes:
+  db-data-dev:
+
+networks:
+  societyapp-dev:
+    driver: bridge

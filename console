@@ -1,0 +1,163 @@
+#!/usr/bin/env php
+<?php
+/**
+ * SocietyApp Console Command
+ *
+ * Usage:
+ *   php console help
+ *   php console add-admin
+ *   php console add-admin <email> <password>
+ */
+
+$rootDir = __DIR__;
+require_once $rootDir . '/vendor/autoload.php';
+
+// Load .env if present
+$envFile = $rootDir . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        if (strpos($line, '=') !== false) {
+            [$key, $value] = explode('=', $line, 2);
+            putenv(trim($key) . '=' . trim($value));
+        }
+    }
+}
+
+require_once $rootDir . '/app/core/Database.php';
+
+$command = $argv[1] ?? 'help';
+
+function printHeader(string $text): void {
+    echo "\n";
+    echo "\033[1;36m╔════════════════════════════════════════╗\033[0m\n";
+    echo "\033[1;36m║\033[0m  \033[1;33mSocietyApp Console\033[0m\n";
+    echo "\033[1;36m║\033[0m  {$text}\n";
+    echo "\033[1;36m╚════════════════════════════════════════╝\033[0m\n\n";
+}
+
+function printSuccess(string $text): void {
+    echo "\033[1;32m✓\033[0m {$text}\n";
+}
+
+function printError(string $text): void {
+    echo "\033[1;31m✗\033[0m {$text}\n";
+}
+
+function printInfo(string $text): void {
+    echo "\033[1;34mℹ\033[0m {$text}\n";
+}
+
+function prompt(string $question, bool $hidden = false): string {
+    echo $question . " ";
+    if ($hidden) {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $vbs = tempnam(sys_get_temp_dir(), 'vbs');
+            file_put_contents($vbs, "WScript.Echo CreateObject(\"ScriptPW.Password\").Password");
+            $password = shell_exec("cscript //nologo \"{$vbs}\"");
+            unlink($vbs);
+            echo "\n";
+            return trim($password);
+        } else {
+            system('stty -echo');
+            $input = trim(fgets(STDIN));
+            system('stty echo');
+            echo "\n";
+            return $input;
+        }
+    }
+    return trim(fgets(STDIN));
+}
+
+switch ($command) {
+    case 'help':
+    case '--help':
+    case '-h':
+        printHeader("Available Commands");
+        echo "  \033[1;33madd-admin [email] [password]\033[0m    Create first admin user\n";
+        echo "  \033[1;33mhelp\033[0m                          Show this help message\n";
+        echo "\n";
+        echo "\033[1;33mExamples:\033[0m\n";
+        echo "  php console add-admin                     (interactive mode)\n";
+        echo "  php console add-admin admin@test.com pass123\n";
+        echo "\n";
+        break;
+
+    case 'add-admin':
+        printHeader("Create Admin User");
+
+        $email = $argv[2] ?? null;
+        $password = $argv[3] ?? null;
+
+        if (!$email) {
+            $email = prompt("\033[1;34mEnter admin email:\033[0m");
+        }
+        if (!$password) {
+            $password = prompt("\033[1;34mEnter admin password:\033[0m", true);
+        }
+
+        if (empty($email) || empty($password)) {
+            printError("Email and password are required.");
+            exit(1);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            printError("Invalid email address: {$email}");
+            exit(1);
+        }
+
+        if (strlen($password) < 8) {
+            printError("Password must be at least 8 characters.");
+            exit(1);
+        }
+
+        // Check if admin already exists
+        $existing = Database::fetchOne("SELECT id, email FROM users WHERE role = 'admin'");
+        if ($existing) {
+            printError("An admin user already exists: {$existing['email']}");
+            printInfo("Delete the existing admin user first, or use a different role.");
+            exit(1);
+        }
+
+        // Check if email already exists
+        $emailExists = Database::fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
+        if ($emailExists) {
+            printError("A user with email {$email} already exists.");
+            exit(1);
+        }
+
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT, ['cost' => 12]);
+
+        try {
+            $userId = Database::insert('users', [
+                'email' => $email,
+                'password_hash' => $passwordHash,
+                'name' => 'System Administrator',
+                'role' => 'admin',
+                'is_active' => 1,
+            ]);
+
+            printSuccess("Admin user created successfully!");
+            echo "\n";
+            echo "  \033[1;34mEmail:\033[0m    {$email}\n";
+            echo "  \033[1;34mPassword:\033[0m  {$password}\n";
+            echo "  \033[1;34mRole:\033[0m      admin\n";
+            echo "\n";
+            printInfo("Login at: /auth/login");
+            echo "\n";
+        } catch (Exception $e) {
+            printError("Failed to create admin: " . $e->getMessage());
+            exit(1);
+        }
+        break;
+
+    default:
+        printError("Unknown command: {$command}");
+        echo "\n";
+        echo "Run \033[1;33mphp console help\033[0m for available commands.\n";
+        echo "\n";
+        exit(1);
+}

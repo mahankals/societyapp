@@ -1,6 +1,18 @@
 RewriteEngine On
 
-# Redirect all requests to index.php unless the file or directory exists
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [L,QSA]
+# Deny access to sensitive directories
+RewriteRule ^(app|config|vendor|docs|\.git|\.ddev) - [F,L]
+
+# Rewrite /assets/* to /public/assets/* (when DocumentRoot = project root)
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+# Serve existing files directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Serve existing directories directly
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route everything else to public/index.php
+RewriteRule ^ public/index.php [L,QSA]

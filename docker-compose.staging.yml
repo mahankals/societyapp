@@ -1,0 +1,55 @@
+# Docker Compose - Staging
+# Usage: docker compose -f docker-compose.staging.yml up -d
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+    container_name: societyapp-staging
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      - APP_ENV=staging
+      - APP_DEBUG=false
+      - APP_URL=${APP_URL:-http://staging.societyapp.com}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-societyapp}
+      - DB_USER=${DB_USER:-societyapp}
+      - DB_PASS=${DB_PASS:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - societyapp-staging
+
+  db:
+    image: mysql:8.0
+    container_name: societyapp-staging-db
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:-}
+      - MYSQL_DATABASE=${DB_NAME:-societyapp}
+      - MYSQL_USER=${DB_USER:-societyapp}
+      - MYSQL_PASSWORD=${DB_PASS:-}
+    volumes:
+      - db-data-staging:/var/lib/mysql
+      - ./includes/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - societyapp-staging
+
+volumes:
+  db-data-staging:
+
+networks:
+  societyapp-staging:
+    driver: bridge

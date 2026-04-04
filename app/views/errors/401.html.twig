@@ -1,0 +1,61 @@
+{% extends "layouts/error.html.twig" %}
+
+{% block title %}401 - Unauthorized | SocietyApp{% endblock %}
+
+{% block content %}
+<style>
+    .error-gradient {
+        background: radial-gradient(ellipse at 50% 0%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 50%, rgba(219, 39, 119, 0.1) 0%, transparent 40%),
+                    radial-gradient(ellipse at 20% 80%, rgba(244, 114, 182, 0.08) 0%, transparent 40%);
+    }
+</style>
+
+<div class="min-h-screen flex items-center justify-center error-gradient px-4">
+    <div class="text-center max-w-lg">
+        <div class="relative mb-8">
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-48 h-48 rounded-full bg-pink-500/10 blur-3xl"></div>
+            </div>
+            <div class="relative">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-500/20 to-pink-600/10 border border-pink-500/20 mb-6">
+                    <i data-lucide="key-round" class="w-12 h-12 text-pink-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative mb-8">
+            <span class="text-[8rem] sm:text-[10rem] font-extrabold leading-none select-none bg-gradient-to-br from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent">401</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-3">Authentication required</h1>
+        <p class="text-white/50 text-lg mb-8 max-w-md mx-auto">
+            Please sign in to access this page. If you already have an account, log in with your credentials.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/auth/login" class="btn-primary !py-3.5 !px-8 !rounded-xl">
+                <i data-lucide="log-in" class="w-5 h-5"></i>
+                Sign In
+            </a>
+            <a href="/" class="inline-flex items-center justify-center gap-2 h-14 px-8 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl text-white font-medium transition-all hover:border-white/[0.15]">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                Go Home
+            </a>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-white/5">
+            <p class="text-sm text-white/30">Don't have an account?</p>
+            <a href="/auth/register" class="text-sm text-brand-400 hover:text-brand-300 transition-colors">
+                Create one
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

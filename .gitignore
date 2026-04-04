@@ -1,5 +1,6 @@
 # Dependencies
 /vendor/
+/node_modules/
 
 # Configuration
 .env
@@ -20,6 +21,15 @@ Desktop.ini
 # Logs
 *.log
 /logs/
+
+# Old directories (migrated)
+/templates/
+/auth/
+/admin/
+/client/
+/api/
+/includes/
+/assets/
 
 # DDEV
 .ddev/.importdb*
@@ -54,3 +64,7 @@ Desktop.ini
 # WAMP/Web server
 error_log
 access_log
+
+# Uploaded files
+/public/uploads/*
+!/public/uploads/.gitkeep

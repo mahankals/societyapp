@@ -1,55 +1,101 @@
 # SocietyApp
 
-A modern, responsive, and PWA-ready management system for housing societies. This application is a rebuild of the original SocietyApp, modernized with Plain PHP, Tailwind CSS, and offline capabilities.
+A modern, responsive, and PWA-ready management system for housing societies. Built with Plain PHP, Tailwind CSS, and offline capabilities.
+
+## Quick Links
+
+- [📖 Full Documentation](docs/README.md) — Architecture, setup, commands, and deployment
+- [🐛 Issues](https://github.com/mahankals/societyapp/issues) — Report bugs or request features
 
 ## Key Features
-- **Modern UI/UX:** Built with the latest Tailwind CSS for a sleek, responsive experience.
-- **PWA Ready:** Installable on mobile and desktop devices.
-- **Offline Access:** Access key client data offline with PIN/Device authentication.
-- **Admin Dashboard:** Comprehensive management for society administrators.
-- **Client Area:** Dedicated portal for residents to view notifications, manage profiles, and upload documents.
 
-## Project Structure
-- `/`: Landing Page.
-- `/admin`: Administrative management area.
-- `/auth`: Authentication portal (Login, Registration, etc.).
-- `/client`: Resident/Member portal.
-- `/api`: Internal PHP-based JSON APIs.
-- `/docs`: Project documentation and plans.
-- `/assets`: Frontend assets (Tailwind CSS, JS, Images).
+- **Modern UI/UX** — Glass-morphism design with Tailwind CSS, responsive across all devices
+- **PWA Ready** — Installable on mobile and desktop with offline support
+- **Secure Auth** — Email/password + Google OAuth with CSRF protection
+- **Role-Based Access** — Admin and Resident portals with permission control
+- **Admin Dashboard** — Full society management with stats, billing, and notices
+- **Client Portal** — Residents can view bills, submit requests, and track complaints
+- **Custom Error Pages** — Beautiful 401, 403, 404, and 500 error screens
 
-## Installation for Developers
+## Quick Start
 
-### Prerequisites
-- PHP 8.1+
-- MySQL 8.0+
-- [DDEV](https://ddev.readthedocs.io/) (Optional, but recommended)
-- Node.js & NPM (for Tailwind CSS development)
+### 1. Install Dependencies
 
-### Setup Steps
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd SocietyApp
-   ```
-2. **Setup DDEV (If using DDEV):**
-   ```bash
-   ddev start
-   ```
-3. **Setup Tailwind CSS:**
-   ```bash
-   npm install
-   # Run build once
-   npx tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css
-   # Or watch for changes
-   npx tailwindcss -i ./assets/src/input.css -o ./assets/dist/output.css --watch
-   ```
-4. **Configure Database:**
-   - Update `includes/db_config.php` with your database credentials (DDEV handles this automatically if using the provided config).
-5. **Access the application:**
-   - [http://societyapp.ddev.site](http://societyapp.ddev.site) (DDEV)
-   - [http://localhost/SocietyApp](http://localhost/SocietyApp) (Standard PHP)
+```bash
+composer install
+npm install
+```
 
-## Documentation
-Refer to the `docs/` directory for detailed feature usage and development plans.
-- [Status of Plan](docs/plans/index.md)
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your database and Google OAuth credentials
+```
+
+### 3. Setup Database
+
+Run the schema SQL in your MySQL database:
+
+```bash
+mysql -u root -p societyapp < app/schema.sql
+```
+
+### 4. Build Assets
+
+```bash
+npm run build    # Build CSS once
+npm run watch    # Watch for changes
+```
+
+### 5. Create Admin User
+
+```bash
+php console add-admin                    # Interactive mode
+php console add-admin admin@mysociety.com Pass@123  # Direct mode
+```
+
+### 6. Run the App
+
+**Option A: WAMP/XAMPP**
+- Point your DocumentRoot to the project folder
+- Access: `http://localhost/SocietyApp`
+
+**Option B: PHP Built-in Server**
+```bash
+php -S localhost:8000
+```
+
+**Option C: Docker**
+```bash
+docker compose -f docker-compose.dev.yml up -d
+# Access: http://localhost:8080
+```
+
+**Option D: DDEV**
+```bash
+ddev start
+ddev launch
+```
+
+## Console Commands
+
+```bash
+php console help                          # Show all commands
+php console add-admin                     # Create admin (interactive)
+php console add-admin admin@mysociety.com Pass@123  # Create admin (direct)
+```
+
+## Docker Environments
+
+| Environment | File | Ports |
+|-------------|------|-------|
+| Development | `docker-compose.dev.yml` | App: 8080, DB: 3306, Mail: 8025 |
+| Staging | `docker-compose.staging.yml` | App: 8080, DB: 3306 |
+| Production | `docker-compose.prod.yml` | App: 80, DB: 3306 |
+
+All ports and credentials are configurable via `.env`.
+
+## License
+
+ISC

@@ -1,0 +1,97 @@
+{% extends "layouts/base.html.twig" %}
+
+{% block title %}Set Up PIN | SocietyApp{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<style>
+    .auth-gradient {
+        background: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+                    radial-gradient(ellipse at 20% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+    }
+</style>
+
+<div class="min-h-screen flex auth-gradient">
+    <div class="flex-1 flex items-center justify-center p-6 sm:p-12">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30 mx-auto mb-6">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Set up offline access</h2>
+                <p class="text-white/50">Create a PIN to access the app when you're offline</p>
+            </div>
+
+            {% if error %}
+            <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-3 animate-fade-in">
+                <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="mb-6 p-4 rounded-xl bg-brand-500/10 border border-brand-500/20">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5"></i>
+                    <p class="text-sm text-brand-200 leading-relaxed">
+                        Your PIN is stored locally on your device and is used to authenticate when offline. Keep it simple but memorable (4-6 digits).
+                    </p>
+                </div>
+            </div>
+
+            <form method="POST" action="/auth/pin-setup" class="space-y-5">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+                <div>
+                    <label for="pin" class="block text-sm font-medium text-white/80 mb-2">Create PIN</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="lock" class="w-5 h-5 text-white/30"></i>
+                        </div>
+                        <input type="password" id="pin" name="pin" required pattern="\d{4,6}" maxlength="6" inputmode="numeric"
+                            class="w-full h-14 bg-white/[0.03] border border-white/[0.08] rounded-xl pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/30 transition-all text-center text-2xl tracking-[0.5em] font-mono"
+                            placeholder="••••">
+                    </div>
+                    <p class="text-xs text-white/30 mt-2">Enter 4 to 6 digits</p>
+                </div>
+
+                <div>
+                    <label for="confirm_pin" class="block text-sm font-medium text-white/80 mb-2">Confirm PIN</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="lock" class="w-5 h-5 text-white/30"></i>
+                        </div>
+                        <input type="password" id="confirm_pin" name="confirm_pin" required pattern="\d{4,6}" maxlength="6" inputmode="numeric"
+                            class="w-full h-14 bg-white/[0.03] border border-white/[0.08] rounded-xl pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/30 transition-all text-center text-2xl tracking-[0.5em] font-mono"
+                            placeholder="••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary w-full !h-14 !text-base !rounded-xl">
+                    Set Up PIN
+                    <i data-lucide="check" class="w-5 h-5"></i>
+                </button>
+            </form>
+
+            <div class="text-center mt-6">
+                <a href="/client" class="text-sm text-white/40 hover:text-white/60 transition-colors">
+                    Skip for now
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+    
+    document.querySelectorAll('input[inputmode="numeric"]').forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
+    });
+</script>
+{% endblock %}
