@@ -9,5 +9,11 @@ RewriteRule ^ - [L]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
+# Serve PWA files
+RewriteRule ^favicon\.ico$ /assets/icons/logo.svg [L]
+RewriteRule ^manifest\.json$ /manifest.json [L]
+RewriteRule ^sw\.js$ /sw.js [L]
+RewriteRule ^offline\.html$ /offline.html [L]
+
 # Route everything else to index.php
 RewriteRule ^ index.php [L,QSA]

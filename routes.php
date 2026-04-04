@@ -11,6 +11,22 @@ $router = new Router();
 $tenant = new TenantController();
 $admin = new AdminController();
 
+// ==================== Middleware ====================
+
+$router->middleware('guest', function() {
+    if (isLoggedIn()) {
+        redirect(Session::get('role') === 'admin' ? '/admin' : '/tenant');
+    }
+});
+
+$router->middleware('auth', function() {
+    requireLogin();
+});
+
+$router->middleware('admin', function() {
+    requireAdmin();
+});
+
 // ==================== Landing & Auth ====================
 
 $router->get('/', function() {
@@ -18,16 +34,20 @@ $router->get('/', function() {
 });
 
 $router->get('/auth/login', function() {
+    $returnUrl = Session::get('return_url', '');
+    Session::forget('return_url');
     echo view('auth/login', [
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
         'googleClientId' => getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID',
+        'returnUrl' => $returnUrl,
     ]);
-});
+}, ['guest']);
 
 $router->post('/auth/login', function() {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
     $password = $_POST['password'] ?? '';
+    $returnUrl = $_POST['return_url'] ?? '';
 
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         Session::flash('error', 'Invalid request. Please try again.');
@@ -50,7 +70,8 @@ $router->post('/auth/login', function() {
             redirect('/auth/pin-setup');
         }
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-        redirect($user['role'] === 'admin' ? '/admin' : '/tenant');
+        $redirectUrl = $returnUrl ?: ($user['role'] === 'admin' ? '/admin' : '/tenant');
+        redirect($redirectUrl);
     } else {
         Session::flash('error', 'Invalid email or password.');
         redirect('/auth/login');
@@ -63,7 +84,7 @@ $router->get('/auth/register', function() {
         'csrfToken' => generateCSRFToken(),
         'googleClientId' => getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID',
     ]);
-});
+}, ['guest']);
 
 $router->post('/auth/register', function() {
     $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -130,7 +151,7 @@ $router->get('/auth/reset-password', function() {
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
     ]);
-});
+}, ['guest']);
 
 $router->post('/auth/reset-password', function() {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
@@ -276,30 +297,30 @@ $router->get('/auth/google-callback', function() {
 
 // ==================== Tenant Routes ====================
 
-$router->get('/tenant', [$tenant, 'index']);
-$router->get('/tenant/notifications', [$tenant, 'notifications']);
-$router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRead']);
-$router->get('/tenant/profile', [$tenant, 'profile']);
-$router->post('/tenant/profile', [$tenant, 'updateProfile']);
-$router->get('/tenant/documents', [$tenant, 'documents']);
-$router->get('/tenant/bills', [$tenant, 'bills']);
-$router->get('/tenant/requests', [$tenant, 'requests']);
-$router->post('/tenant/requests', [$tenant, 'createRequest']);
+$router->get('/tenant', [$tenant, 'index'], ['auth']);
+$router->get('/tenant/notifications', [$tenant, 'notifications'], ['auth']);
+$router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRead'], ['auth']);
+$router->get('/tenant/profile', [$tenant, 'profile'], ['auth']);
+$router->post('/tenant/profile', [$tenant, 'updateProfile'], ['auth']);
+$router->get('/tenant/documents', [$tenant, 'documents'], ['auth']);
+$router->get('/tenant/bills', [$tenant, 'bills'], ['auth']);
+$router->get('/tenant/requests', [$tenant, 'requests'], ['auth']);
+$router->post('/tenant/requests', [$tenant, 'createRequest'], ['auth']);
 
 // ==================== Admin Routes ====================
 
-$router->get('/admin', [$admin, 'index']);
-$router->get('/admin/users', [$admin, 'users']);
-$router->get('/admin/users/{id}', [$admin, 'editUser']);
-$router->post('/admin/users/{id}', [$admin, 'updateUser']);
-$router->get('/admin/invitations', [$admin, 'invitations']);
-$router->post('/admin/invitations', [$admin, 'sendInvitation']);
-$router->get('/admin/requests', [$admin, 'requests']);
-$router->post('/admin/requests/{id}', [$admin, 'updateRequest']);
-$router->get('/admin/bills', [$admin, 'bills']);
-$router->post('/admin/bills', [$admin, 'createBill']);
-$router->get('/admin/notifications', [$admin, 'notifications']);
-$router->post('/admin/notifications', [$admin, 'sendNotification']);
+$router->get('/admin', [$admin, 'index'], ['auth', 'admin']);
+$router->get('/admin/users', [$admin, 'users'], ['auth', 'admin']);
+$router->get('/admin/users/{id}', [$admin, 'editUser'], ['auth', 'admin']);
+$router->post('/admin/users/{id}', [$admin, 'updateUser'], ['auth', 'admin']);
+$router->get('/admin/invitations', [$admin, 'invitations'], ['auth', 'admin']);
+$router->post('/admin/invitations', [$admin, 'sendInvitation'], ['auth', 'admin']);
+$router->get('/admin/requests', [$admin, 'requests'], ['auth', 'admin']);
+$router->post('/admin/requests/{id}', [$admin, 'updateRequest'], ['auth', 'admin']);
+$router->get('/admin/bills', [$admin, 'bills'], ['auth', 'admin']);
+$router->post('/admin/bills', [$admin, 'createBill'], ['auth', 'admin']);
+$router->get('/admin/notifications', [$admin, 'notifications'], ['auth', 'admin']);
+$router->post('/admin/notifications', [$admin, 'sendNotification'], ['auth', 'admin']);
 
 // ==================== API Routes ====================
 

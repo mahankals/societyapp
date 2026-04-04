@@ -2,7 +2,7 @@
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="description" content="SocietyApp — The premium digital platform for modern residential communities.">
     <meta name="theme-color" content="#10b981">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,20 +19,27 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/assets/js/offline.js"></script>
     <style>
+        body {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
         .glass-panel { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .noise-overlay { position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); opacity: 0.015; pointer-events: none; z-index: 9999; }
     </style>
+    {% block styles %}{% endblock %}
 </head>
 <body class="min-h-screen bg-surface-950">
     <div class="noise-overlay"></div>
 
-    <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950 border-b border-white/10 shadow-lg">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+    <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950 border-b border-white/10 shadow-lg" style="padding-top: env(safe-area-inset-top);">
+        <nav class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <a href="/tenant" class="flex items-center gap-3 group">
-                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/25">
-                        <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
-                    </div>
+                <a href="{{ user.role == 'admin' and currentRoute starts with '/admin' ? '/admin' : '/tenant' }}" class="flex items-center gap-3 group">
+                    <img src="/assets/icons/logo.svg" alt="SocietyApp" class="w-9 h-9 rounded-lg">
                     <span class="text-lg font-bold text-white tracking-tight">SocietyApp</span>
                 </a>
             </div>
@@ -52,7 +59,6 @@
                             <span class="text-sm font-semibold text-white">{{ user.name|first|upper }}</span>
                         </div>
                         {% endif %}
-                        <span class="text-sm font-medium text-white hidden sm:block">{{ user.name }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
                     </button>
                     <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 glass-panel rounded-xl overflow-hidden shadow-xl shadow-black/20">
@@ -89,12 +95,13 @@
         </nav>
     </header>
 
-    <main class="pt-20">
+    <main class="pt-20 pb-8" style="padding-bottom: env(safe-area-inset-bottom);">
         {% block content %}{% endblock %}
     </main>
 
     <script>
         lucide.createIcons();
+        
         const profileBtn = document.getElementById('profile-menu-btn');
         const profileDropdown = document.getElementById('profile-dropdown');
         if (profileBtn && profileDropdown) {
@@ -121,6 +128,27 @@
                     });
             });
         }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.showInstallPrompt = function() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            let message = 'To install SocietyApp on your device:\n\n';
+            if (isMobile) {
+                message += '1. Tap the menu button (three dots) or share button\n';
+                message += '2. Select "Add to Home Screen" or "Install App"\n';
+                message += '3. Tap "Add" to confirm';
+            } else {
+                message += '1. Click the menu icon in the browser address bar\n';
+                message += '2. Select "Install SocietyApp"\n';
+                message += '3. Click "Install" to confirm';
+            }
+            alert(message);
+        };
     </script>
     {% block scripts %}{% endblock %}
 </body>

@@ -7,23 +7,24 @@ class Router {
     private array $routes = [];
     private array $middleware = [];
 
-    public function get(string $path, callable $handler): void {
-        $this->addRoute('GET', $path, $handler);
+    public function get(string $path, callable $handler, array $middleware = []): void {
+        $this->addRoute('GET', $path, $handler, $middleware);
     }
 
-    public function post(string $path, callable $handler): void {
-        $this->addRoute('POST', $path, $handler);
+    public function post(string $path, callable $handler, array $middleware = []): void {
+        $this->addRoute('POST', $path, $handler, $middleware);
     }
 
-    public function any(string $path, callable $handler): void {
-        $this->addRoute('ANY', $path, $handler);
+    public function any(string $path, callable $handler, array $middleware = []): void {
+        $this->addRoute('ANY', $path, $handler, $middleware);
     }
 
-    private function addRoute(string $method, string $path, callable $handler): void {
+    private function addRoute(string $method, string $path, callable $handler, array $middleware = []): void {
         $this->routes[] = [
             'method' => $method,
             'path' => $path,
             'handler' => $handler,
+            'middleware' => $middleware,
         ];
     }
 

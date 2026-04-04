@@ -1,4 +1,4 @@
-{% extends "layouts/base.html.twig" %}
+{% extends "layouts/auth.html.twig" %}
 
 {% block title %}Sign In | SocietyApp{% endblock %}
 {% block header %}{% endblock %}
@@ -97,6 +97,9 @@
 
             <form method="POST" action="/auth/login" class="space-y-5">
                 <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                {% if returnUrl %}
+                <input type="hidden" name="return_url" value="{{ returnUrl }}">
+                {% endif %}
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-white/80 mb-2">Email address</label>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SocietyApp — The premium digital platform for modern residential communities.">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/logo.svg">
+    <link rel="apple-touch-icon" href="/assets/icons/logo.svg">
     <title>{% block title %}SocietyApp{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,15 +21,14 @@
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 transition-all duration-500">
             <div class="glass-panel rounded-2xl px-6 py-3.5 flex items-center justify-between">
                 <a href="/" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition-shadow">
-                        <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
-                    </div>
+                    <img src="/assets/icons/logo.svg" alt="SocietyApp" class="w-10 h-10 rounded-xl shadow-lg group-hover:shadow-brand-500/40 transition-shadow">
                     <span class="text-lg font-bold text-white tracking-tight">SocietyApp</span>
                 </a>
                 <div class="hidden md:flex items-center gap-1">
                     <a href="/#features" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">Features</a>
                     <a href="/#how-it-works" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">How it Works</a>
                     <a href="/#stats" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">Impact</a>
+                    <a href="/#install" class="px-4 py-2 text-sm font-medium text-brand-400 hover:text-brand-300 hover:bg-white/5 rounded-lg transition-all duration-200">Download App</a>
                     <div class="w-px h-5 bg-white/10 mx-3"></div>
                     <a href="/auth/login" class="px-4 py-2 text-sm font-semibold text-white hover:bg-white/5 rounded-lg transition-all duration-200">Log in</a>
                     <a href="/auth/register" class="btn-primary !py-2.5 !px-5 !text-sm !rounded-xl !shadow-none hover:!shadow-lg hover:!shadow-brand-500/20">
@@ -44,6 +45,7 @@
                     <a href="/#features" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">Features</a>
                     <a href="/#how-it-works" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">How it Works</a>
                     <a href="/#stats" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">Impact</a>
+                    <a href="/#install" class="px-4 py-3 text-sm font-medium text-brand-400 hover:text-brand-300 hover:bg-white/5 rounded-xl transition-all">Download App</a>
                     <div class="h-px bg-white/10 my-2"></div>
                     <a href="/auth/login" class="px-4 py-3 text-sm font-semibold text-white hover:bg-white/5 rounded-xl transition-all">Log in</a>
                     <a href="/auth/register" class="btn-primary mt-1 !rounded-xl">
@@ -164,7 +166,16 @@
                 const isOpen = !mobileMenu.classList.contains('hidden');
                 mobileMenu.classList.toggle('hidden');
                 menuIcon.setAttribute('data-lucide', isOpen ? 'menu' : 'x');
+                menuIcon.classList.toggle('rotate-90', !isOpen);
                 lucide.createIcons();
+            });
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    menuIcon.setAttribute('data-lucide', 'menu');
+                    menuIcon.classList.remove('rotate-90');
+                    lucide.createIcons();
+                });
             });
         }
         const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
@@ -206,6 +217,27 @@
         document.querySelectorAll('[data-count]').forEach(el => {
             counterObserver.observe(el);
         });
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.showInstallPrompt = function() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            let message = 'To install SocietyApp on your device:\n\n';
+            if (isMobile) {
+                message += '1. Tap the menu button (three dots) or share button\n';
+                message += '2. Select "Add to Home Screen" or "Install App"\n';
+                message += '3. Tap "Add" to confirm';
+            } else {
+                message += '1. Click the menu icon in the browser address bar\n';
+                message += '2. Select "Install SocietyApp"\n';
+                message += '3. Click "Install" to confirm';
+            }
+            alert(message);
+        };
     </script>
     {% block scripts %}{% endblock %}
 </body>

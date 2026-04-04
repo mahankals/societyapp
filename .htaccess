@@ -6,6 +6,10 @@ RewriteRule ^(app|config|vendor|docs|\.git|\.ddev) - [F,L]
 # Rewrite /assets/* to /public/assets/* (when DocumentRoot = project root)
 RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 
+# Rewrite public root files when DocumentRoot = project root
+RewriteRule ^(favicon\.ico)$ public/assets/icons/logo.svg [L]
+RewriteRule ^(manifest\.json|sw\.js|offline\.html)$ public/$1 [L]
+
 # Serve existing files directly
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]

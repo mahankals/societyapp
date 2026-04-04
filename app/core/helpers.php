@@ -13,6 +13,10 @@ function isAdmin(): bool {
 
 function requireLogin(): void {
     if (!isLoggedIn()) {
+        $currentUrl = $_SERVER['REQUEST_URI'] ?? '/';
+        if (!empty($currentUrl) && $currentUrl !== '/') {
+            Session::put('return_url', $currentUrl);
+        }
         http_response_code(401);
         $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../views');
         $twig = new \Twig\Environment($loader, ['debug' => true]);

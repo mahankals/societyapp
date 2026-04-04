@@ -363,6 +363,87 @@
         </div>
     </section>
 
+    <!-- ========== INSTALL APP SECTION ========== -->
+    <section id="install" class="relative py-28 overflow-hidden">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-16" data-animate>
+                <div class="section-badge mb-5 inline-flex">
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                    <span>Mobile First</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">
+                    Use SocietyApp Anywhere
+                </h2>
+                <p class="text-white/50 text-lg max-w-2xl mx-auto leading-relaxed">
+                    Install our PWA on your phone for the best experience. Access your society dashboard even when you're offline.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <!-- Phone Mockup -->
+                <div class="relative mx-auto w-full max-w-[420px]" data-animate>
+                    <div class="relative rounded-[3.5rem] bg-surface-900 border-[8px] border-surface-800 shadow-2xl overflow-hidden min-h-[600px] flex items-center justify-center">
+                        <div class="absolute top-0 inset-x-0 h-8 bg-surface-800 rounded-b-xl"></div>
+                        <div class="p-10 pt-16 flex flex-col items-center justify-center gap-8 text-center">
+                            <div class="w-44 h-44 rounded-[2.5rem] bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-2xl shadow-brand-500/30">
+                                <i data-lucide="building-2" class="w-24 h-24 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-white text-3xl font-bold tracking-tight">SocietyApp</p>
+                                <p class="text-surface-200/50 text-base mt-3">Install on your phone for a fast, app-like resident portal.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-brand-500/20 rounded-full blur-3xl"></div>
+                </div>
+
+                <!-- Install Steps -->
+                <div class="space-y-6" data-animate>
+                    <div class="glass-panel rounded-2xl p-6 flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="download" class="w-6 h-6 text-brand-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">1. Open in Browser</h3>
+                            <p class="text-sm text-surface-200/60">Visit our website on your mobile device using Chrome, Safari, or any modern browser.</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-6 flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="plus-square" class="w-6 h-6 text-brand-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">2. Add to Home Screen</h3>
+                            <p class="text-sm text-surface-200/60">Tap the share button in Safari or the menu icon in Chrome, then select "Add to Home Screen".</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-6 flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="app-window" class="w-6 h-6 text-brand-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">3. Use Like an App</h3>
+                            <p class="text-sm text-surface-200/60">SocietyApp will appear on your home screen. Launch it anytime for instant access, even offline.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <a href="/auth/register" class="btn-primary">
+                            Get Started
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </a>
+                        <button onclick="showInstallPrompt()" class="btn-secondary">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            Install App
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ========== CTA SECTION ========== -->
     <section class="relative py-28 overflow-hidden">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
