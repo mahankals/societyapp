@@ -77,13 +77,60 @@ switch ($command) {
     case '--help':
     case '-h':
         printHeader("Available Commands");
+        echo "  \033[1;33mmigrate\033[0m                       Run database migrations\n";
         echo "  \033[1;33madd-admin [email] [password]\033[0m    Create first admin user\n";
         echo "  \033[1;33mhelp\033[0m                          Show this help message\n";
         echo "\n";
         echo "\033[1;33mExamples:\033[0m\n";
+        echo "  php console migrate                        (run migrations)\n";
         echo "  php console add-admin                     (interactive mode)\n";
         echo "  php console add-admin admin@test.com pass123\n";
         echo "\n";
+        break;
+
+    case 'migrate':
+        printHeader("Run Database Migrations");
+
+        $schemaFile = $rootDir . '/app/schema.sql';
+        if (!file_exists($schemaFile)) {
+            printError("Schema file not found: app/schema.sql");
+            exit(1);
+        }
+
+        printInfo("Reading schema file...");
+
+        $config = require $rootDir . '/config/database.php';
+
+        try {
+            $dsn = "{$config['driver']}:host={$config['host']};port={$config['port']};dbname={$config['database']}";
+            $pdo = new PDO($dsn, $config['username'], $config['password'], [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+
+            $sql = file_get_contents($schemaFile);
+
+            $pdo->exec($sql);
+
+            printSuccess("Database migrated successfully!");
+            echo "\n";
+            echo "  \033[1;34mTables created:\033[0m\n";
+            echo "    - users\n";
+            echo "    - password_reset_tokens\n";
+            echo "    - user_sessions\n";
+            echo "    - activity_logs\n";
+            echo "    - user_profiles\n";
+            echo "    - notifications\n";
+            echo "    - documents\n";
+            echo "    - maintenance_bills\n";
+            echo "    - service_requests\n";
+            echo "    - complaints\n";
+            echo "    - events\n";
+            echo "\n";
+        } catch (PDOException $e) {
+            printError("Migration failed: " . $e->getMessage());
+            exit(1);
+        }
         break;
 
     case 'add-admin':

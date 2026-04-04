@@ -354,11 +354,166 @@ $router->get('/client', function() {
     requireLogin();
     $user = getUser();
     $flash = Session::getFlash();
+    
+    $unreadCount = Database::fetchOne(
+        "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0",
+        [Session::get('user_id')]
+    );
+    
     echo view('client/index', [
         'basePath' => '/',
         'user' => $user,
         'flash' => $flash,
+        'unreadNotifications' => $unreadCount['count'] ?? 0,
     ]);
+});
+
+$router->get('/client/notifications', function() {
+    requireLogin();
+    $user = getUser();
+    $notifications = Database::fetchAll(
+        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
+        [Session::get('user_id')]
+    );
+    echo view('client/notifications', [
+        'basePath' => '/',
+        'user' => $user,
+        'notifications' => $notifications,
+    ]);
+});
+
+$router->post('/client/notifications/mark-read', function() {
+    requireLogin();
+    if (verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        Database::update(
+            'notifications',
+            ['is_read' => 1],
+            'user_id = ? AND is_read = 0',
+            [Session::get('user_id')]
+        );
+    }
+    redirect('/client/notifications');
+});
+
+$router->get('/client/profile', function() {
+    requireLogin();
+    $user = getUser();
+    $profile = Database::fetchOne(
+        "SELECT * FROM user_profiles WHERE user_id = ?",
+        [Session::get('user_id')]
+    );
+    echo view('client/profile', [
+        'basePath' => '/',
+        'user' => $user,
+        'profile' => $profile,
+    ]);
+});
+
+$router->post('/client/profile', function() {
+    requireLogin();
+    $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $phone = filter_input(INPUT_POST, 'phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $address = filter_input(INPUT_POST, 'address', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $apartment = filter_input(INPUT_POST, 'apartment', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $emergency_name = filter_input(INPUT_POST, 'emergency_contact_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $emergency_phone = filter_input(INPUT_POST, 'emergency_contact_phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        Session::flash('error', 'Invalid request.');
+        redirect('/client/profile');
+    }
+    
+    $profileData = [
+        'phone' => $phone,
+        'address' => $address,
+        'apartment' => $apartment,
+        'emergency_contact_name' => $emergency_name,
+        'emergency_contact_phone' => $emergency_phone,
+    ];
+    
+    $existing = Database::fetchOne("SELECT id FROM user_profiles WHERE user_id = ?", [Session::get('user_id')]);
+    
+    if ($existing) {
+        Database::update('user_profiles', $profileData, 'user_id = ?', [Session::get('user_id')]);
+    } else {
+        $profileData['user_id'] = Session::get('user_id');
+        Database::insert('user_profiles', $profileData);
+    }
+    
+    Database::update('users', ['name' => $name], 'id = ?', [Session::get('user_id')]);
+    
+    Session::flash('success', 'Profile updated successfully!');
+    redirect('/client/profile');
+});
+
+$router->get('/client/documents', function() {
+    requireLogin();
+    $user = getUser();
+    $documents = Database::fetchAll(
+        "SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC",
+        [Session::get('user_id')]
+    );
+    echo view('client/documents', [
+        'basePath' => '/',
+        'user' => $user,
+        'documents' => $documents,
+    ]);
+});
+
+$router->get('/client/bills', function() {
+    requireLogin();
+    $user = getUser();
+    $bills = Database::fetchAll(
+        "SELECT * FROM maintenance_bills WHERE user_id = ? ORDER BY created_at DESC",
+        [Session::get('user_id')]
+    );
+    echo view('client/bills', [
+        'basePath' => '/',
+        'user' => $user,
+        'bills' => $bills,
+    ]);
+});
+
+$router->get('/client/requests', function() {
+    requireLogin();
+    $user = getUser();
+    $requests = Database::fetchAll(
+        "SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC",
+        [Session::get('user_id')]
+    );
+    echo view('client/requests', [
+        'basePath' => '/',
+        'user' => $user,
+        'requests' => $requests,
+    ]);
+});
+
+$router->post('/client/requests', function() {
+    requireLogin();
+    $category = filter_input(INPUT_POST, 'category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $priority = filter_input(INPUT_POST, 'priority', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: 'medium';
+    
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        Session::flash('error', 'Invalid request.');
+        redirect('/client/requests');
+    }
+    
+    if (empty($category) || empty($description)) {
+        Session::flash('error', 'Please fill in all required fields.');
+        redirect('/client/requests');
+    }
+    
+    Database::insert('service_requests', [
+        'user_id' => Session::get('user_id'),
+        'category' => $category,
+        'description' => $description,
+        'priority' => $priority,
+        'status' => 'pending',
+    ]);
+    
+    Session::flash('success', 'Service request submitted successfully!');
+    redirect('/client/requests');
 });
 
 // Admin Routes (admin required)

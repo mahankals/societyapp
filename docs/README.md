@@ -81,8 +81,9 @@ Key variables:
 ## Console Commands
 
 ```bash
-php console help                              # Show all commands
-php console add-admin                         # Interactive admin creation
+php console help                          # Show all commands
+php console migrate                       # Run database migrations
+php console add-admin                     # Interactive admin creation
 php console add-admin admin@mysociety.com Pass@123  # Direct admin creation
 ```
 

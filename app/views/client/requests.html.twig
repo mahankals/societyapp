@@ -1,0 +1,124 @@
+{% extends "layouts/base.html.twig" %}
+
+{% block title %}Service Requests | SocietyApp{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen pt-20 px-4">
+    <nav class="glass-panel mx-4 mt-4 rounded-2xl px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="/client" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
+            </a>
+            <div>
+                <h1 class="text-lg font-bold text-white">Service Requests</h1>
+                <p class="text-sm text-surface-200/40">Track your maintenance requests</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('new-request').classList.toggle('hidden')" class="btn-primary !py-2 !px-4 !text-sm !rounded-lg">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Request
+        </button>
+    </nav>
+
+    {% if flash %}
+    <div class="mx-4 mt-4 p-4 rounded-xl {% if flash.type == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400{% else %}bg-green-500/10 border border-green-500/20 text-green-400{% endif %} text-sm flex items-center gap-3">
+        <i data-lucide="{% if flash.type == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-5 h-5 flex-shrink-0"></i>
+        {{ flash.message }}
+    </div>
+    {% endif %}
+
+    <div id="new-request" class="mx-4 mt-4 glass-panel rounded-2xl p-6 hidden">
+        <h3 class="text-lg font-semibold text-white mb-4">Create New Request</h3>
+        <form method="POST" action="/client/requests" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken() }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="category" class="block text-sm font-medium text-white/80 mb-2">Category</label>
+                    <select id="category" name="category" required
+                        class="w-full h-12 bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/30 transition-all">
+                        <option value="" class="text-surface-900">Select category</option>
+                        <option value="Electrical" class="text-surface-900">Electrical</option>
+                        <option value="Plumbing" class="text-surface-900">Plumbing</option>
+                        <option value="Cleaning" class="text-surface-900">Cleaning</option>
+                        <option value="Security" class="text-surface-900">Security</option>
+                        <option value="Carpentry" class="text-surface-900">Carpentry</option>
+                        <option value="Other" class="text-surface-900">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-white/80 mb-2">Priority</label>
+                    <select id="priority" name="priority"
+                        class="w-full h-12 bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/30 transition-all">
+                        <option value="low" class="text-surface-900">Low</option>
+                        <option value="medium" selected class="text-surface-900">Medium</option>
+                        <option value="high" class="text-surface-900">High</option>
+                        <option value="urgent" class="text-surface-900">Urgent</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label for="description" class="block text-sm font-medium text-white/80 mb-2">Description</label>
+                <textarea id="description" name="description" rows="3" required
+                    class="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/30 transition-all"
+                    placeholder="Describe your issue in detail..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn-primary w-full !h-12 !rounded-xl">
+                <i data-lucide="send" class="w-5 h-5"></i>
+                Submit Request
+            </button>
+        </form>
+    </div>
+
+    <div class="mt-4 space-y-3">
+        {% for request in requests %}
+        <div class="glass-panel rounded-2xl p-4">
+            <div class="flex items-start justify-between">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+                        {% if request.priority == 'urgent' %}bg-red-500/20 text-red-400
+                        {% elseif request.priority == 'high' %}bg-orange-500/20 text-orange-400
+                        {% elseif request.priority == 'medium' %}bg-blue-500/20 text-blue-400
+                        {% else %}bg-surface-200/20 text-surface-200/40{% endif %}">
+                        <i data-lucide="wrench" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-medium">{{ request.category }}</h3>
+                        <p class="text-sm text-surface-200/50 mt-1 line-clamp-2">{{ request.description }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 rounded-lg text-xs font-medium flex-shrink-0
+                    {% if request.status == 'completed' %}bg-green-500/20 text-green-400
+                    {% elseif request.status == 'in_progress' %}bg-blue-500/20 text-blue-400
+                    {% elseif request.status == 'cancelled' %}bg-red-500/20 text-red-400
+                    {% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
+                    {{ request.status|replace({'_': ' '})|title }}
+                </span>
+            </div>
+            <div class="flex items-center gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-surface-200/40">
+                <span>{{ request.created_at|date('M d, Y') }}</span>
+                <span class="px-2 py-0.5 rounded bg-white/5">{{ request.priority|title }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="glass-panel rounded-2xl p-8 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="clipboard-list" class="w-8 h-8 text-surface-200/30"></i>
+            </div>
+            <h3 class="text-white font-medium mb-2">No service requests</h3>
+            <p class="text-sm text-surface-200/50">Create a new request to get help</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

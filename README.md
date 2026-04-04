@@ -33,26 +33,23 @@ cp .env.example .env
 # Edit .env with your database and Google OAuth credentials
 ```
 
-### 3. Setup Database
-
-Run the schema SQL in your MySQL database:
+### 3. Run Migrations
 
 ```bash
-mysql -u root -p societyapp < app/schema.sql
+php console migrate
 ```
 
-### 4. Build Assets
+### 4. Create Admin User
+
+```bash
+php console add-admin admin@mysociety.com Pass@123
+```
+
+### 5. Build Assets
 
 ```bash
 npm run build    # Build CSS once
 npm run watch    # Watch for changes
-```
-
-### 5. Create Admin User
-
-```bash
-php console add-admin                    # Interactive mode
-php console add-admin admin@mysociety.com Pass@123  # Direct mode
 ```
 
 ### 6. Run the App
@@ -82,6 +79,7 @@ ddev launch
 
 ```bash
 php console help                          # Show all commands
+php console migrate                       # Run database migrations
 php console add-admin                     # Create admin (interactive)
 php console add-admin admin@mysociety.com Pass@123  # Create admin (direct)
 ```
