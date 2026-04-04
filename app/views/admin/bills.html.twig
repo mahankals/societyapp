@@ -29,7 +29,7 @@
         <div class="glass-panel rounded-2xl p-6 mb-6">
             <h2 class="text-lg font-semibold text-white mb-4">Generate New Bill</h2>
             <form method="POST" action="/admin/bills" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input type="hidden" name="csrf_token" value="{{ csrfToken() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                 <input type="number" name="user_id" placeholder="User ID" required
                     class="h-12 bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-brand-500/50">
                 <input type="number" name="amount" placeholder="Amount" step="0.01" required

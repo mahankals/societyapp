@@ -22,7 +22,7 @@
         {% for request in requests %}
         <div class="glass-panel rounded-2xl p-4">
             <form method="POST" action="/admin/requests/{{ request.id }}" class="flex items-start justify-between">
-                <input type="hidden" name="csrf_token" value="{{ csrfToken() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                 <div class="flex items-start gap-3">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
                         {% if request.priority == 'urgent' %}bg-red-500/20 text-red-400

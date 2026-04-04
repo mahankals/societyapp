@@ -379,6 +379,7 @@ $router->get('/client/notifications', function() {
         'basePath' => '/',
         'user' => $user,
         'notifications' => $notifications,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -406,6 +407,7 @@ $router->get('/client/profile', function() {
         'basePath' => '/',
         'user' => $user,
         'profile' => $profile,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -457,6 +459,7 @@ $router->get('/client/documents', function() {
         'basePath' => '/',
         'user' => $user,
         'documents' => $documents,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -471,6 +474,7 @@ $router->get('/client/bills', function() {
         'basePath' => '/',
         'user' => $user,
         'bills' => $bills,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -485,6 +489,7 @@ $router->get('/client/requests', function() {
         'basePath' => '/',
         'user' => $user,
         'requests' => $requests,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -564,6 +569,7 @@ $router->get('/admin/users/{id}', function($id) {
         'basePath' => '/',
         'user' => getUser(),
         'targetUser' => $targetUser,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -600,6 +606,7 @@ $router->get('/admin/invitations', function() {
     echo view('admin/invitations', [
         'basePath' => '/',
         'user' => $user,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -649,6 +656,7 @@ $router->get('/admin/requests', function() {
         'basePath' => '/',
         'user' => $user,
         'requests' => $requests,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -690,6 +698,7 @@ $router->get('/admin/bills', function() {
         'basePath' => '/',
         'user' => $user,
         'bills' => $bills,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 
@@ -737,6 +746,7 @@ $router->get('/admin/notifications', function() {
     echo view('admin/notifications', [
         'basePath' => '/',
         'user' => $user,
+        'csrfToken' => generateCSRFToken(),
     ]);
 });
 

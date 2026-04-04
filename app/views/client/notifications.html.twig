@@ -17,7 +17,7 @@
             </div>
         </div>
         <form method="POST" action="/client/notifications/mark-read">
-            <input type="hidden" name="csrf_token" value="{{ csrfToken() }}">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
             <button type="submit" class="flex items-center gap-2 px-4 py-2 text-sm text-surface-200/60 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                 <i data-lucide="check-check" class="w-4 h-4"></i>
                 Mark all read
