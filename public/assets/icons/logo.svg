@@ -1,17 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="96" fill="url(#grad)"/>
-  <circle cx="256" cy="256" r="180" fill="white"/>
-  <g transform="translate(156, 156) scale(0.8)">
-    <path d="M10 12h4" stroke="#059669" stroke-width="32" stroke-linecap="round"/>
-    <path d="M10 8h4" stroke="#059669" stroke-width="32" stroke-linecap="round"/>
-    <path d="M14 421v-3a2 2 0 0 0-4 0v3" stroke="#059669" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" stroke="#059669" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" stroke="#059669" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+<svg fill="none" stroke="#000000" width="200" height="200" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fixed circle with proper padding -->
+  <circle cx="12" cy="12" r="11" fill="#ffffff" stroke="#000000" />
+
+  <!-- Inner icon -->
+  <!-- Inner icon (scaled & centered to stay inside circle) -->
+  <g transform="translate(3.5,3.5) scale(0.7)">
+    <path d="M10 8h4"></path>
+    <path d="M10 12h4"></path>
+    <path d="M14 21v-3a2 2 0 0 0-4 0v3"></path>
+    <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
+    <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"></path>
   </g>
 </svg>
