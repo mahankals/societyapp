@@ -222,21 +222,34 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn) {
+                btn.style.display = 'inline-flex';
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn) {
+                btn.style.display = 'none';
+            }
         });
 
         window.showInstallPrompt = function() {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            let message = 'To install SocietyApp on your device:\n\n';
-            if (isMobile) {
-                message += '1. Tap the menu button (three dots) or share button\n';
-                message += '2. Select "Add to Home Screen" or "Install App"\n';
-                message += '3. Tap "Add" to confirm';
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    deferredPrompt = null;
+                });
             } else {
-                message += '1. Click the menu icon in the browser address bar\n';
-                message += '2. Select "Install SocietyApp"\n';
-                message += '3. Click "Install" to confirm';
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (isMobile) {
+                    alert('To install: Tap the share button and select "Add to Home Screen"');
+                } else {
+                    alert('To install: Click the install icon in the browser address bar');
+                }
             }
-            alert(message);
         };
     </script>
     {% block scripts %}{% endblock %}
