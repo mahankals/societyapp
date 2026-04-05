@@ -17,11 +17,7 @@ function requireLogin(): void {
         if (!empty($currentUrl) && $currentUrl !== '/') {
             Session::put('return_url', $currentUrl);
         }
-        http_response_code(401);
-        $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../views');
-        $twig = new \Twig\Environment($loader, ['debug' => true]);
-        echo $twig->render('errors/401.html.twig');
-        exit;
+        redirect('/auth/login');
     }
 }
 
