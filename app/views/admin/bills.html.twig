@@ -21,6 +21,36 @@
     </div>
     {% endif %}
 
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="glass-panel rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-white">{{ stats.total }}</p>
+            <p class="text-xs text-surface-200/60">Total Bills</p>
+        </div>
+        <div class="glass-panel rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-green-400">{{ stats.paid }}</p>
+            <p class="text-xs text-surface-200/60">Paid</p>
+        </div>
+        <div class="glass-panel rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-red-400">{{ stats.pending }}</p>
+            <p class="text-xs text-surface-200/60">Pending</p>
+        </div>
+        <div class="glass-panel rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-brand-400">₹{{ stats.paidAmount|number_format }}</p>
+            <p class="text-xs text-surface-200/60">Collected</p>
+        </div>
+    </div>
+
+    <form method="GET" class="mb-4 glass-panel rounded-xl p-4">
+        <div class="flex gap-3">
+            <select name="status" onchange="this.form.submit()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm">
+                <option value="">All Status</option>
+                <option value="paid" {% if statusFilter == 'paid' %}selected{% endif %}>Paid</option>
+                <option value="pending" {% if statusFilter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="overdue" {% if statusFilter == 'overdue' %}selected{% endif %}>Overdue</option>
+            </select>
+        </div>
+    </form>
+
     <div class="glass-panel rounded-2xl p-6 mb-6">
         <h2 class="text-lg font-semibold text-white mb-4">Generate New Bill</h2>
         <form method="POST" action="/admin/bills" class="grid grid-cols-1 md:grid-cols-4 gap-4">

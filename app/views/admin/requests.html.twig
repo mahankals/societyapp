@@ -14,6 +14,25 @@
         </div>
     </div>
 
+    <form method="GET" class="mb-4 glass-panel rounded-xl p-4">
+        <div class="flex flex-col md:flex-row gap-3">
+            <select name="status" onchange="this.form.submit()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm">
+                <option value="">All Status</option>
+                <option value="pending" {% if statusFilter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="in_progress" {% if statusFilter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="completed" {% if statusFilter == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="cancelled" {% if statusFilter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <select name="priority" onchange="this.form.submit()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm">
+                <option value="">All Priority</option>
+                <option value="urgent" {% if priorityFilter == 'urgent' %}selected{% endif %}>Urgent</option>
+                <option value="high" {% if priorityFilter == 'high' %}selected{% endif %}>High</option>
+                <option value="medium" {% if priorityFilter == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="low" {% if priorityFilter == 'low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+    </form>
+
     <div class="space-y-3">
         {% for request in requests %}
         <div class="glass-panel rounded-2xl p-4">

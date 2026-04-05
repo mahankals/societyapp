@@ -23,16 +23,40 @@ class AdminController
             'unpaidBills' => Database::fetchOne("SELECT COUNT(*) as count FROM maintenance_bills WHERE status = 'pending' OR status = 'overdue'")['count'] ?? 0,
         ];
         
+        $revenueStats = Database::fetchOne("
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as totalCollected,
+                COALESCE(SUM(CASE WHEN status IN ('pending', 'overdue') THEN amount ELSE 0 END), 0) as totalPending,
+                COALESCE(SUM(amount), 0) as totalBilled
+            FROM maintenance_bills
+        ");
+        
+        $thisMonth = date('Y-m');
+        $monthlyRevenue = Database::fetchOne("
+            SELECT COALESCE(SUM(amount), 0) as total 
+            FROM maintenance_bills 
+            WHERE status = 'paid' AND DATE_FORMAT(paid_date, '%Y-%m') = ?
+        ", [$thisMonth]);
+        
+        $membersByRole = Database::fetchAll("
+            SELECT role, COUNT(*) as count FROM users GROUP BY role
+        ");
+        
         $recentActivity = Database::fetchAll("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 10");
         $recentRequests = Database::fetchAll("SELECT r.*, u.name as user_name FROM service_requests r LEFT JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC LIMIT 5");
+        $recentUsers = Database::fetchAll("SELECT id, name, email, created_at FROM users ORDER BY created_at DESC LIMIT 5");
         
         echo view('admin/index', [
             'basePath' => '/',
             'user' => $user,
             'flash' => $flash,
             'stats' => $stats,
+            'revenueStats' => $revenueStats,
+            'monthlyRevenue' => $monthlyRevenue['total'] ?? 0,
+            'membersByRole' => $membersByRole,
             'recentActivity' => $recentActivity,
             'recentRequests' => $recentRequests,
+            'recentUsers' => $recentUsers,
             'profile' => getUserProfile(),
             'currentRoute' => '/admin',
         ]);
@@ -42,11 +66,42 @@ class AdminController
     {
         requireAdmin();
         $user = getUser();
-        $users = Database::fetchAll("SELECT u.*, up.phone, up.apartment FROM users u LEFT JOIN user_profiles up ON u.id = up.user_id ORDER BY u.created_at DESC");
+        
+        $search = $_GET['search'] ?? '';
+        $role = $_GET['role'] ?? '';
+        $status = $_GET['status'] ?? '';
+        
+        $where = [];
+        $params = [];
+        
+        if ($search) {
+            $where[] = "(u.name LIKE ? OR u.email LIKE ? OR up.apartment LIKE ?)";
+            $searchParam = "%{$search}%";
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+        
+        if ($role) {
+            $where[] = "u.role = ?";
+            $params[] = $role;
+        }
+        
+        if ($status) {
+            $where[] = "u.is_active = ?";
+            $params[] = ($status === 'active') ? 1 : 0;
+        }
+        
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $users = Database::fetchAll("SELECT u.*, up.phone, up.apartment FROM users u LEFT JOIN user_profiles up ON u.id = up.user_id {$whereClause} ORDER BY u.created_at DESC", $params);
+        
         echo view('admin/users', [
             'basePath' => '/',
             'user' => $user,
             'users' => $users,
+            'search' => $search,
+            'role' => $role,
+            'status' => $status,
             'profile' => getUserProfile(),
             'currentRoute' => '/admin/users',
         ]);
@@ -154,11 +209,32 @@ class AdminController
     {
         requireAdmin();
         $user = getUser();
-        $requests = Database::fetchAll("SELECT r.*, u.name as user_name, u.email as user_email FROM service_requests r LEFT JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC");
+        
+        $statusFilter = $_GET['status'] ?? '';
+        $priorityFilter = $_GET['priority'] ?? '';
+        
+        $where = [];
+        $params = [];
+        
+        if ($statusFilter) {
+            $where[] = "r.status = ?";
+            $params[] = $statusFilter;
+        }
+        
+        if ($priorityFilter) {
+            $where[] = "r.priority = ?";
+            $params[] = $priorityFilter;
+        }
+        
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $requests = Database::fetchAll("SELECT r.*, u.name as user_name, u.email as user_email FROM service_requests r LEFT JOIN users u ON r.user_id = u.id {$whereClause} ORDER BY r.created_at DESC", $params);
+        
         echo view('admin/requests', [
             'basePath' => '/',
             'user' => $user,
             'requests' => $requests,
+            'statusFilter' => $statusFilter,
+            'priorityFilter' => $priorityFilter,
             'csrfToken' => generateCSRFToken(),
             'profile' => getUserProfile(),
             'currentRoute' => '/admin/requests',
@@ -200,11 +276,36 @@ class AdminController
     {
         requireAdmin();
         $user = getUser();
-        $bills = Database::fetchAll("SELECT b.*, u.name as user_name, u.email as user_email FROM maintenance_bills b LEFT JOIN users u ON b.user_id = u.id ORDER BY b.created_at DESC");
+        
+        $statusFilter = $_GET['status'] ?? '';
+        
+        $where = [];
+        $params = [];
+        
+        if ($statusFilter) {
+            $where[] = "b.status = ?";
+            $params[] = $statusFilter;
+        }
+        
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $bills = Database::fetchAll("SELECT b.*, u.name as user_name, u.email as user_email FROM maintenance_bills b LEFT JOIN users u ON b.user_id = u.id {$whereClause} ORDER BY b.created_at DESC", $params);
+        
+        $stats = Database::fetchOne("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid,
+                SUM(CASE WHEN status IN ('pending', 'overdue') THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as paidAmount,
+                SUM(CASE WHEN status IN ('pending', 'overdue') THEN amount ELSE 0 END) as pendingAmount
+            FROM maintenance_bills
+        ");
+        
         echo view('admin/bills', [
             'basePath' => '/',
             'user' => $user,
             'bills' => $bills,
+            'stats' => $stats,
+            'statusFilter' => $statusFilter,
             'csrfToken' => generateCSRFToken(),
             'profile' => getUserProfile(),
             'currentRoute' => '/admin/bills',
