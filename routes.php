@@ -303,6 +303,7 @@ $router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRea
 $router->get('/tenant/profile', [$tenant, 'profile'], ['auth']);
 $router->post('/tenant/profile', [$tenant, 'updateProfile'], ['auth']);
 $router->get('/tenant/documents', [$tenant, 'documents'], ['auth']);
+$router->post('/tenant/documents/upload', [$tenant, 'uploadDocument'], ['auth']);
 $router->get('/tenant/bills', [$tenant, 'bills'], ['auth']);
 $router->get('/tenant/requests', [$tenant, 'requests'], ['auth']);
 $router->post('/tenant/requests', [$tenant, 'createRequest'], ['auth']);

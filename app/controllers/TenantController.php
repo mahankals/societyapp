@@ -15,16 +15,47 @@ class TenantController
         requireLogin();
         $user = getUser();
         $flash = Session::getFlash();
+        $userId = Session::get('user_id');
         
         $unreadCount = Database::fetchOne(
             "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0",
-            [Session::get('user_id')]
+            [$userId]
         );
         
         $profile = Database::fetchOne(
             "SELECT * FROM user_profiles WHERE user_id = ?",
-            [Session::get('user_id')]
+            [$userId]
         );
+        
+        $unpaidBills = Database::fetchOne(
+            "SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM maintenance_bills WHERE user_id = ? AND status = 'pending'",
+            [$userId]
+        );
+        
+        $pendingRequests = Database::fetchOne(
+            "SELECT COUNT(*) as count FROM service_requests WHERE user_id = ? AND status = 'pending'",
+            [$userId]
+        );
+        
+        $recentBills = Database::fetchAll(
+            "SELECT * FROM maintenance_bills WHERE user_id = ? ORDER BY created_at DESC LIMIT 3",
+            [$userId]
+        );
+        
+        $recentRequests = Database::fetchAll(
+            "SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 3",
+            [$userId]
+        );
+        
+        $profileComplete = 0;
+        if ($profile) {
+            $fields = ['phone', 'address', 'apartment', 'emergency_contact_name', 'emergency_contact_phone'];
+            $filled = 0;
+            foreach ($fields as $field) {
+                if (!empty($profile[$field])) $filled++;
+            }
+            $profileComplete = round(($filled / count($fields)) * 100);
+        }
         
         echo view('tenant/index', [
             'basePath' => '/',
@@ -32,6 +63,12 @@ class TenantController
             'flash' => $flash,
             'unreadNotifications' => $unreadCount['count'] ?? 0,
             'profile' => $profile,
+            'unpaidBillsCount' => $unpaidBills['count'] ?? 0,
+            'unpaidBillsTotal' => $unpaidBills['total'] ?? 0,
+            'pendingRequestsCount' => $pendingRequests['count'] ?? 0,
+            'recentBills' => $recentBills,
+            'recentRequests' => $recentRequests,
+            'profileComplete' => $profileComplete,
             'currentRoute' => '/tenant',
         ]);
     }
@@ -147,6 +184,60 @@ class TenantController
             'profile' => $profile,
             'currentRoute' => '/tenant/documents',
         ]);
+    }
+
+    public function uploadDocument()
+    {
+        requireLogin();
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid request.');
+            redirect('/tenant/documents');
+        }
+        
+        if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+            Session::flash('error', 'Please select a file to upload.');
+            redirect('/tenant/documents');
+        }
+        
+        $file = $_FILES['document'];
+        $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        $maxSize = 5 * 1024 * 1024;
+        
+        if (!in_array($file['type'], $allowedTypes)) {
+            Session::flash('error', 'Invalid file type. Allowed: PDF, JPG, PNG, DOC');
+            redirect('/tenant/documents');
+        }
+        
+        if ($file['size'] > $maxSize) {
+            Session::flash('error', 'File too large. Maximum size: 5MB');
+            redirect('/tenant/documents');
+        }
+        
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('doc_') . '.' . $ext;
+        $uploadDir = __DIR__ . '/../../public/uploads/documents/';
+        
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        $filepath = $uploadDir . $filename;
+        
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            Database::insert('documents', [
+                'user_id' => Session::get('user_id'),
+                'name' => basename($file['name']),
+                'file_path' => '/uploads/documents/' . $filename,
+                'file_size' => $file['size'],
+                'mime_type' => $file['type'],
+            ]);
+            Session::flash('success', 'Document uploaded successfully!');
+        } else {
+            Session::flash('error', 'Failed to upload document.');
+        }
+        
+        redirect('/tenant/documents');
     }
 
     public function bills()

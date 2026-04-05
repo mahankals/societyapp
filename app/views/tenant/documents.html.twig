@@ -14,6 +14,16 @@
         </div>
     </div>
 
+    <form method="POST" action="/tenant/documents/upload" enctype="multipart/form-data" class="mb-6">
+        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+        <label class="glass-panel rounded-2xl p-6 cursor-pointer hover:bg-white/5 transition-all block text-center border-2 border-dashed border-white/10 hover:border-brand-500/50">
+            <input type="file" name="document" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="this.closest('form').submit()">
+            <i data-lucide="upload" class="w-8 h-8 text-surface-200/40 mx-auto mb-2"></i>
+            <p class="text-sm text-surface-200/60">Tap to upload document</p>
+            <p class="text-xs text-surface-200/30 mt-1">PDF, JPG, PNG, DOC up to 5MB</p>
+        </label>
+    </form>
+
     {% if flash %}
     <div class="mb-4 p-4 rounded-xl {% if flash.type == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400{% else %}bg-green-500/10 border border-green-500/20 text-green-400{% endif %} text-sm flex items-center gap-3">
         <i data-lucide="{% if flash.type == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-5 h-5 flex-shrink-0"></i>
