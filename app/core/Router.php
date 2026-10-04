@@ -69,6 +69,9 @@ class Router {
     }
 
     private function buildPattern(string $path): string {
+        // {param+} = greedy wildcard (matches multiple segments including slashes)
+        $path = preg_replace('/\{([a-zA-Z_]+)\+\}/', '(.+)', $path);
+        // {param}  = single segment (no slashes)
         $path = preg_replace('/\{([a-zA-Z_]+)\}/', '([^/]+)', $path);
         return '#^' . $path . '$#';
     }

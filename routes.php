@@ -519,11 +519,11 @@ $router->post('/resident/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
 $router->get('/resident/requests', [$resident, 'requests'], ['auth']);
 $router->post('/resident/requests', [$resident, 'createRequest'], ['auth']);
 
-// Legacy redirects: /tenant and /residential -> /resident
+// Legacy redirects: /tenant and /residential -> /resident (full deep-path support via {path+})
 $router->any('/tenant', function() { redirect('/resident'); }, ['auth']);
-$router->any('/tenant/{path}', function($path) { redirect('/resident/' . $path); }, ['auth']);
+$router->any('/tenant/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
 $router->any('/residential', function() { redirect('/resident'); }, ['auth']);
-$router->any('/residential/{path}', function($path) { redirect('/resident/' . $path); }, ['auth']);
+$router->any('/residential/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
 $router->get('/profile', function() { redirect('/resident/profile'); }, ['auth']);
 $router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['auth']);
 
