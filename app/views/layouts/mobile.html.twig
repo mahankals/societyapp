@@ -62,19 +62,19 @@
                 {% if user %}
                 <div class="hidden md:flex items-center gap-1 text-sm font-medium">
                     {% if userCaps.isResident %}
-                    <a href="/resident" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute == '/resident' or currentRoute == '/tenant' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <a href="/resident" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute == '/resident' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Dashboard
                     </a>
-                    <a href="/resident/bills" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/bills' or currentRoute starts with '/tenant/bills' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <a href="/resident/bills" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/bills' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Bills & Dues
                     </a>
-                    <a href="/resident/receipts" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/receipts' or currentRoute starts with '/tenant/receipts' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <a href="/resident/receipts" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/receipts' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Receipts
                     </a>
-                    <a href="/resident/directory" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/directory' or currentRoute starts with '/tenant/directory' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <a href="/resident/directory" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/directory' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Directory
                     </a>
-                    <a href="/resident/link-flat" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/link-flat' or currentRoute starts with '/tenant/link-flat' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <a href="/resident/link-flat" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/link-flat' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Link Flat
                     </a>
                     {% endif %}
@@ -121,7 +121,7 @@
                             {# View Switchers based on roles and current view #}
                             {% set showAdminView = (user.role == 'admin' or userCaps.isAdmin) and not (currentRoute starts with '/admin') %}
                             {% set showCommitteeView = (isCommittee or userCaps.isCommittee) and not (currentRoute starts with '/comitee' or currentRoute starts with '/committee' or currentRoute starts with '/committe') %}
-                            {% set showResidentView = not (currentRoute starts with '/resident' or currentRoute starts with '/residential' or currentRoute starts with '/tenant') %}
+                            {% set showResidentView = not (currentRoute starts with '/resident') %}
 
                             {% if showAdminView %}
                             <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
@@ -140,7 +140,7 @@
                             {% if showResidentView %}
                             <a href="/resident" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
                                 <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
-                                <span>Residential view</span>
+                                <span>Resident view</span>
                             </a>
                             {% endif %}
 
@@ -172,20 +172,20 @@
     {% if user %}
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[95] bg-surface-950/95 backdrop-blur-xl border-t border-white/10 px-3 py-2" style="padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);">
         <div class="flex items-center justify-around">
-            <a href="{{ user.role == 'admin' ? '/admin' : '/resident' }}" class="flex flex-col items-center gap-1 {{ (user.role == 'admin' and currentRoute starts with '/admin') or (user.role != 'admin' and (currentRoute == '/resident' or currentRoute == '/tenant')) ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+            <a href="{{ user.role == 'admin' ? '/admin' : '/resident' }}" class="flex flex-col items-center gap-1 {{ (user.role == 'admin' and currentRoute starts with '/admin') or (user.role != 'admin' and currentRoute == '/resident') ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                 <i data-lucide="home" class="w-5 h-5"></i>
                 <span class="text-[10px] font-medium">Home</span>
             </a>
             {% if userCaps.isResident %}
-            <a href="/resident/bills" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/bills' or currentRoute starts with '/tenant/bills' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+            <a href="/resident/bills" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/bills' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                 <i data-lucide="receipt" class="w-5 h-5"></i>
                 <span class="text-[10px] font-medium">Bills</span>
             </a>
-            <a href="/resident/receipts" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/receipts' or currentRoute starts with '/tenant/receipts' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+            <a href="/resident/receipts" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/receipts' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                 <i data-lucide="file-check-2" class="w-5 h-5"></i>
                 <span class="text-[10px] font-medium">Receipts</span>
             </a>
-            <a href="/resident/directory" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/directory' or currentRoute starts with '/tenant/directory' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+            <a href="/resident/directory" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/directory' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                 <i data-lucide="users" class="w-5 h-5"></i>
                 <span class="text-[10px] font-medium">Directory</span>
             </a>
@@ -198,12 +198,12 @@
             {% endif %}
             {% if userCaps.isAdmin %}
             <a href="/admin" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/admin' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
                 <span class="text-[10px] font-medium">Admin</span>
             </a>
             {% endif %}
             {% if userCaps.isResident and not userCaps.isCommittee and not userCaps.isAdmin %}
-            <a href="/resident/link-flat" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/link-flat' or currentRoute starts with '/tenant/link-flat' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+            <a href="/resident/link-flat" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/link-flat' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                 <i data-lucide="building" class="w-5 h-5"></i>
                 <span class="text-[10px] font-medium">Flats</span>
             </a>

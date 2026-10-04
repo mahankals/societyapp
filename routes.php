@@ -499,27 +499,31 @@ foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
 $router->get('/admin/committee', function() { redirect('/comitee'); }, ['auth']);
 $router->get('/admin/commitee', function() { redirect('/comitee'); }, ['auth']);
 
-// ==================== Resident Routes (/resident/, /residential/, and /tenant/) ====================
+// ==================== Resident Routes (/resident/) ====================
 
-foreach (['/resident', '/residential', '/tenant'] as $rPrefix) {
-    $router->get($rPrefix, [$resident, 'index'], ['auth']);
-    $router->get($rPrefix . '/notifications', [$resident, 'notifications'], ['auth']);
-    $router->post($rPrefix . '/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
-    $router->get($rPrefix . '/profile', [$resident, 'profile'], ['auth']);
-    $router->post($rPrefix . '/profile', [$resident, 'updateProfile'], ['auth']);
-    $router->post($rPrefix . '/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
-    $router->get($rPrefix . '/documents', [$resident, 'documents'], ['auth']);
-    $router->post($rPrefix . '/documents/upload', [$resident, 'uploadDocument'], ['auth']);
-    $router->get($rPrefix . '/bills', [$resident, 'bills'], ['auth']);
-    $router->post($rPrefix . '/bills/{id}/pay', [$resident, 'recordPayment'], ['auth']);
-    $router->get($rPrefix . '/receipts', [$resident, 'receipts'], ['auth']);
-    $router->get($rPrefix . '/receipts/{id}', [$resident, 'viewReceipt'], ['auth']);
-    $router->get($rPrefix . '/directory', [$resident, 'directory'], ['auth']);
-    $router->get($rPrefix . '/link-flat', [$resident, 'linkFlat'], ['auth']);
-    $router->post($rPrefix . '/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
-    $router->get($rPrefix . '/requests', [$resident, 'requests'], ['auth']);
-    $router->post($rPrefix . '/requests', [$resident, 'createRequest'], ['auth']);
-}
+$router->get('/resident', [$resident, 'index'], ['auth']);
+$router->get('/resident/notifications', [$resident, 'notifications'], ['auth']);
+$router->post('/resident/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
+$router->get('/resident/profile', [$resident, 'profile'], ['auth']);
+$router->post('/resident/profile', [$resident, 'updateProfile'], ['auth']);
+$router->post('/resident/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
+$router->get('/resident/documents', [$resident, 'documents'], ['auth']);
+$router->post('/resident/documents/upload', [$resident, 'uploadDocument'], ['auth']);
+$router->get('/resident/bills', [$resident, 'bills'], ['auth']);
+$router->post('/resident/bills/{id}/pay', [$resident, 'recordPayment'], ['auth']);
+$router->get('/resident/receipts', [$resident, 'receipts'], ['auth']);
+$router->get('/resident/receipts/{id}', [$resident, 'viewReceipt'], ['auth']);
+$router->get('/resident/directory', [$resident, 'directory'], ['auth']);
+$router->get('/resident/link-flat', [$resident, 'linkFlat'], ['auth']);
+$router->post('/resident/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
+$router->get('/resident/requests', [$resident, 'requests'], ['auth']);
+$router->post('/resident/requests', [$resident, 'createRequest'], ['auth']);
+
+// Legacy redirects: /tenant and /residential -> /resident
+$router->any('/tenant', function() { redirect('/resident'); }, ['auth']);
+$router->any('/tenant/{path}', function($path) { redirect('/resident/' . $path); }, ['auth']);
+$router->any('/residential', function() { redirect('/resident'); }, ['auth']);
+$router->any('/residential/{path}', function($path) { redirect('/resident/' . $path); }, ['auth']);
 $router->get('/profile', function() { redirect('/resident/profile'); }, ['auth']);
 $router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['auth']);
 
