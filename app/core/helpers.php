@@ -210,6 +210,21 @@ function view(string $name, array $data = []): string {
         $data['currentRoute'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
     }
 
+    $viewDir = __DIR__ . '/../views';
+    if (!file_exists($viewDir . '/' . $name . '.html.twig')) {
+        if (str_starts_with($name, 'tenant/')) {
+            $alt = 'resident/' . substr($name, 7);
+            if (file_exists($viewDir . '/' . $alt . '.html.twig')) {
+                $name = $alt;
+            }
+        } elseif (str_starts_with($name, 'resident/')) {
+            $alt = 'tenant/' . substr($name, 9);
+            if (file_exists($viewDir . '/' . $alt . '.html.twig')) {
+                $name = $alt;
+            }
+        }
+    }
+
     return $twig->render($name . '.html.twig', $data);
 }
 

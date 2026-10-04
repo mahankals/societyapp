@@ -5,7 +5,7 @@
 {% block content %}
 <div class="px-4 py-4">
     <div class="flex items-center gap-4 mb-4">
-        <a href="/tenant" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+        <a href="/resident" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
             <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
         </a>
         <div>
@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <form method="POST" action="/tenant/documents/upload" enctype="multipart/form-data" class="mb-6">
+    <form method="POST" action="/resident/documents/upload" enctype="multipart/form-data" class="mb-6">
         <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
         <label class="glass-panel rounded-2xl p-6 cursor-pointer hover:bg-white/5 transition-all block text-center border-2 border-dashed border-white/10 hover:border-brand-500/50">
             <input type="file" name="document" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="this.closest('form').submit()">

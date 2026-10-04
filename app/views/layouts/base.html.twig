@@ -30,7 +30,7 @@
                     <a href="/#stats" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">Impact</a>
                     <div class="w-px h-5 bg-white/10 mx-2"></div>
                     {% if user %}
-                    <a href="{{ user.role == 'admin' ? '/admin' : '/tenant' }}" class="btn-primary !py-2.5 !px-5 !text-sm !rounded-xl !shadow-none hover:!shadow-lg hover:!shadow-brand-500/20">
+                    <a href="{{ user.role == 'admin' ? '/admin' : '/resident' }}" class="btn-primary !py-2.5 !px-5 !text-sm !rounded-xl !shadow-none hover:!shadow-lg hover:!shadow-brand-500/20">
                         Dashboard
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
@@ -52,7 +52,7 @@
                     <a href="/#stats" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">Impact</a>
                     <div class="h-px bg-white/10 my-2"></div>
                     {% if user %}
-                    <a href="{{ user.role == 'admin' ? '/admin' : '/tenant' }}" class="btn-primary mt-1 !rounded-xl">
+                    <a href="{{ user.role == 'admin' ? '/admin' : '/resident' }}" class="btn-primary mt-1 !rounded-xl">
                         Dashboard
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>

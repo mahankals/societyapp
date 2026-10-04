@@ -84,7 +84,7 @@ $router = new Router();
 // Middleware
 $router->middleware('guest', function() {
     if (isLoggedIn()) {
-        redirect(isAdmin() ? '/admin' : '/tenant');
+        redirect(isAdmin() ? '/admin' : '/resident');
     }
 });
 

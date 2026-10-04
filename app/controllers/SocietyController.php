@@ -173,7 +173,7 @@ class SocietyController
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid security token.');
-            redirect('/committee/flats');
+            redirect('/comitee/flats');
         }
 
         $flatNo = trim($_POST['flat_no'] ?? '');
@@ -184,13 +184,13 @@ class SocietyController
 
         if (empty($flatNo)) {
             Session::flash('error', 'Flat number is required.');
-            redirect('/committee/flats');
+            redirect('/comitee/flats');
         }
 
         $exists = Database::fetchOne("SELECT id FROM flats WHERE society_id = ? AND flat_no = ? AND wing = ?", [$societyId, $flatNo, $wing]);
         if ($exists) {
             Session::flash('error', "Flat {$wing}-{$flatNo} already exists in this society.");
-            redirect('/committee/flats');
+            redirect('/comitee/flats');
         }
 
         Database::insert('flats', [
@@ -203,7 +203,7 @@ class SocietyController
         ]);
 
         Session::flash('success', "Flat {$wing}-{$flatNo} added successfully.");
-        redirect('/committee/flats');
+        redirect('/comitee/flats');
     }
 
     /**
@@ -216,7 +216,7 @@ class SocietyController
 
         Database::delete('flats', 'id = ? AND society_id = ?', [$id, $societyId]);
         Session::flash('success', 'Flat removed successfully.');
-        redirect('/committee/flats');
+        redirect('/comitee/flats');
     }
 
     /**
@@ -270,7 +270,7 @@ class SocietyController
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid token.');
-            redirect('/committee/members');
+            redirect('/comitee/members');
         }
 
         $identifier = trim($_POST['user_identifier'] ?? '');
@@ -279,14 +279,14 @@ class SocietyController
 
         if (empty($identifier) || empty($flatId)) {
             Session::flash('error', 'User email/mobile and flat selection are required.');
-            redirect('/committee/members');
+            redirect('/comitee/members');
         }
 
         // Find user by email or phone
         $user = Database::fetchOne("SELECT id, name, email FROM users WHERE email = ? OR phone = ?", [$identifier, $identifier]);
         if (!$user) {
             Session::flash('error', "No user found with email or phone '{$identifier}'. They must create an account first.");
-            redirect('/committee/members');
+            redirect('/comitee/members');
         }
 
         $userId = (int)$user['id'];
@@ -309,7 +309,7 @@ class SocietyController
         }
 
         Session::flash('success', "{$user['name']} has been successfully assigned to the flat.");
-        redirect('/committee/members');
+        redirect('/comitee/members');
     }
 
     /**
@@ -322,7 +322,7 @@ class SocietyController
 
         Database::update('society_members', ['status' => 'unlinked', 'flat_id' => null], 'id = ? AND society_id = ?', [$id, $societyId]);
         Session::flash('success', 'Member unlinked from flat.');
-        redirect('/committee/members');
+        redirect('/comitee/members');
     }
 
     /**
@@ -372,7 +372,7 @@ class SocietyController
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
         Session::flash('success', 'Join request approved.');
-        redirect('/committee/requests');
+        redirect('/comitee/requests');
     }
 
     /**
@@ -388,7 +388,7 @@ class SocietyController
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
         Session::flash('success', 'Join request rejected.');
-        redirect('/committee/requests');
+        redirect('/comitee/requests');
     }
 
     /**
@@ -465,7 +465,7 @@ class SocietyController
             } else {
                 Session::flash('info', 'Your request to join this flat is currently pending committee approval.');
             }
-            redirect('/tenant');
+            redirect('/resident');
         }
 
         Database::insert('society_members', [
@@ -478,7 +478,7 @@ class SocietyController
         ]);
 
         Session::flash('success', 'Your request to join has been sent to the managing committee for approval.');
-        redirect('/tenant');
+        redirect('/resident');
     }
 
     /**
@@ -540,6 +540,6 @@ class SocietyController
         ]);
 
         Session::flash('success', 'Society proposal submitted successfully! Our team and committee will review your submission.');
-        redirect('/tenant');
+        redirect('/resident');
     }
 }

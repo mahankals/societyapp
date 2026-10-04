@@ -5,14 +5,14 @@
 {% block content %}
 <div class="px-4 py-4">
     <div class="flex items-center gap-4 mb-4">
-        <a href="/tenant" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+        <a href="/resident" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
             <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
         </a>
         <div>
             <h1 class="text-lg font-bold text-white">Notifications</h1>
             <p class="text-sm text-surface-200/40">{{ notifications|length }} notifications</p>
         </div>
-        <form method="POST" action="/tenant/notifications/mark-read" class="ml-auto">
+        <form method="POST" action="/resident/notifications/mark-read" class="ml-auto">
             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
             <button type="submit" class="flex items-center gap-2 px-4 py-2 text-sm text-surface-200/60 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                 <i data-lucide="check-check" class="w-4 h-4"></i>

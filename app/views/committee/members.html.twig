@@ -8,7 +8,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <a href="/committee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+                <a href="/comitee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
             </div>
             <h1 class="text-2xl font-bold text-white tracking-tight">Society Members & Roles</h1>
             <p class="text-xs text-surface-200/60">{{ society.name }} &middot; {{ members|length }} Registered Members</p>
@@ -90,7 +90,7 @@
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-right">
-                            <form action="/committee/members/{{ m.id }}/unlink" method="POST" onsubmit="return confirm('Unlink {{ m.member_name }} from flat?')">
+                            <form action="/comitee/members/{{ m.id }}/unlink" method="POST" onsubmit="return confirm('Unlink {{ m.member_name }} from flat?')">
                                 <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                                 <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 text-xs transition-colors">
                                     Unlink
@@ -118,7 +118,7 @@
             <button type="button" onclick="document.getElementById('assignModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
         </div>
 
-        <form action="/committee/members/assign" method="POST">
+        <form action="/comitee/members/assign" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
 
             <div class="space-y-4 mb-6">

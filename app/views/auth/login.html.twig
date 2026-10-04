@@ -251,7 +251,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                window.location.href = data.redirect || '/tenant';
+                window.location.href = data.redirect || '/resident';
             } else {
                 alert(data.error || 'Google Sign-In failed.');
             }

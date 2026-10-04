@@ -12,11 +12,11 @@
             <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Connect with your neighbors</p>
         </div>
 
-        <form action="/tenant/directory" method="GET" class="relative max-w-sm w-full">
+        <form action="/resident/directory" method="GET" class="relative max-w-sm w-full">
             <i data-lucide="search" class="w-4 h-4 text-surface-200/40 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
             <input type="text" name="q" value="{{ search }}" placeholder="Search by name, flat, phone..." class="input-glass w-full !pl-10 !py-2 text-xs">
             {% if search %}
-            <a href="/tenant/directory" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-surface-200/40 hover:text-white">✕</a>
+            <a href="/resident/directory" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-surface-200/40 hover:text-white">✕</a>
             {% endif %}
         </form>
     </div>

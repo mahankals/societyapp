@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold text-white tracking-tight">Maintenance Bills & Dues</h1>
             <p class="text-xs text-surface-200/60">View itemized dues and pay instantly using UPI or card</p>
         </div>
-        <a href="/tenant/receipts" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
+        <a href="/resident/receipts" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
             <i data-lucide="file-check-2" class="w-4 h-4"></i>
             <span>Payment Receipts</span>
         </a>
@@ -153,7 +153,7 @@
         document.getElementById('upiQrImage').src = qrUrl;
 
         // Set action on form
-        document.getElementById('recordPaymentForm').action = '/tenant/bills/' + billId + '/pay';
+        document.getElementById('recordPaymentForm').action = '/resident/bills/' + billId + '/pay';
 
         document.getElementById('upiModal').classList.remove('hidden');
     }

@@ -44,13 +44,13 @@
     <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950 border-b border-white/10 shadow-lg">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <a href="/tenant" class="flex items-center gap-3 group">
+                <a href="{{ user.role == 'admin' and currentRoute starts with '/admin' ? '/admin' : '/resident' }}" class="flex items-center gap-3 group">
                     <img src="{{ appLogo|default('/assets/icons/logo.svg') }}" alt="{{ appName|default('SocietyApp') }}" class="w-9 h-9 rounded-lg object-contain shadow-lg shadow-brand-500/25">
                     <span class="text-lg font-bold text-white tracking-tight">{{ appName|default('SocietyApp') }}</span>
                 </a>
             </div>
             <div class="flex items-center gap-2">
-                <a href="/tenant/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                <a href="/resident/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     {% if unreadNotifications is defined and unreadNotifications > 0 %}
                     <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">{{ unreadNotifications }}</span>
@@ -78,20 +78,20 @@
                             {% if userCaps.isAdmin and userCaps.isResident and userCaps.isCommittee %}
                                 {# for admin + Resident + Committee member: Admin view, Committee/Resident view #}
                                 {% if currentRoute starts with '/admin' %}
-                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                <a href="/comitee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
                                     <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
                                     Committee View
                                 </a>
-                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                <a href="/resident" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
                                     <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
                                     Resident View
                                 </a>
-                                {% elseif currentRoute starts with '/committee' %}
+                                {% elseif currentRoute starts with '/comitee' or currentRoute starts with '/committee' %}
                                 <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
                                     <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
                                     Admin View
                                 </a>
-                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                <a href="/resident" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
                                     <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
                                     Resident View
                                 </a>
@@ -100,7 +100,7 @@
                                     <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
                                     Admin View
                                 </a>
-                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                <a href="/comitee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
                                     <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
                                     Committee View
                                 </a>
@@ -109,7 +109,7 @@
                             {% elseif userCaps.isAdmin and userCaps.isResident %}
                                 {# for admin + Resident: Admin/Resident view #}
                                 {% if currentRoute starts with '/admin' %}
-                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                <a href="/resident" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
                                     <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
                                     Resident View
                                 </a>
@@ -122,13 +122,13 @@
                                 <div class="h-px bg-white/10 my-1"></div>
                             {% elseif userCaps.isCommittee and userCaps.isResident %}
                                 {# for committee member: Committee/Resident view #}
-                                {% if currentRoute starts with '/committee' %}
-                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                {% if currentRoute starts with '/comitee' or currentRoute starts with '/committee' %}
+                                <a href="/resident" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
                                     <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
                                     Resident View
                                 </a>
                                 {% else %}
-                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                <a href="/comitee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
                                     <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
                                     Committee View
                                 </a>
@@ -137,7 +137,7 @@
                             {% elseif userCaps.isAdmin and userCaps.isCommittee %}
                                 {# for admin + Committee #}
                                 {% if currentRoute starts with '/admin' %}
-                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                <a href="/comitee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
                                     <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
                                     Committee View
                                 </a>
@@ -150,7 +150,7 @@
                                 <div class="h-px bg-white/10 my-1"></div>
                             {% endif %}
                             {# Base items: Profile & Logout #}
-                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/90 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                            <a href="/resident/profile" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/90 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                                 <i data-lucide="user" class="w-4 h-4"></i>
                                 Profile
                             </a>

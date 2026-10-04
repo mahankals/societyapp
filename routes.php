@@ -4,13 +4,15 @@
  * All application routes are defined here.
  */
 
+require_once APP_PATH . '/controllers/ResidentController.php';
 require_once APP_PATH . '/controllers/TenantController.php';
 require_once APP_PATH . '/controllers/AdminController.php';
 require_once APP_PATH . '/controllers/SetupController.php';
 require_once APP_PATH . '/controllers/SocietyController.php';
 
 $router = $router ?? new Router();
-$tenant = new TenantController();
+$resident = new ResidentController();
+$tenant = $resident;
 $admin = new AdminController();
 $setup = new SetupController();
 $society = new SocietyController();
@@ -19,7 +21,7 @@ $society = new SocietyController();
 
 $router->middleware('guest', function() {
     if (isLoggedIn()) {
-        redirect(Session::get('role') === 'admin' ? '/admin' : '/tenant');
+        redirect(Session::get('role') === 'admin' ? '/admin' : '/resident');
     }
 });
 
@@ -77,7 +79,7 @@ $router->post('/auth/login', function() {
             redirect('/auth/pin-setup');
         }
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-        $redirectUrl = $returnUrl ?: ($user['role'] === 'admin' ? '/admin' : '/tenant');
+        $redirectUrl = $returnUrl ?: ($user['role'] === 'admin' ? '/admin' : '/resident');
         redirect($redirectUrl);
     } else {
         Session::flash('error', 'Invalid email or password.');
@@ -195,7 +197,7 @@ $router->get('/auth/pin-setup', function() {
     requireLogin();
     $user = getUser();
     if ($user && $user['pin_hash'] !== null) {
-        redirect('/tenant');
+        redirect('/resident');
     }
     echo view('auth/pin-setup', [
         'basePath' => '/',
@@ -228,7 +230,7 @@ $router->post('/auth/pin-setup', function() {
     Database::update('users', ['pin_hash' => $pinHash], 'id = ?', [Session::get('user_id')]);
 
     Session::flash('success', 'PIN set up successfully! You can now use offline access.');
-    redirect('/tenant');
+    redirect('/resident');
 });
 
 $router->get('/auth/google-callback', function() {
@@ -319,7 +321,7 @@ $router->get('/auth/google-callback', function() {
                     redirect('/auth/pin-setup');
                 }
 
-                redirect($existingUser['role'] === 'admin' ? '/admin' : '/tenant');
+                redirect($existingUser['role'] === 'admin' ? '/admin' : '/resident');
             }
         }
 
@@ -419,7 +421,7 @@ $router->post('/auth/google-one-tap', function() {
             Database::update('users', $updates, 'id = ?', [$existingUser['id']]);
         }
         loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
-        $redirectUrl = ($existingUser['role'] === 'admin') ? '/admin' : '/tenant';
+        $redirectUrl = ($existingUser['role'] === 'admin') ? '/admin' : '/resident';
         if ($existingUser['pin_hash'] === null) {
             $redirectUrl = '/auth/pin-setup';
         }
@@ -479,44 +481,47 @@ $router->post('/join/{code}', [$society, 'handleJoin']);
 $router->get('/society/contribute', [$society, 'contribute']);
 $router->post('/society/contribute', [$society, 'handleContribute']);
 
-// ==================== Committee Routes ====================
+// ==================== Committee Routes (/comitee/ and /committee/) ====================
 
-$router->get('/committee', [$society, 'dashboard'], ['auth']);
-$router->get('/commitee', function() { redirect('/committee'); }, ['auth']);
-$router->get('/admin/committee', function() { redirect('/committee'); }, ['auth']);
-$router->get('/admin/commitee', function() { redirect('/committee'); }, ['auth']);
-$router->get('/committee/flats', [$society, 'flats'], ['auth']);
-$router->post('/committee/flats', [$society, 'addFlat'], ['auth']);
-$router->post('/committee/flats/add', [$society, 'addFlat'], ['auth']);
-$router->post('/committee/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
-$router->get('/committee/members', [$society, 'members'], ['auth']);
-$router->post('/committee/members/assign', [$society, 'assignMember'], ['auth']);
-$router->post('/committee/members/{id}/unlink', [$society, 'unlinkMember'], ['auth']);
-$router->get('/committee/requests', [$society, 'requests'], ['auth']);
-$router->post('/committee/requests/{id}/approve', [$society, 'approveRequest'], ['auth']);
-$router->post('/committee/requests/{id}/reject', [$society, 'rejectRequest'], ['auth']);
+foreach (['/comitee', '/committee'] as $cPrefix) {
+    $router->get($cPrefix, [$society, 'dashboard'], ['auth']);
+    $router->get($cPrefix . '/flats', [$society, 'flats'], ['auth']);
+    $router->post($cPrefix . '/flats', [$society, 'addFlat'], ['auth']);
+    $router->post($cPrefix . '/flats/add', [$society, 'addFlat'], ['auth']);
+    $router->post($cPrefix . '/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
+    $router->get($cPrefix . '/members', [$society, 'members'], ['auth']);
+    $router->post($cPrefix . '/members/assign', [$society, 'assignMember'], ['auth']);
+    $router->post($cPrefix . '/members/{id}/unlink', [$society, 'unlinkMember'], ['auth']);
+    $router->get($cPrefix . '/requests', [$society, 'requests'], ['auth']);
+    $router->post($cPrefix . '/requests/{id}/approve', [$society, 'approveRequest'], ['auth']);
+    $router->post($cPrefix . '/requests/{id}/reject', [$society, 'rejectRequest'], ['auth']);
+}
+$router->get('/admin/committee', function() { redirect('/comitee'); }, ['auth']);
+$router->get('/admin/commitee', function() { redirect('/comitee'); }, ['auth']);
 
-// ==================== Tenant Routes ====================
+// ==================== Resident Routes (/resident/ and /tenant/) ====================
 
-$router->get('/tenant', [$tenant, 'index'], ['auth']);
-$router->get('/tenant/notifications', [$tenant, 'notifications'], ['auth']);
-$router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRead'], ['auth']);
-$router->get('/tenant/profile', [$tenant, 'profile'], ['auth']);
-$router->get('/profile', function() { redirect('/tenant/profile'); }, ['auth']);
-$router->get('/admin/profile', function() { redirect('/tenant/profile'); }, ['auth']);
-$router->post('/tenant/profile', [$tenant, 'updateProfile'], ['auth']);
-$router->post('/tenant/profile/photo', [$tenant, 'uploadPhoto'], ['auth']);
-$router->get('/tenant/documents', [$tenant, 'documents'], ['auth']);
-$router->post('/tenant/documents/upload', [$tenant, 'uploadDocument'], ['auth']);
-$router->get('/tenant/bills', [$tenant, 'bills'], ['auth']);
-$router->post('/tenant/bills/{id}/pay', [$tenant, 'recordPayment'], ['auth']);
-$router->get('/tenant/receipts', [$tenant, 'receipts'], ['auth']);
-$router->get('/tenant/receipts/{id}', [$tenant, 'viewReceipt'], ['auth']);
-$router->get('/tenant/directory', [$tenant, 'directory'], ['auth']);
-$router->get('/tenant/link-flat', [$tenant, 'linkFlat'], ['auth']);
-$router->post('/tenant/link-flat', [$tenant, 'handleLinkFlat'], ['auth']);
-$router->get('/tenant/requests', [$tenant, 'requests'], ['auth']);
-$router->post('/tenant/requests', [$tenant, 'createRequest'], ['auth']);
+foreach (['/resident', '/tenant'] as $rPrefix) {
+    $router->get($rPrefix, [$resident, 'index'], ['auth']);
+    $router->get($rPrefix . '/notifications', [$resident, 'notifications'], ['auth']);
+    $router->post($rPrefix . '/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
+    $router->get($rPrefix . '/profile', [$resident, 'profile'], ['auth']);
+    $router->post($rPrefix . '/profile', [$resident, 'updateProfile'], ['auth']);
+    $router->post($rPrefix . '/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
+    $router->get($rPrefix . '/documents', [$resident, 'documents'], ['auth']);
+    $router->post($rPrefix . '/documents/upload', [$resident, 'uploadDocument'], ['auth']);
+    $router->get($rPrefix . '/bills', [$resident, 'bills'], ['auth']);
+    $router->post($rPrefix . '/bills/{id}/pay', [$resident, 'recordPayment'], ['auth']);
+    $router->get($rPrefix . '/receipts', [$resident, 'receipts'], ['auth']);
+    $router->get($rPrefix . '/receipts/{id}', [$resident, 'viewReceipt'], ['auth']);
+    $router->get($rPrefix . '/directory', [$resident, 'directory'], ['auth']);
+    $router->get($rPrefix . '/link-flat', [$resident, 'linkFlat'], ['auth']);
+    $router->post($rPrefix . '/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
+    $router->get($rPrefix . '/requests', [$resident, 'requests'], ['auth']);
+    $router->post($rPrefix . '/requests', [$resident, 'createRequest'], ['auth']);
+}
+$router->get('/profile', function() { redirect('/resident/profile'); }, ['auth']);
+$router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['auth']);
 
 // ==================== Admin Routes ====================
 

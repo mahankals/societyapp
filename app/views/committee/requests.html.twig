@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <a href="/committee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+                <a href="/comitee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
             </div>
             <h1 class="text-2xl font-bold text-white tracking-tight">Pending Join Requests</h1>
             <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Review and approve resident access</p>
@@ -64,14 +64,14 @@
                         </td>
                         <td class="py-3.5 px-4 text-right">
                             <div class="inline-flex items-center gap-2">
-                                <form action="/committee/requests/{{ req.id }}/approve" method="POST">
+                                <form action="/comitee/requests/{{ req.id }}/approve" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                                     <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
                                         <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                         <span>Approve</span>
                                     </button>
                                 </form>
-                                <form action="/committee/requests/{{ req.id }}/reject" method="POST">
+                                <form action="/comitee/requests/{{ req.id }}/reject" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                                     <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
                                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
