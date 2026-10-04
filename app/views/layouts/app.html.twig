@@ -53,26 +53,26 @@
                         <span class="text-sm font-medium text-white hidden sm:block">{{ user.name }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
                     </button>
-                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 glass-panel rounded-xl overflow-hidden shadow-xl shadow-black/20">
-                        <div class="p-3 border-b border-white/5">
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-surface-900 border border-white/15 rounded-xl overflow-hidden shadow-2xl shadow-black/80 z-50">
+                        <div class="p-3 border-b border-white/10 bg-surface-950/60">
                             <p class="text-sm font-semibold text-white">{{ user.name }}</p>
-                            <p class="text-xs text-surface-200/40">{{ user.email }}</p>
+                            <p class="text-xs text-surface-200/50">{{ user.email }}</p>
                         </div>
-                        <div class="p-1.5">
+                        <div class="p-1.5 space-y-0.5">
                             {% if user.role == 'admin' %}
                             {% if currentRoute starts with '/tenant' %}
-                            <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
                                 <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
                                 As Admin
                             </a>
                             {% else %}
-                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-surface-200 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                                 Tenant View
                             </a>
                             {% endif %}
                             {% endif %}
-                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/90 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                                 <i data-lucide="user" class="w-4 h-4"></i>
                                 Profile
                             </a>
