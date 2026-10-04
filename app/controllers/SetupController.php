@@ -67,6 +67,13 @@ class SetupController
             $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
             $adminUser = null;
             if ($hasUsers) {
+                try {
+                    $hasPhotoCol = (bool)$db->query("SHOW COLUMNS FROM users LIKE 'profile_photo'")->fetch();
+                    if (!$hasPhotoCol) {
+                        $db->exec("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) NULL AFTER google_id");
+                    }
+                } catch (Throwable $e) {}
+
                 $superadminId = getSetting('superadmin_id');
                 if (!empty($superadminId)) {
                     $stmt = $db->prepare("SELECT id, name, email, phone, google_id, password_hash, profile_photo FROM users WHERE id = ? LIMIT 1");
@@ -772,8 +779,13 @@ class SetupController
             exit;
         }
 
-        if (!$adminEmail || strlen($adminPassword) < 8 || empty($adminName)) {
-            echo json_encode(['success' => false, 'error' => 'Please provide a valid Super Admin name, email, and password (at least 8 characters).']);
+        if (!$adminEmail || empty($adminName)) {
+            echo json_encode(['success' => false, 'error' => 'Please provide a valid Super Admin name and email.']);
+            exit;
+        }
+
+        if (!empty($adminPassword) && strlen($adminPassword) < 8) {
+            echo json_encode(['success' => false, 'error' => 'Super Administrator password must be at least 8 characters.']);
             exit;
         }
 
@@ -827,6 +839,10 @@ class SetupController
                 if ($userRole && strpos($userRole['Type'], 'committee') === false) {
                     $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'committee', 'resident') DEFAULT 'resident'");
                 }
+                $userPhoto = $pdo->query("SHOW COLUMNS FROM users LIKE 'profile_photo'")->fetch();
+                if (!$userPhoto) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) NULL AFTER google_id");
+                }
             } catch (Exception $e) {
                 // Ignore if already altered
             }
@@ -869,6 +885,17 @@ class SetupController
             $stmt = $pdo->prepare("SELECT id, password_hash FROM users WHERE email = ?");
             $stmt->execute([$adminEmail]);
             $existingAdmin = $stmt->fetch();
+
+            if (!$existingAdmin && (empty($adminPassword) || strlen($adminPassword) < 8)) {
+                echo json_encode(['success' => false, 'error' => 'Please provide a password of at least 8 characters for the new Super Administrator.']);
+                exit;
+            }
+
+            if ($existingAdmin && empty($existingAdmin['password_hash']) && (empty($adminPassword) || strlen($adminPassword) < 8)) {
+                echo json_encode(['success' => false, 'error' => 'Please provide a password of at least 8 characters for the Super Administrator.']);
+                exit;
+            }
+
             $passwordHash = !empty($adminPassword) 
                 ? password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]) 
                 : ($existingAdmin['password_hash'] ?? '');
