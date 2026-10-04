@@ -38,8 +38,10 @@ class Router {
             $uri = '/';
         }
 
+        $checkMethod = $method === 'HEAD' ? 'GET' : $method;
+
         foreach ($this->routes as $route) {
-            if ($route['method'] !== 'ANY' && $route['method'] !== $method) {
+            if ($route['method'] !== 'ANY' && $route['method'] !== $checkMethod) {
                 continue;
             }
 

@@ -15,14 +15,25 @@ class Database {
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
                 ]);
             } catch (PDOException $e) {
                 error_log("Database connection failed: " . $e->getMessage());
-                throw new Exception("Database connection failed");
+                $uri = $_SERVER['REQUEST_URI'] ?? '';
+                if (strpos($uri, '/setup') === false && !headers_sent() && php_sapi_name() !== 'cli') {
+                    header('Location: /setup');
+                    exit;
+                }
+                throw new Exception("Database connection failed: " . $e->getMessage());
             }
         }
         return self::$instance;
     }
+
+    public static function resetInstance(): void {
+        self::$instance = null;
+    }
+
 
     public static function query(string $sql, array $params = []): PDOStatement {
         $stmt = self::getInstance()->prepare($sql);

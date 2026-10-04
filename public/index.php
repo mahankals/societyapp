@@ -29,7 +29,15 @@ if (file_exists($envFile)) {
         if (strpos(trim($line), '#') === 0) continue;
         if (strpos($line, '=') !== false) {
             [$key, $value] = explode('=', $line, 2);
-            putenv(trim($key) . '=' . trim($value));
+            $key = trim($key);
+            $value = trim($value);
+            if ((str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                $value = substr($value, 1, -1);
+            }
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
         }
     }
 }
@@ -54,6 +62,21 @@ if (Session::isExpired()) {
 
 // Load Config
 $appConfig = require CONFIG_PATH . '/app.php';
+
+// Fresh Deployment & Setup Guard
+$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$isSetupRoute = (strpos($requestUri, '/setup') === 0)
+    || (strpos($requestUri, '/auth/google-callback') === 0)
+    || (strpos($requestUri, '/auth/google-one-tap') === 0);
+$isAsset = (bool)preg_match('/\.(css|js|png|jpg|jpeg|svg|gif|ico|webp|woff2?|ttf|map)$/i', $requestUri);
+
+if (!$isSetupRoute && !$isAsset) {
+    if (!isAppSetupCompleted()) {
+        header('Location: /setup');
+        exit;
+    }
+}
+
 
 // Create Router
 $router = new Router();
@@ -110,12 +133,17 @@ register_shutdown_function(function() {
 
 // ==================== Dispatch ====================
 
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$scriptName = dirname($_SERVER['SCRIPT_NAME']);
-$route = str_replace($scriptName, '', $requestUri);
-$route = rtrim($route, '/');
-if ($route === '') {
-    $route = '/';
+$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+if ($scriptDir !== '/' && $scriptDir !== '\\' && $scriptDir !== '.') {
+    $route = preg_replace('#^' . preg_quote($scriptDir, '#') . '#', '', $requestUri);
+} else {
+    $route = $requestUri;
+}
+$route = '/' . ltrim($route, '/');
+if (strlen($route) > 1) {
+    $route = rtrim($route, '/');
 }
 
-$router->dispatch($route, $_SERVER['REQUEST_METHOD']);
+$router->dispatch($route, $_SERVER['REQUEST_METHOD'] ?? 'GET');
+

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt {{ receipt.receipt_no }} - {{ receipt.society_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .receipt-card {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #e2e8f0;
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            margin: 0 0 6px 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .header p {
+            margin: 2px 0;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .badge {
+            display: inline-block;
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+            border-radius: 9999px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .row .label {
+            color: #64748b;
+        }
+        .row .val {
+            font-weight: 600;
+            color: #0f172a;
+            text-align: right;
+        }
+        .amount-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin: 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .amount-box .amt-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .amount-box .amt-val {
+            font-size: 28px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #059669;
+        }
+        .footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .print-btn {
+            background: #0f172a;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto 0;
+        }
+        @media print {
+            body { padding: 0; background: #fff; }
+            .receipt-card { border: none; box-shadow: none; padding: 20px; }
+            .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-card">
+        <div class="header">
+            <h1>{{ receipt.society_name }}</h1>
+            {% if receipt.registration_no %}
+            <p>Registration No: {{ receipt.registration_no }}</p>
+            {% endif %}
+            <p>{{ receipt.society_address ? receipt.society_address ~ ', ' : '' }}{{ receipt.society_city }}</p>
+            <div class="badge">MAINTENANCE RECEIPT</div>
+        </div>
+
+        <div class="row">
+            <span class="label">Receipt Number</span>
+            <span class="val" style="font-family: 'JetBrains Mono', monospace;">{{ receipt.receipt_no }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Payment Date</span>
+            <span class="val">{{ receipt.payment_date|date('F d, Y') }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Received From (Resident)</span>
+            <span class="val">{{ receipt.member_name }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Unit / Flat Details</span>
+            <span class="val">Flat {{ receipt.wing ? receipt.wing ~ '-' : '' }}{{ receipt.flat_no }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Particulars</span>
+            <span class="val">{{ receipt.particulars }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Payment Mode</span>
+            <span class="val" style="text-transform: uppercase;">{{ receipt.payment_method }}</span>
+        </div>
+        {% if receipt.transaction_ref %}
+        <div class="row">
+            <span class="label">Transaction Reference (UTR)</span>
+            <span class="val" style="font-family: 'JetBrains Mono', monospace;">{{ receipt.transaction_ref }}</span>
+        </div>
+        {% endif %}
+
+        <div class="amount-box">
+            <span class="amt-label">Total Amount Paid</span>
+            <span class="amt-val">₹{{ receipt.amount|number_format(2) }}</span>
+        </div>
+
+        <div class="footer">
+            <div>
+                <p style="margin: 0;">Computer generated official receipt</p>
+                <p style="margin: 2px 0 0 0;">SocietyApp Digital Platform</p>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin: 0; font-weight: 600; color: #475569;">For {{ receipt.society_name }}</p>
+                <p style="margin: 2px 0 0 0;">Managing Committee</p>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="window.print()" class="print-btn">Print / Save as PDF</button>
+</body>
+</html>

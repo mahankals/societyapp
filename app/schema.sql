@@ -10,8 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NULL,
     name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NULL,
     google_id VARCHAR(255) NULL UNIQUE,
-    role ENUM('admin', 'resident') DEFAULT 'resident',
+    role ENUM('admin', 'committee', 'resident') DEFAULT 'resident',
     pin_hash VARCHAR(255) NULL,
     is_active TINYINT(1) DEFAULT 1,
     email_verified_at TIMESTAMP NULL,
@@ -20,6 +21,117 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_email (email),
     INDEX idx_google_id (google_id),
     INDEX idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Housing Societies Table
+CREATE TABLE IF NOT EXISTS societies (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    society_code VARCHAR(50) NOT NULL UNIQUE,
+    registration_no VARCHAR(100) NULL,
+    address TEXT NULL,
+    city VARCHAR(100) NULL,
+    state VARCHAR(100) NULL,
+    pincode VARCHAR(20) NULL,
+    upi_id VARCHAR(100) NULL,
+    payee_name VARCHAR(100) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_society_code (society_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Flats / Units Table
+CREATE TABLE IF NOT EXISTS flats (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    flat_no VARCHAR(50) NOT NULL,
+    wing VARCHAR(20) NULL DEFAULT 'A',
+    floor VARCHAR(20) NULL,
+    area_sqft DECIMAL(8,2) DEFAULT 0.00,
+    flat_type VARCHAR(50) DEFAULT '2BHK',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    INDEX idx_soc_flat (society_id, flat_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Society Members & Flat Assignments (Owner / Committee / Tenant)
+CREATE TABLE IF NOT EXISTS society_members (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    flat_id INT UNSIGNED NULL,
+    user_id INT UNSIGNED NOT NULL,
+    role ENUM('chairman', 'secretary', 'treasurer', 'committee', 'owner', 'tenant') DEFAULT 'owner',
+    status ENUM('active', 'pending', 'rejected', 'unlinked') DEFAULT 'active',
+    ownership_type ENUM('owner', 'tenant', 'family') DEFAULT 'owner',
+    notes TEXT NULL,
+    approved_by INT UNSIGNED NULL,
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    FOREIGN KEY (flat_id) REFERENCES flats(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_soc_user (society_id, user_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Payment Transactions & Receipts Table
+CREATE TABLE IF NOT EXISTS transactions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    receipt_no VARCHAR(50) NOT NULL UNIQUE,
+    society_id INT UNSIGNED NOT NULL,
+    flat_id INT UNSIGNED NULL,
+    user_id INT UNSIGNED NOT NULL,
+    bill_id INT UNSIGNED NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50) DEFAULT 'upi',
+    transaction_ref VARCHAR(100) NULL,
+    particulars VARCHAR(255) NOT NULL,
+    payment_date DATE NOT NULL,
+    status ENUM('completed', 'pending', 'failed') DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_receipt_no (receipt_no),
+    INDEX idx_user_trans (user_id),
+    INDEX idx_soc_trans (society_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Society Requests ("Contribute / Add Society")
+CREATE TABLE IF NOT EXISTS society_requests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    society_name VARCHAR(150) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    address TEXT NULL,
+    contact1_name VARCHAR(100) NULL,
+    contact1_phone VARCHAR(20) NULL,
+    contact1_flat VARCHAR(50) NULL,
+    contact2_name VARCHAR(100) NULL,
+    contact2_phone VARCHAR(20) NULL,
+    contact2_flat VARCHAR(50) NULL,
+    contact3_name VARCHAR(100) NULL,
+    contact3_phone VARCHAR(20) NULL,
+    contact3_flat VARCHAR(50) NULL,
+    contact4_name VARCHAR(100) NULL,
+    contact4_phone VARCHAR(20) NULL,
+    contact4_flat VARCHAR(50) NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Application Settings (Google SSO, Email/SMTP, Branding)
+CREATE TABLE IF NOT EXISTS settings (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT NULL,
+    setting_group VARCHAR(50) DEFAULT 'general',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_setting_key (setting_key),
+    INDEX idx_setting_group (setting_group)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Password Reset Tokens
@@ -119,7 +231,11 @@ CREATE TABLE IF NOT EXISTS documents (
 CREATE TABLE IF NOT EXISTS maintenance_bills (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
+    society_id INT UNSIGNED NULL,
+    flat_id INT UNSIGNED NULL,
     bill_number VARCHAR(50) NOT NULL UNIQUE,
+    title VARCHAR(150) NULL DEFAULT 'Monthly Maintenance',
+    particulars VARCHAR(255) NULL,
     amount DECIMAL(10,2) NOT NULL,
     month VARCHAR(7) NOT NULL,
     due_date DATE NOT NULL,
@@ -129,10 +245,12 @@ CREATE TABLE IF NOT EXISTS maintenance_bills (
     transaction_id VARCHAR(100) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE SET NULL,
+    FOREIGN KEY (flat_id) REFERENCES flats(id) ON DELETE SET NULL,
     INDEX idx_user_id (user_id),
+    INDEX idx_soc_bill (society_id),
     INDEX idx_status (status),
-    INDEX idx_month (month),
-    UNIQUE KEY uk_user_month (user_id, month)
+    INDEX idx_month (month)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Service Requests

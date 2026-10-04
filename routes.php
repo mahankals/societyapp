@@ -6,10 +6,14 @@
 
 require_once APP_PATH . '/controllers/TenantController.php';
 require_once APP_PATH . '/controllers/AdminController.php';
+require_once APP_PATH . '/controllers/SetupController.php';
+require_once APP_PATH . '/controllers/SocietyController.php';
 
-$router = new Router();
+$router = $router ?? new Router();
 $tenant = new TenantController();
 $admin = new AdminController();
+$setup = new SetupController();
+$society = new SocietyController();
 
 // ==================== Middleware ====================
 
@@ -39,7 +43,7 @@ $router->get('/auth/login', function() {
     echo view('auth/login', [
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
-        'googleClientId' => getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID',
+        'googleClientId' => getSetting('google_client_id', ''),
         'returnUrl' => $returnUrl,
     ]);
 }, ['guest']);
@@ -82,9 +86,10 @@ $router->get('/auth/register', function() {
     echo view('auth/register', [
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
-        'googleClientId' => getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID',
+        'googleClientId' => getSetting('google_client_id', ''),
     ]);
 }, ['guest']);
+
 
 $router->post('/auth/register', function() {
     $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -224,10 +229,23 @@ $router->post('/auth/pin-setup', function() {
 });
 
 $router->get('/auth/google-callback', function() {
+    $isSetupAdmin = (isset($_GET['state']) && $_GET['state'] === 'setup_admin');
+
+    if (isset($_GET['error'])) {
+        $err = htmlspecialchars($_GET['error_description'] ?? $_GET['error']);
+        if ($isSetupAdmin) {
+            $payload = json_encode(['type' => 'GOOGLE_SSO_ERROR', 'error' => $err]);
+            echo "<!DOCTYPE html><html><head><title>Google Authentication Error</title></head><body style=\"background:#0b0f17;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;\"><div style=\"text-align:center;padding:20px;\"><h3 style=\"color:#f43f5e;\">Google Sign-In Error</h3><p>$err</p></div><script>if(window.opener){window.opener.postMessage($payload, window.location.origin);window.close();}else{alert('$err');window.close();}</script></body></html>";
+            exit;
+        }
+        Session::flash('error', 'Google Sign-In error: ' . $err);
+        redirect('/auth/login');
+    }
+
     if (isset($_GET['code'])) {
-        $clientId = getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID';
-        $clientSecret = getenv('GOOGLE_CLIENT_SECRET') ?: 'YOUR_GOOGLE_CLIENT_SECRET';
-        $redirectUri = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/auth/google-callback';
+        $clientId = getSetting('google_client_id', '');
+        $clientSecret = getSetting('google_client_secret', '');
+        $redirectUri = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/auth/google-callback';
 
         $tokenUrl = 'https://oauth2.googleapis.com/token';
         $tokenData = [
@@ -260,6 +278,18 @@ $router->get('/auth/google-callback', function() {
             $userInfo = json_decode($userResponse, true);
 
             if (isset($userInfo['email'])) {
+                if ($isSetupAdmin) {
+                    $payload = json_encode([
+                        'type' => 'GOOGLE_SSO_SETUP',
+                        'email' => $userInfo['email'],
+                        'name' => $userInfo['name'] ?? '',
+                        'google_id' => $userInfo['id'] ?? '',
+                        'avatar' => $userInfo['picture'] ?? '',
+                    ]);
+                    echo "<!DOCTYPE html><html><head><title>Google Authentication</title></head><body style=\"background:#0b0f17;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;\"><div style=\"text-align:center;padding:20px;\"><h3 style=\"color:#10b981;\">Google Account Verified</h3><p>Connecting Google Account...</p></div><script>if(window.opener){window.opener.postMessage($payload, window.location.origin);window.close();}else{window.location.href='/setup?step=admin';}</script></body></html>";
+                    exit;
+                }
+
                 $existingUser = Database::fetchOne(
                     "SELECT id, email, name, role, pin_hash FROM users WHERE google_id = ? OR email = ?",
                     [$userInfo['id'], $userInfo['email']]
@@ -289,11 +319,167 @@ $router->get('/auth/google-callback', function() {
                 redirect($existingUser['role'] === 'admin' ? '/admin' : '/tenant');
             }
         }
+
+        if ($isSetupAdmin) {
+            $err = htmlspecialchars($tokenInfo['error_description'] ?? $tokenInfo['error'] ?? 'Failed to exchange authorization token with Google.');
+            $payload = json_encode(['type' => 'GOOGLE_SSO_ERROR', 'error' => $err]);
+            echo "<!DOCTYPE html><html><head><title>Google Authentication Error</title></head><body style=\"background:#0b0f17;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;\"><div style=\"text-align:center;padding:20px;\"><h3 style=\"color:#f43f5e;\">OAuth Token Exchange Failed</h3><p>$err</p></div><script>if(window.opener){window.opener.postMessage($payload, window.location.origin);window.close();}else{alert('$err');window.close();}</script></body></html>";
+            exit;
+        }
     }
 
     Session::flash('error', 'Google authentication failed. Please try again.');
     redirect('/auth/login');
 });
+
+$router->post('/auth/google-one-tap', function() {
+    header('Content-Type: application/json');
+
+    $rawInput = file_get_contents('php://input');
+    $data = json_decode($rawInput, true) ?: [];
+    $idToken = trim($data['credential'] ?? ($_POST['credential'] ?? ''));
+    $context = trim($data['context'] ?? ($_POST['context'] ?? ''));
+
+    if (empty($idToken)) {
+        echo json_encode(['success' => false, 'error' => 'No credential received from Google One Tap.']);
+        exit;
+    }
+
+    // Verify Google token using Google's tokeninfo endpoint (try id_token first, fallback to access_token)
+    $verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($idToken);
+    $ch = curl_init($verifyUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        $verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?access_token=' . urlencode($idToken);
+        $ch = curl_init($verifyUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    }
+
+    $payload = json_decode($response, true);
+    if ($httpCode !== 200 || !is_array($payload) || empty($payload['email'])) {
+        $errMsg = $payload['error_description'] ?? ($payload['error'] ?? 'Google token verification failed.');
+        echo json_encode(['success' => false, 'error' => $errMsg]);
+        exit;
+    }
+
+    $email = strtolower(trim($payload['email']));
+    $name = trim($payload['name'] ?? '');
+    if (empty($name)) {
+        $given = trim($payload['given_name'] ?? '');
+        $family = trim($payload['family_name'] ?? '');
+        $name = trim("$given $family");
+    }
+    if (empty($name)) {
+        $name = explode('@', $email)[0];
+    }
+    $googleId = (string)($payload['sub'] ?? '');
+    $avatar = trim($payload['picture'] ?? '');
+
+    // Setup Admin Context: Return user details to prefill admin form
+    if ($context === 'setup_admin') {
+        echo json_encode([
+            'success' => true,
+            'email' => $email,
+            'name' => $name,
+            'google_id' => $googleId,
+            'picture' => $avatar,
+        ]);
+        exit;
+    }
+
+    // Standard Login / Registration flow
+    $existingUser = Database::fetchOne(
+        "SELECT id, email, name, role, pin_hash FROM users WHERE google_id = ? OR email = ?",
+        [$googleId, $email]
+    );
+
+    if ($existingUser) {
+        if (empty($existingUser['google_id'])) {
+            Database::update('users', ['google_id' => $googleId], 'id = ?', [$existingUser['id']]);
+        }
+        loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
+        $redirectUrl = ($existingUser['role'] === 'admin') ? '/admin' : '/tenant';
+        if ($existingUser['pin_hash'] === null) {
+            $redirectUrl = '/auth/pin-setup';
+        }
+        Session::flash('success', 'Welcome back, ' . htmlspecialchars($existingUser['name']) . '!');
+        echo json_encode([
+            'success' => true,
+            'redirect' => $redirectUrl,
+            'user' => [
+                'id' => $existingUser['id'],
+                'name' => $existingUser['name'],
+                'email' => $existingUser['email'],
+                'role' => $existingUser['role'],
+            ]
+        ]);
+        exit;
+    }
+
+    // Auto-create resident user
+    $userId = Database::insert('users', [
+        'email' => $email,
+        'name' => $name,
+        'google_id' => $googleId,
+        'role' => 'resident',
+        'is_active' => 1,
+        'email_verified_at' => date('Y-m-d H:i:s'),
+    ]);
+    loginUser($userId, 'resident', $email);
+    Session::flash('success', 'Welcome to Society App!');
+    echo json_encode([
+        'success' => true,
+        'redirect' => '/auth/pin-setup',
+        'user' => [
+            'id' => $userId,
+            'name' => $name,
+            'email' => $email,
+            'role' => 'resident',
+        ]
+    ]);
+    exit;
+});
+
+// ==================== Setup Wizard ====================
+
+$router->get('/setup', [$setup, 'index']);
+$router->get('/setup/csrf-token', [$setup, 'getCsrfToken']);
+$router->post('/setup/test-db', [$setup, 'testDb']);
+$router->post('/setup/test-email', [$setup, 'testEmail']);
+$router->post('/setup/test-google-sso', [$setup, 'testGoogleSso']);
+$router->post('/setup/save-step', [$setup, 'saveStep']);
+$router->post('/setup/install', [$setup, 'install']);
+
+// ==================== Public Society Routes ====================
+
+$router->get('/join/{code}', [$society, 'publicJoin']);
+$router->post('/join/{code}', [$society, 'handleJoin']);
+$router->get('/society/contribute', [$society, 'contribute']);
+$router->post('/society/contribute', [$society, 'handleContribute']);
+
+// ==================== Committee Routes ====================
+
+$router->get('/committee', [$society, 'dashboard'], ['auth']);
+$router->get('/committee/flats', [$society, 'flats'], ['auth']);
+$router->post('/committee/flats/add', [$society, 'addFlat'], ['auth']);
+$router->post('/committee/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
+$router->get('/committee/members', [$society, 'members'], ['auth']);
+$router->post('/committee/members/assign', [$society, 'assignMember'], ['auth']);
+$router->post('/committee/members/{id}/unlink', [$society, 'unlinkMember'], ['auth']);
+$router->get('/committee/requests', [$society, 'requests'], ['auth']);
+$router->post('/committee/requests/{id}/approve', [$society, 'approveRequest'], ['auth']);
+$router->post('/committee/requests/{id}/reject', [$society, 'rejectRequest'], ['auth']);
 
 // ==================== Tenant Routes ====================
 
@@ -302,9 +488,16 @@ $router->get('/tenant/notifications', [$tenant, 'notifications'], ['auth']);
 $router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRead'], ['auth']);
 $router->get('/tenant/profile', [$tenant, 'profile'], ['auth']);
 $router->post('/tenant/profile', [$tenant, 'updateProfile'], ['auth']);
+$router->post('/tenant/profile/photo', [$tenant, 'uploadPhoto'], ['auth']);
 $router->get('/tenant/documents', [$tenant, 'documents'], ['auth']);
 $router->post('/tenant/documents/upload', [$tenant, 'uploadDocument'], ['auth']);
 $router->get('/tenant/bills', [$tenant, 'bills'], ['auth']);
+$router->post('/tenant/bills/{id}/pay', [$tenant, 'recordPayment'], ['auth']);
+$router->get('/tenant/receipts', [$tenant, 'receipts'], ['auth']);
+$router->get('/tenant/receipts/{id}', [$tenant, 'viewReceipt'], ['auth']);
+$router->get('/tenant/directory', [$tenant, 'directory'], ['auth']);
+$router->get('/tenant/link-flat', [$tenant, 'linkFlat'], ['auth']);
+$router->post('/tenant/link-flat', [$tenant, 'handleLinkFlat'], ['auth']);
 $router->get('/tenant/requests', [$tenant, 'requests'], ['auth']);
 $router->post('/tenant/requests', [$tenant, 'createRequest'], ['auth']);
 
@@ -329,3 +522,4 @@ $router->get('/api/status', function() {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'ok', 'time' => date('c')]);
 });
+

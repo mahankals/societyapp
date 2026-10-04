@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ appName|default(defaults.app_name ?: 'SocietyApp') }} Setup & Deployment Wizard</title>
+    <link rel="icon" id="pageFavicon" href="{{ appFavicon|default(defaults.app_logo ?: '/assets/icons/logo.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="/assets/dist/output.css?v=6" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+        }
+        body {
+            background-color: #0b0f17;
+            color: #f1f5f9;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .input-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.75rem;
+            padding: 0.625rem 0.875rem;
+            color: #ffffff;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        .input-glass:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .input-glass option, select option {
+            background: #0b0f17;
+            color: #f1f5f9;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1.25rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.35);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.45);
+        }
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+        .btn-secondary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .step-nav-btn.active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #10b981;
+        }
+        .step-nav-btn.completed .step-number {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+        .step-pane {
+            display: none;
+        }
+        .step-pane.active {
+            display: block;
+        }
+        code, pre {
+            font-family: var(--f-mono);
+        }
+        .uploader-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+        .uploader-zone.dragover {
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        .google-btn {
+            background: #ffffff;
+            color: #1f2937;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1rem;
+            transition: all 0.2s ease;
+        }
+        .google-btn:hover {
+            background: #f3f4f6;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+    <!-- Header -->
+    <header class="border-b border-white/10 bg-surface-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-white/5 border border-white/10 shadow-lg shadow-brand-500/10">
+                    <img id="headerAppLogo" src="{{ appLogo|default(defaults.app_logo ?: '/assets/icons/logo.svg') }}" alt="{{ appName|default(defaults.app_name ?: 'SocietyApp') }}" class="w-8 h-8 object-contain">
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                        <span id="headerAppName">{{ appName|default(defaults.app_name ?: 'SocietyApp') }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Setup Wizard</span>
+                    </h1>
+                    <p class="text-xs text-surface-200/50">Housing Society Platform Infrastructure Setup</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-surface-200/60">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Step <span id="currentStepIndicator">{{ initialStep }}</span> of 7
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Navigation Stepper -->
+            <nav class="lg:col-span-4 glass-panel rounded-2xl p-5 border border-white/10 bg-surface-900/60 sticky top-24">
+                <div class="mb-4 pb-3 border-b border-white/5">
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Setup Steps</h2>
+                    <p class="text-xs text-surface-200/50">Configure platform and infrastructure</p>
+                </div>
+
+                <div class="space-y-1.5" id="stepperNav">
+                    <button type="button" onclick="navigateToStep(1)" id="stepBtn-1" class="step-nav-btn {% if initialStep == 1 %}active{% elseif completedSteps.prerequisites or 1 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">1</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Prerequisites</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">Environment & Extensions</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(2)" id="stepBtn-2" class="step-nav-btn {% if initialStep == 2 %}active{% elseif completedSteps.database or 2 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">2</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Database Setup</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">MySQL / MariaDB Connection</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(3)" id="stepBtn-3" class="step-nav-btn {% if initialStep == 3 %}active{% elseif completedSteps.branding or 3 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">3</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Branding</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">App Name, Description & Logo</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(4)" id="stepBtn-4" class="step-nav-btn {% if initialStep == 4 %}active{% elseif completedSteps.email or 4 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">4</span>
+                        <div>
+                            <p class="leading-tight font-semibold">SMTP Email</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">Mail Server & Notifications</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(5)" id="stepBtn-5" class="step-nav-btn {% if initialStep == 5 %}active{% elseif completedSteps.google or 5 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">5</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Google Sign-In</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">OAuth 2.0 Credentials</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(6)" id="stepBtn-6" class="step-nav-btn {% if initialStep == 6 %}active{% elseif completedSteps.admin or 6 < initialStep %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">6</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Super Administrator</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">Root Account & Auth</p>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="navigateToStep(7)" id="stepBtn-7" class="step-nav-btn {% if initialStep == 7 %}active{% elseif completedSteps.review %}completed{% endif %} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-transparent text-left transition-all text-sm font-medium text-surface-200/80 hover:bg-white/5">
+                        <span class="step-number w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold transition-colors">7</span>
+                        <div>
+                            <p class="leading-tight font-semibold">Review & Deploy</p>
+                            <p class="text-[11px] text-surface-200/50 font-normal">Initialize Database & Launch</p>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center gap-2 text-xs text-surface-200/40">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                    <span>Zero unhandled errors guaranteed</span>
+                </div>
+            </nav>
+
+            <!-- Right Content Form Panes -->
+            <section class="lg:col-span-8 glass-panel rounded-2xl p-6 sm:p-8 border border-white/10 bg-surface-900/40">
+                <form id="setupWizardForm" onsubmit="return false;">
+                    <input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrfToken }}">
+                    <input type="hidden" name="app_url" id="app_url" value="{{ defaults.app_url }}">
+                    <input type="hidden" name="logo_base64" id="logo_base64" value="{{ defaults.app_logo }}">
+
+                    <!-- ================= Step 1: Prerequisites ================= -->
+                    <div class="step-pane {% if initialStep == 1 %}active{% endif %}" id="pane-1">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Server & Environment Readiness</h2>
+                            <p class="text-sm text-surface-200/60">Verifying that your runtime and PHP extensions meet the system requirements.</p>
+                        </div>
+
+                        <div class="space-y-3 mb-8">
+                            {% for req in requirements %}
+                            <div class="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center gap-3">
+                                    {% if req.passed %}
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="text-sm font-medium text-white">{{ req.name }}</p>
+                                        <p class="text-xs text-surface-200/50">{{ req.note }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-mono px-2.5 py-1 rounded-md {{ req.passed ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border border-rose-500/20' }}">
+                                    {{ req.current }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="flex justify-end pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(2)" class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Continue to Database</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 2: Database ================= -->
+                    <div class="step-pane {% if initialStep == 2 %}active{% endif %}" id="pane-2">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Database Configuration</h2>
+                            <p class="text-sm text-surface-200/60">Provide MySQL / MariaDB connection parameters. You must test and verify the connection before proceeding.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Database Host *</label>
+                                <input type="text" name="db_host" id="db_host" value="{{ defaults.db_host }}" required class="input-glass w-full text-sm">
+                                <p class="text-[11px] text-surface-200/40 mt-1">Use <code class="text-brand-300">db</code> in Docker/DDEV or <code class="text-brand-300">localhost</code> in cPanel.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Database Port *</label>
+                                <input type="number" name="db_port" id="db_port" value="{{ defaults.db_port }}" required class="input-glass w-full text-sm font-mono">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Database Name *</label>
+                                <input type="text" name="db_name" id="db_name" value="{{ defaults.db_name }}" required class="input-glass w-full text-sm font-mono">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Username *</label>
+                                <input type="text" name="db_user" id="db_user" value="{{ defaults.db_user }}" required class="input-glass w-full text-sm font-mono">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Password</label>
+                                <input type="password" name="db_pass" id="db_pass" value="" placeholder="{% if defaults.has_db_pass %}Leave blank to keep existing{% else %}••••••••{% endif %}" class="input-glass w-full text-sm font-mono">
+                            </div>
+                        </div>
+
+                        <!-- Live DB Test Alert Box -->
+                        <div class="mb-6 p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-0.5">Connection Verification</h3>
+                                <p class="text-xs text-surface-200/50" id="dbTestStatus">Test connection to enable the continue button.</p>
+                            </div>
+                            <button type="button" id="testDbBtn" onclick="testDatabaseConnection()" class="btn-secondary text-xs !px-4 !py-2 flex items-center gap-2">
+                                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                <span>Test Connection</span>
+                            </button>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(1, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="dbNextBtn" onclick="saveAndAdvance('database', 3)" disabled class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Save & Continue to Branding</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 3: Branding (App Name, Description, Logo) ================= -->
+                    <div class="step-pane {% if initialStep == 3 %}active{% endif %}" id="pane-3">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Application Branding</h2>
+                            <p class="text-sm text-surface-200/60">Configure how your platform looks and introduces itself across resident portals, sign-in screens, and communications.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                            <!-- Drag & Drop Logo Tile -->
+                            <div class="lg:col-span-4">
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Application Logo</label>
+                                <div id="logoDropZone" class="uploader-zone rounded-2xl p-4 text-center cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] flex flex-col items-center justify-center min-h-[190px]">
+                                    <div id="logoPreviewContainer" class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden mb-3 shadow-inner">
+                                        <div id="logoDefaultIcon" class="text-brand-400 {% if defaults.app_logo %}hidden{% endif %}">
+                                            <i data-lucide="building-2" class="w-10 h-10"></i>
+                                        </div>
+                                        <img id="logoPreviewImg" src="{{ defaults.app_logo }}" alt="App Logo" class="w-full h-full object-contain {% if not defaults.app_logo %}hidden{% endif %}">
+                                    </div>
+                                    <p class="text-xs font-medium text-white mb-1">Drag logo here or click to browse</p>
+                                    <p class="text-[11px] text-surface-200/50">SVG, PNG, JPG, WEBP up to 2MB</p>
+                                    
+                                    <div id="logoActionBtns" class="mt-3 flex items-center gap-2 {% if not defaults.app_logo %}hidden{% endif %}">
+                                        <button type="button" onclick="event.stopPropagation(); triggerLogoBrowse();" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white">Replace</button>
+                                        <button type="button" onclick="event.stopPropagation(); removeLogo();" class="text-[11px] px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30">Remove</button>
+                                    </div>
+                                </div>
+                                <input type="file" id="logoFileInput" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif" class="hidden">
+                            </div>
+
+                            <!-- Name & Description Fields -->
+                            <div class="lg:col-span-8 space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Application Name *</label>
+                                    <input type="text" name="app_name" id="app_name" value="{{ defaults.app_name }}" required maxlength="40" class="input-glass w-full text-sm font-semibold">
+                                    <small class="text-[11px] text-surface-200/50">Displayed in portal titles, header bars, and notifications.</small>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <label class="block text-xs font-semibold text-surface-200/70">Tagline / Description *</label>
+                                        <span class="text-[11px] text-surface-200/50"><span id="descCharCount">0</span>/140</span>
+                                    </div>
+                                    <textarea name="app_desc" id="app_desc" rows="3" maxlength="140" required class="input-glass w-full text-sm resize-none" placeholder="Cooperative Housing Society Management & Resident Portal">{{ defaults.app_desc }}</textarea>
+                                    <small class="text-[11px] text-surface-200/50">Introduces your platform on the login page and mobile web app.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(2, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="brandingNextBtn" onclick="saveAndAdvance('branding', 4)" class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Save & Continue to SMTP Email</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 4: SMTP Email Setup ================= -->
+                    <div class="step-pane {% if initialStep == 4 %}active{% endif %}" id="pane-4">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">SMTP Email Configuration</h2>
+                            <p class="text-sm text-surface-200/60">Configure mail delivery for billing receipts, password resets, and resident invitations. You must test and verify SMTP connectivity before proceeding.</p>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                                <!-- Row 1: SMTP Host & SMTP Port -->
+                                <div class="sm:col-span-8">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">SMTP Host *</label>
+                                    <input type="text" name="mail_host" id="mail_host" value="{{ defaults.mail_host }}" placeholder="smtp.gmail.com or 127.0.0.1" required class="input-glass w-full text-sm font-mono">
+                                </div>
+                                <div class="sm:col-span-4">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">SMTP Port *</label>
+                                    <input type="number" name="mail_port" id="mail_port" value="{{ defaults.mail_port }}" required class="input-glass w-full text-sm font-mono">
+                                </div>
+
+                                <!-- Row 2: Username & Password -->
+                                <div class="sm:col-span-6">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Username / Email</label>
+                                    <input type="text" name="mail_username" id="mail_username" value="{{ defaults.mail_username }}" placeholder="user@example.com" class="input-glass w-full text-sm font-mono">
+                                </div>
+                                <div class="sm:col-span-6">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Password</label>
+                                    <div class="relative">
+                                        <input type="password" name="mail_password" id="mail_password" value="" placeholder="{% if defaults.has_mail_password %}Leave blank to keep existing{% else %}••••••••{% endif %}" class="input-glass w-full text-sm font-mono pr-10">
+                                        <button type="button" onclick="togglePassVisibility('mail_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-200/50 hover:text-white">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: From Email & Sender Name -->
+                                <div class="sm:col-span-6">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">From Email Address</label>
+                                    <input type="email" name="mail_from_address" id="mail_from_address" value="{{ defaults.mail_from_address }}" class="input-glass w-full text-sm font-mono" placeholder="no-reply@{{ currentDomain|default('societyapp.ddev.site') }}">
+                                </div>
+                                <div class="sm:col-span-6">
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">From Sender Name</label>
+                                    <input type="text" name="mail_from_name" id="mail_from_name" value="{{ defaults.mail_from_name }}" class="input-glass w-full text-sm" placeholder="Society App Notifications">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Email Test Alert Box -->
+                        <div class="mb-6 p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-0.5">SMTP Connectivity Test</h3>
+                                <p class="text-xs text-surface-200/50" id="emailTestStatus">Verify mail server connectivity to enable the continue button.</p>
+                            </div>
+                            <button type="button" id="testEmailBtn" onclick="testEmailConnection()" class="btn-secondary text-xs !px-4 !py-2 flex items-center gap-2">
+                                <i data-lucide="mail-check" class="w-3.5 h-3.5"></i>
+                                <span>Test Email Connection</span>
+                            </button>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(3, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="emailNextBtn" onclick="saveAndAdvance('email', 5)" disabled class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Save & Continue to Google Sign-In</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 5: Google Sign-In (OAuth 2.0 without email domain) ================= -->
+                    <div class="step-pane {% if initialStep == 5 %}active{% endif %}" id="pane-5">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Google Single Sign-On (OAuth 2.0)</h2>
+                            <p class="text-sm text-surface-200/60">Enable 1-tap Google Authentication for administrators and residents without email domain restrictions.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                            <!-- Left: Credentials & Origin Box -->
+                            <div class="lg:col-span-7 space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Client ID *</label>
+                                    <input type="text" name="google_client_id" id="google_client_id" value="{{ defaults.google_client_id }}" placeholder="589743594423-xxxx.apps.googleusercontent.com" required class="input-glass w-full text-sm font-mono">
+                                    <small class="text-[11px] text-surface-200/40">Generated in Google Cloud Console. Ends with .apps.googleusercontent.com</small>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Client Secret *</label>
+                                    <div class="relative">
+                                        <input type="password" name="google_client_secret" id="google_client_secret" value="" placeholder="{% if defaults.has_google_client_secret %}Leave blank to keep existing{% else %}GOCSPX-xxxx{% endif %}" {% if not defaults.has_google_client_secret %}required{% endif %} class="input-glass w-full text-sm font-mono pr-10">
+                                        <button type="button" onclick="togglePassVisibility('google_client_secret')" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-200/50 hover:text-white">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-[11px] text-surface-200/40">Shown next to Client ID in Google Cloud. Kept encrypted on server.</small>
+                                </div>
+
+                                <!-- Test Credential Row directly below Client Secret -->
+                                <div class="flex items-center justify-between gap-3 pt-1">
+                                    <div id="googleTestStatus" class="text-xs font-medium text-surface-200/60 flex items-center gap-1.5">
+                                        {% if completedSteps.google %}
+                                        <span class="text-emerald-400 flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Client ID format and credentials validated.</span>
+                                        {% else %}
+                                        <span>Click Test Credential to verify.</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" id="gTestBtn" onclick="testGoogleCredential()" class="btn-secondary text-xs !px-4 !py-2 flex items-center gap-2 whitespace-nowrap">
+                                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                                        <span>Test Credential</span>
+                                    </button>
+                                </div>
+
+                                <!-- Authorized JavaScript Origin -->
+                                <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                    <label class="block text-xs font-semibold text-white mb-1.5">Authorized JavaScript origin</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" readonly value="{{ defaults.app_url }}" id="originCode" onclick="this.select()" class="input-glass flex-grow min-w-0 !h-10 !py-2 !px-3 text-xs font-mono text-emerald-400 select-all cursor-pointer bg-black/20">
+                                        <button type="button" onclick="copyText('originCode', this)" class="shrink-0 h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/10" title="Copy Origin">
+                                            <i data-lucide="copy" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] text-surface-200/50 mt-1.5">Add this origin under <b>Authorized JavaScript origins</b> in Google Cloud Console. No redirect URI is required.</p>
+                                </div>
+                            </div>
+
+                            <!-- Right: Setup Guide Aside (matching web-app-prototype-v3.html) -->
+                            <div class="lg:col-span-5 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <i data-lucide="book-open" class="w-4 h-4 text-brand-400"></i>
+                                    Setup Guide
+                                </h3>
+                                <ol class="text-xs text-surface-200/70 space-y-2 list-decimal list-inside leading-relaxed">
+                                    <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-brand-400 hover:underline">Google Cloud Console</a></li>
+                                    <li>Create or select a <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener" class="text-brand-400 hover:underline">project</a></li>
+                                    <li>Configure the <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="text-brand-400 hover:underline">OAuth consent screen</a></li>
+                                    <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="text-brand-400 hover:underline">Credentials</a></li>
+                                    <li>Click <b>Create Credentials → OAuth client ID</b></li>
+                                    <li>Select <b>Web application</b></li>
+                                    <li>Under <b>Authorized JavaScript origins</b>, add the origin shown on this page</li>
+                                    <li>Paste the Client ID and Client secret here, then click <b>Test credential</b></li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(4, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="googleNextBtn" onclick="saveAndAdvance('google', 6)" disabled class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Save & Continue to Super Administrator</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 6: Super Administrator ================= -->
+                    <div class="step-pane {% if initialStep == 6 %}active{% endif %}" id="pane-6">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Super Administrator Account</h2>
+                            <p class="text-sm text-surface-200/60">Create your master administrative account. You can configure credentials manually or authenticate with Google.</p>
+                        </div>
+
+                        <input type="hidden" name="admin_google_id" id="admin_google_id" value="{{ defaults.admin_google_id }}">
+
+                        <!-- Google Sign-In: Unlinked State (when not yet linked) -->
+                        <div id="googleAdminUnlinkedCard" class="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-white">Sign in with Google</p>
+                                    <p class="text-xs text-surface-200/50">Link your Google account to enable 1-click administrator Single Sign-On.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="googleCustomAdminBtn" onclick="triggerGoogleAdminPrefill()" class="google-btn text-xs flex items-center gap-2 whitespace-nowrap">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                                <span>Sign in with Google</span>
+                            </button>
+                        </div>
+
+                        <!-- Google Sign-In: Already Linked State (with Switch & Unlink) -->
+                        <div id="googleAdminLinkedCard" class="hidden mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <div class="relative shrink-0">
+                                    <img id="linkedGoogleAvatar" src="" alt="Google Profile" class="hidden w-11 h-11 rounded-full border-2 border-emerald-500/40 object-cover">
+                                    <div id="linkedGoogleAvatarFallback" class="w-11 h-11 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold text-sm">
+                                        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+                                    </div>
+                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-surface-900 border border-white/20 flex items-center justify-center" title="Google Connected">
+                                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span id="linkedGoogleName" class="text-sm font-semibold text-white truncate max-w-[200px]">{{ defaults.admin_name ?: 'Google User' }}</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+                                            <i data-lucide="check" class="w-3 h-3"></i> Linked
+                                        </span>
+                                    </div>
+                                    <p id="linkedGoogleEmail" class="text-xs text-emerald-300/80 font-mono truncate max-w-[240px]">{{ defaults.admin_email }}</p>
+                                    <p class="text-[11px] text-surface-200/50 mt-0.5">Google Single Sign-On is active. Please enter your administrator password below.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                <button type="button" onclick="switchGoogleAccount()" class="px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 text-xs font-medium text-surface-100 hover:text-white flex items-center gap-1.5 transition-colors" title="Sign in with another Google account">
+                                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-surface-200/70"></i>
+                                    <span>Sign in with another</span>
+                                </button>
+                                <button type="button" onclick="unlinkGoogleAccount()" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors" title="Unlink this Google account">
+                                    Unlink
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Full Name *</label>
+                                <input type="text" name="admin_name" id="admin_name" value="{{ defaults.admin_name }}" placeholder="e.g. John Doe" required autocomplete="off" class="input-glass w-full text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Email Address *</label>
+                                <input type="email" name="admin_email" id="admin_email" value="{{ defaults.admin_email }}" placeholder="admin@{{ currentDomain|default('example.com') }}" required autocomplete="off" class="input-glass w-full text-sm font-mono">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Password * (min 8 characters)</label>
+                                <div class="relative">
+                                    <input type="password" name="admin_password" id="admin_password" placeholder="••••••••" required minlength="8" autocomplete="new-password" class="input-glass w-full text-sm font-mono pr-10">
+                                    <button type="button" onclick="togglePassVisibility('admin_password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-200/50 hover:text-white">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Confirm Password *</label>
+                                <div class="relative">
+                                    <input type="password" name="admin_password_confirm" id="admin_password_confirm" placeholder="••••••••" required minlength="8" autocomplete="new-password" class="input-glass w-full text-sm font-mono pr-10">
+                                    <button type="button" onclick="togglePassVisibility('admin_password_confirm')" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-200/50 hover:text-white">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-surface-200/70 mb-1.5 flex items-center justify-between">
+                                    <span>Mobile Number (Optional)</span>
+                                    <span id="admin_phone_badge" class="text-[10px] text-surface-200/40 font-normal">🇮🇳 India (+91) Default</span>
+                                </label>
+                                <div class="flex rounded-xl overflow-hidden border border-white/12 bg-white/5 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+                                    <div class="relative flex items-center bg-surface-900/60 border-r border-white/10 shrink-0">
+                                        <select id="admin_phone_country" class="appearance-none bg-transparent pl-3 pr-8 py-2.5 text-xs text-surface-100 font-medium focus:outline-none cursor-pointer">
+                                            <option value="+91" data-digits="10" data-pattern="^[6-9]\d{9}$" data-placeholder="98765 43210" data-hint="10-digit number starting with 6, 7, 8, or 9" selected>🇮🇳 +91 (India)</option>
+                                            <option value="+1" data-digits="10" data-pattern="^[2-9]\d{9}$" data-placeholder="202 555 0123" data-hint="10-digit number">🇺🇸 +1 (US / Canada)</option>
+                                            <option value="+44" data-digits="10" data-pattern="^7\d{9}$" data-placeholder="7911 123456" data-hint="10-digit number starting with 7">🇬🇧 +44 (UK)</option>
+                                            <option value="+971" data-digits="9" data-pattern="^5\d{8}$" data-placeholder="50 123 4567" data-hint="9-digit number starting with 5">🇦🇪 +971 (UAE)</option>
+                                            <option value="+966" data-digits="9" data-pattern="^5\d{8}$" data-placeholder="50 123 4567" data-hint="9-digit number starting with 5">🇸🇦 +966 (Saudi Arabia)</option>
+                                            <option value="+65" data-digits="8" data-pattern="^[89]\d{7}$" data-placeholder="8123 4567" data-hint="8-digit number starting with 8 or 9">🇸🇬 +65 (Singapore)</option>
+                                            <option value="+61" data-digits="9" data-pattern="^4\d{8}$" data-placeholder="412 345 678" data-hint="9-digit number starting with 4">🇦🇺 +61 (Australia)</option>
+                                            <option value="+49" data-digits="11" data-pattern="^1[5-7]\d{8,9}$" data-placeholder="151 23456789" data-hint="10 to 11 digits">🇩🇪 +49 (Germany)</option>
+                                            <option value="+33" data-digits="9" data-pattern="^[67]\d{8}$" data-placeholder="6 12 34 56 78" data-hint="9-digit number starting with 6 or 7">🇫🇷 +33 (France)</option>
+                                            <option value="+974" data-digits="8" data-pattern="^[3567]\d{7}$" data-placeholder="3312 3456" data-hint="8-digit number">🇶🇦 +974 (Qatar)</option>
+                                            <option value="+965" data-digits="8" data-pattern="^[569]\d{7}$" data-placeholder="5123 4567" data-hint="8-digit number">🇰🇼 +965 (Kuwait)</option>
+                                            <option value="+968" data-digits="8" data-pattern="^[79]\d{7}$" data-placeholder="9123 4567" data-hint="8-digit number">🇴🇲 +968 (Oman)</option>
+                                            <option value="+973" data-digits="8" data-pattern="^[36]\d{7}$" data-placeholder="3612 3456" data-hint="8-digit number">🇧🇭 +973 (Bahrain)</option>
+                                            <option value="+60" data-digits="10" data-pattern="^1\d{8,9}$" data-placeholder="12 345 6789" data-hint="9 to 10 digits">🇲🇾 +60 (Malaysia)</option>
+                                            <option value="+977" data-digits="10" data-pattern="^9[78]\d{8}$" data-placeholder="9841 234567" data-hint="10-digit number starting with 97/98">🇳🇵 +977 (Nepal)</option>
+                                            <option value="+880" data-digits="10" data-pattern="^1[3-9]\d{8}$" data-placeholder="1712 345678" data-hint="10-digit number starting with 1">🇧🇩 +880 (Bangladesh)</option>
+                                            <option value="+94" data-digits="9" data-pattern="^7\d{8}$" data-placeholder="71 234 5678" data-hint="9-digit number starting with 7">🇱🇰 +94 (Sri Lanka)</option>
+                                            <option value="+64" data-digits="9" data-pattern="^2\d{7,9}$" data-placeholder="21 123 4567" data-hint="8 to 10 digits">🇳🇿 +64 (New Zealand)</option>
+                                            <option value="+27" data-digits="9" data-pattern="^[6-8]\d{8}$" data-placeholder="71 234 5678" data-hint="9-digit number">🇿🇦 +27 (South Africa)</option>
+                                            <option value="" data-digits="15" data-pattern="^\d{7,15}$" data-placeholder="Phone number" data-hint="7 to 15 digits">🌐 Other</option>
+                                        </select>
+                                        <div class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-200/50">
+                                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                                        </div>
+                                    </div>
+                                    <div class="relative flex-1 min-w-0">
+                                        <input type="tel" 
+                                               id="admin_phone_national" 
+                                               inputmode="numeric" 
+                                               autocomplete="tel-national" 
+                                               placeholder="98765 43210" 
+                                               maxlength="10" 
+                                               class="w-full bg-transparent px-3.5 py-2.5 text-sm text-white font-mono placeholder:text-surface-200/30 focus:outline-none">
+                                        <div id="admin_phone_valid_icon" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400">
+                                            <i data-lucide="check" class="w-4 h-4"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="admin_phone" id="admin_phone" value="{{ defaults.admin_phone }}">
+                                <div id="admin_phone_error" class="hidden text-xs text-rose-400 mt-1.5 flex items-center gap-1.5"></div>
+                                <p id="admin_phone_hint" class="text-[11px] text-surface-200/40 mt-1">Default: India (+91) &bull; Enter 10-digit mobile number starting with 6, 7, 8, or 9</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(5, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="adminNextBtn" onclick="saveAndAdvance('admin', 7)" disabled class="btn-primary !px-6 !py-2.5 flex items-center gap-2">
+                                <span>Save & Continue to Review</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================= Step 7: Review & Deploy ================= -->
+                    <div class="step-pane {% if initialStep == 7 %}active{% endif %}" id="pane-7">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-bold text-white mb-1">Review & Initialize Deployment</h2>
+                            <p class="text-sm text-surface-200/60">The installer will create tables, configure settings, and seal the setup with your master administrator.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-surface-200/50 uppercase tracking-wider">Database</span>
+                                    <a href="javascript:void(0)" onclick="goToStep(2, true)" class="text-xs text-brand-400 hover:underline">Edit</a>
+                                </div>
+                                <p class="text-sm font-medium text-white flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                                    <span id="revDb">db:3306 / db</span>
+                                </p>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-surface-200/50 uppercase tracking-wider">Branding</span>
+                                    <a href="javascript:void(0)" onclick="goToStep(3, true)" class="text-xs text-brand-400 hover:underline">Edit</a>
+                                </div>
+                                <p class="text-sm font-medium text-white flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                                    <span id="revBranding">SocietyApp</span>
+                                </p>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-surface-200/50 uppercase tracking-wider">SMTP Email</span>
+                                    <a href="javascript:void(0)" onclick="goToStep(4, true)" class="text-xs text-brand-400 hover:underline">Edit</a>
+                                </div>
+                                <p class="text-sm font-medium text-white flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                                    <span id="revEmail">127.0.0.1:1025</span>
+                                </p>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-surface-200/50 uppercase tracking-wider">Google Single Sign-On</span>
+                                    <a href="javascript:void(0)" onclick="goToStep(5, true)" class="text-xs text-brand-400 hover:underline">Edit</a>
+                                </div>
+                                <p class="text-sm font-medium text-white flex items-center gap-1.5 truncate">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                                    <span id="revGoogle" class="truncate font-mono text-xs">Verified</span>
+                                </p>
+                            </div>
+
+                            <div class="sm:col-span-2 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-surface-200/50 uppercase tracking-wider">Super Administrator</span>
+                                    <a href="javascript:void(0)" onclick="goToStep(6, true)" class="text-xs text-brand-400 hover:underline">Edit</a>
+                                </div>
+                                <p class="text-sm font-medium text-white flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                                    <span id="revAdmin">{% if defaults.admin_email %}{{ defaults.admin_name ?: 'Admin' }} ({{ defaults.admin_email }}){% else %}Pending Configuration{% endif %}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Error Banner -->
+                        <div id="deployErrorBanner" class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs mb-6 hidden">
+                            <span id="deployErrorText"></span>
+                        </div>
+
+                        <div class="flex justify-between pt-4 border-t border-white/5">
+                            <button type="button" onclick="goToStep(6, true)" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80">Back</button>
+                            <button type="button" id="deployBtn" onclick="submitDeployment()" class="btn-primary !px-8 !py-3 flex items-center gap-2 text-base">
+                                <i data-lucide="rocket" class="w-5 h-5"></i>
+                                <span>Initialize & Deploy Platform</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- Reusable System Modal (Replaces default alert/prompt) -->
+    <div id="systemModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 transition-all duration-200 hidden">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border border-white/15 shadow-2xl relative">
+            <div class="flex items-start gap-4">
+                <div id="modalIconContainer" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-400">
+                    <i id="modalIcon" data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 id="modalTitle" class="text-base font-bold text-white mb-1.5">Action Required</h3>
+                    <p id="modalMessage" class="text-sm text-surface-200/70 leading-relaxed"></p>
+                </div>
+            </div>
+            
+            <div id="modalPromptContainer" class="mt-4 hidden">
+                <input type="text" id="modalPromptInput" class="input-glass w-full text-sm font-mono" placeholder="Enter value...">
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="modalCancelBtn" onclick="closeModal()" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm text-surface-200/80 hidden">Cancel</button>
+                <button type="button" id="modalConfirmBtn" onclick="confirmModal()" class="btn-primary !px-5 !py-2 text-sm">Understood</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-4 text-center text-xs text-surface-200/40">
+        <p>&copy; {{ "now"|date("Y") }} SocietyApp Platform &bull; Cooperative Housing Society Management</p>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        const totalSteps = 7;
+        const stepSlugs = {
+            1: 'prerequisites',
+            2: 'database',
+            3: 'branding',
+            4: 'email',
+            5: 'google',
+            6: 'admin',
+            7: 'review'
+        };
+        const slugToStep = {
+            'prerequisites': 1,
+            'database': 2,
+            'branding': 3,
+            'email': 4,
+            'google': 5,
+            'admin': 6,
+            'review': 7
+        };
+
+        // Completed steps state from database
+        const completedSteps = {{ completedSteps|json_encode|raw }};
+        let currentStep = {{ initialStep }};
+
+        // Test status tracking flags
+        let dbTestPassed = {{ completedSteps.database ? 'true' : 'false' }};
+        let emailTestPassed = {{ completedSteps.email ? 'true' : 'false' }};
+        let googleTestPassed = {{ completedSteps.google ? 'true' : 'false' }};
+
+        // Snapshot of values when opened (to detect changes)
+        let stepSnapshots = {};
+
+        function getStepValues(step) {
+            const pane = document.getElementById('pane-' + step);
+            if (!pane) return '';
+            const inputs = Array.from(pane.querySelectorAll('input, textarea, select')).map(i => {
+                if (i.type === 'file') return '';
+                return i.value;
+            });
+            return JSON.stringify(inputs);
+        }
+
+        function snapCurrentStep(step) {
+            stepSnapshots[step] = getStepValues(step);
+        }
+
+        function checkBrandingValidity() {
+            const name = (document.getElementById('app_name')?.value || '').trim();
+            const desc = (document.getElementById('app_desc')?.value || '').trim();
+            const btn = document.getElementById('brandingNextBtn');
+            if (btn) {
+                btn.disabled = (name === '' || desc === '');
+            }
+        }
+
+        function checkAdminValidity() {
+            const name = (document.getElementById('admin_name')?.value || '').trim();
+            const email = (document.getElementById('admin_email')?.value || '').trim();
+            const pass = document.getElementById('admin_password')?.value || '';
+            const confirmPass = document.getElementById('admin_password_confirm')?.value || '';
+            const btn = document.getElementById('adminNextBtn');
+            
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            const passValid = pass.length >= 8 && pass === confirmPass;
+
+            // Mobile number pattern check (optional, but if entered must match country pattern)
+            const nationalPhone = (document.getElementById('admin_phone_national')?.value || '').replace(/\D/g, '');
+            const countrySelect = document.getElementById('admin_phone_country');
+            const patternStr = countrySelect?.options[countrySelect.selectedIndex]?.getAttribute('data-pattern') || '^[6-9]\\d{9}$';
+            const phoneValid = nationalPhone.length === 0 || new RegExp(patternStr).test(nationalPhone);
+
+            if (btn) {
+                btn.disabled = !(name.length > 0 && emailValid && passValid && phoneValid);
+            }
+        }
+
+        function getStepNextBtnId(stepName) {
+            switch (stepName) {
+                case 'database': return 'dbNextBtn';
+                case 'branding': return 'brandingNextBtn';
+                case 'email': return 'emailNextBtn';
+                case 'google': return 'googleNextBtn';
+                case 'admin': return 'adminNextBtn';
+                default: return '';
+            }
+        }
+
+        // Persist step data to database and proceed
+        async function saveAndAdvance(stepName, nextStepNum) {
+            const btnId = getStepNextBtnId(stepName);
+            const btn = document.getElementById(btnId);
+            let originalHtml = '';
+            if (btn) {
+                originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Saving & Storing…</span>';
+                lucide.createIcons();
+            }
+
+            const form = document.getElementById('setupWizardForm');
+            const formData = new FormData(form);
+            formData.append('step', stepName);
+            const currentCsrf = document.getElementById('csrf_token')?.value || '';
+
+            try {
+                let res = await fetch('/setup/save-step', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-Token': currentCsrf }
+                });
+                let data = await res.json();
+
+                // Update CSRF token if returned
+                if (data.csrf_token || data.new_csrf_token) {
+                    const csrfInput = document.getElementById('csrf_token');
+                    if (csrfInput) csrfInput.value = data.csrf_token || data.new_csrf_token;
+                }
+
+                // If CSRF validation failed, attempt automatic refresh and retry once
+                if (!data.success && data.error && data.error.includes('CSRF')) {
+                    try {
+                        const tokenRes = await fetch('/setup/csrf-token');
+                        const tokenData = await tokenRes.json();
+                        if (tokenData && tokenData.csrf_token) {
+                            const csrfInput = document.getElementById('csrf_token');
+                            if (csrfInput) csrfInput.value = tokenData.csrf_token;
+                            formData.set('csrf_token', tokenData.csrf_token);
+                            res = await fetch('/setup/save-step', {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-CSRF-Token': tokenData.csrf_token }
+                            });
+                            data = await res.json();
+                            if (data.csrf_token || data.new_csrf_token) {
+                                if (csrfInput) csrfInput.value = data.csrf_token || data.new_csrf_token;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore retry error, fall through to modal
+                    }
+                }
+
+                if (data.success) {
+                    completedSteps[stepName] = true;
+                    goToStep(nextStepNum, true);
+                } else {
+                    showModal({
+                        title: 'Error Saving Settings',
+                        message: data.error || 'Failed to save settings into database. Please check values and try again.',
+                        type: 'error'
+                    });
+                }
+            } catch (err) {
+                showModal({
+                    title: 'Server Error',
+                    message: 'Could not connect to the server: ' + err.message,
+                    type: 'error'
+                });
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        // Sidebar Navigation click handler with validation gating
+        function navigateToStep(step) {
+            if (step === currentStep) return;
+            if (step < currentStep) {
+                goToStep(step, true);
+                return;
+            }
+            if (step > 2 && !completedSteps.database && !dbTestPassed) {
+                showModal({
+                    title: 'Database Setup Required',
+                    message: 'Please complete and verify database setup first.',
+                    type: 'warning',
+                    confirmText: 'Go to Database',
+                    onConfirm: () => goToStep(2, true)
+                });
+                return;
+            }
+            if (step > 3 && !completedSteps.branding) {
+                showModal({
+                    title: 'Branding Required',
+                    message: 'Please complete Application Branding first.',
+                    type: 'warning',
+                    confirmText: 'Go to Branding',
+                    onConfirm: () => goToStep(3, true)
+                });
+                return;
+            }
+            if (step > 4 && !completedSteps.email && !emailTestPassed) {
+                showModal({
+                    title: 'SMTP Email Required',
+                    message: 'Please test and verify your SMTP Email settings first.',
+                    type: 'warning',
+                    confirmText: 'Go to Email Step',
+                    onConfirm: () => goToStep(4, true)
+                });
+                return;
+            }
+            if (step > 5 && !completedSteps.google && !googleTestPassed) {
+                showModal({
+                    title: 'Google SSO Verification Required',
+                    message: 'Please verify your Google OAuth credentials first.',
+                    type: 'warning',
+                    confirmText: 'Go to Google SSO',
+                    onConfirm: () => goToStep(5, true)
+                });
+                return;
+            }
+            if (step > 6 && !completedSteps.admin) {
+                showModal({
+                    title: 'Super Administrator Required',
+                    message: 'Please create the Super Administrator account first.',
+                    type: 'warning',
+                    confirmText: 'Go to Admin Step',
+                    onConfirm: () => goToStep(6, true)
+                });
+                return;
+            }
+            goToStep(step, true);
+        }
+
+        // Stepper Navigation with URL Parameter Synchronization
+        function goToStep(step, updateUrl = true) {
+            if (step < 1 || step > totalSteps) return;
+
+            // Enforce tests before allowing forward progression
+            if (step > 2 && !completedSteps.database && !dbTestPassed && currentStep < step) {
+                showModal({
+                    title: 'Database Verification Required',
+                    message: 'Please test and verify the database connection before proceeding to the next steps.',
+                    type: 'warning',
+                    confirmText: 'Go to Database Step',
+                    onConfirm: () => goToStep(2, true)
+                });
+                return;
+            }
+            if (step > 3 && !completedSteps.branding && currentStep < step) {
+                showModal({
+                    title: 'Branding Configuration Required',
+                    message: 'Please configure Application Branding before proceeding.',
+                    type: 'warning',
+                    confirmText: 'Go to Branding Step',
+                    onConfirm: () => goToStep(3, true)
+                });
+                return;
+            }
+            if (step > 4 && !completedSteps.email && !emailTestPassed && currentStep < step) {
+                showModal({
+                    title: 'SMTP Email Verification Required',
+                    message: 'Please test and verify SMTP email connectivity before proceeding to Google Sign-In.',
+                    type: 'warning',
+                    confirmText: 'Go to Email Step',
+                    onConfirm: () => goToStep(4, true)
+                });
+                return;
+            }
+            if (step > 5 && !completedSteps.google && !googleTestPassed && currentStep < step) {
+                showModal({
+                    title: 'Google OAuth Verification Required',
+                    message: 'Please test and verify your Google Sign-In credentials before proceeding.',
+                    type: 'warning',
+                    confirmText: 'Go to Google SSO Step',
+                    onConfirm: () => goToStep(5, true)
+                });
+                return;
+            }
+            if (step > 6 && !completedSteps.admin && currentStep < step) {
+                showModal({
+                    title: 'Super Administrator Required',
+                    message: 'Please create the Super Administrator account before proceeding to Review.',
+                    type: 'warning',
+                    confirmText: 'Go to Admin Step',
+                    onConfirm: () => goToStep(6, true)
+                });
+                return;
+            }
+
+            // Update panes
+            document.querySelectorAll('.step-pane').forEach(p => p.classList.remove('active'));
+            const targetPane = document.getElementById('pane-' + step);
+            if (targetPane) targetPane.classList.add('active');
+
+            // Update nav buttons
+            for (let i = 1; i <= totalSteps; i++) {
+                const btn = document.getElementById('stepBtn-' + i);
+                if (!btn) continue;
+                btn.classList.remove('active');
+                const slug = stepSlugs[i];
+                if (completedSteps[slug] || i < step) {
+                    btn.classList.add('completed');
+                } else {
+                    btn.classList.remove('completed');
+                }
+            }
+            const activeBtn = document.getElementById('stepBtn-' + step);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            currentStep = step;
+            document.getElementById('currentStepIndicator').textContent = step;
+
+            // Synchronize URL query parameter (e.g. ?step=branding)
+            if (updateUrl) {
+                const slug = stepSlugs[step];
+                const newUrl = window.location.pathname + '?step=' + slug;
+                if (window.location.search !== '?step=' + slug) {
+                    window.history.pushState({ step: step, slug: slug }, '', newUrl);
+                }
+            }
+
+            // Step 6 (Super Administrator) initialization
+            if (step === 6) {
+                initAdminPhoneInput();
+                syncGoogleLinkState();
+                initGoogleOneTapInSetup();
+            } else if (window.google?.accounts?.id) {
+                google.accounts.id.cancel();
+            }
+
+            // Update Review Summary if on Step 7
+            if (step === 7) {
+                updateReviewSummary();
+            }
+
+            snapCurrentStep(step);
+            lucide.createIcons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateReviewSummary() {
+            const dbHost = document.getElementById('db_host')?.value || 'localhost';
+            const dbPort = document.getElementById('db_port')?.value || '3306';
+            const dbName = document.getElementById('db_name')?.value || 'db';
+            const appName = document.getElementById('app_name')?.value || 'SocietyApp';
+            const mailHost = document.getElementById('mail_host')?.value || '127.0.0.1';
+            const mailPort = document.getElementById('mail_port')?.value || '1025';
+            const googleId = document.getElementById('google_client_id')?.value || 'Configured';
+            const adminName = (document.getElementById('admin_name')?.value || '').trim();
+            const adminEmail = (document.getElementById('admin_email')?.value || '').trim();
+
+            document.getElementById('revDb').textContent = `${dbHost}:${dbPort} / ${dbName}`;
+            document.getElementById('revBranding').textContent = appName;
+            document.getElementById('revEmail').textContent = `${mailHost}:${mailPort} (Verified)`;
+            document.getElementById('revGoogle').textContent = googleId;
+            document.getElementById('revAdmin').textContent = adminEmail ? `${adminName || 'Admin'} (${adminEmail})` : 'Pending Configuration';
+        }
+
+        // 1. Database Connection Test
+        async function testDatabaseConnection() {
+            const btn = document.getElementById('testDbBtn');
+            const status = document.getElementById('dbTestStatus');
+            const nextBtn = document.getElementById('dbNextBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Testing…</span>';
+            lucide.createIcons();
+
+            const formData = new FormData();
+            formData.append('csrf_token', document.getElementById('csrf_token').value);
+            formData.append('db_host', document.getElementById('db_host').value);
+            formData.append('db_port', document.getElementById('db_port').value);
+            formData.append('db_name', document.getElementById('db_name').value);
+            formData.append('db_user', document.getElementById('db_user').value);
+            formData.append('db_pass', document.getElementById('db_pass').value);
+
+            try {
+                const res = await fetch('/setup/test-db', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    dbTestPassed = true;
+                    status.innerHTML = `<span class="text-emerald-400 font-semibold">✓ ${data.message}</span>`;
+                    nextBtn.disabled = false;
+                } else {
+                    dbTestPassed = false;
+                    status.innerHTML = `<span class="text-rose-400 font-semibold">✗ ${data.error}</span>`;
+                    nextBtn.disabled = true;
+                }
+            } catch (err) {
+                dbTestPassed = false;
+                status.innerHTML = `<span class="text-rose-400 font-semibold">✗ Error: ${err.message}</span>`;
+                nextBtn.disabled = true;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="activity" class="w-3.5 h-3.5"></i><span>Test Connection</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // 2. SMTP Email Connection Test
+        async function testEmailConnection() {
+            const btn = document.getElementById('testEmailBtn');
+            const status = document.getElementById('emailTestStatus');
+            const nextBtn = document.getElementById('emailNextBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Testing…</span>';
+            lucide.createIcons();
+
+            const formData = new FormData();
+            formData.append('csrf_token', document.getElementById('csrf_token').value);
+            formData.append('mail_host', document.getElementById('mail_host').value);
+            formData.append('mail_port', document.getElementById('mail_port').value);
+            formData.append('mail_username', document.getElementById('mail_username').value);
+            formData.append('mail_password', document.getElementById('mail_password').value);
+
+            try {
+                const res = await fetch('/setup/test-email', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    emailTestPassed = true;
+                    status.innerHTML = `<span class="text-emerald-400 font-semibold">${data.message}</span>`;
+                    nextBtn.disabled = false;
+                } else {
+                    emailTestPassed = false;
+                    status.innerHTML = `<span class="text-rose-400 font-semibold">✗ ${data.error}</span>`;
+                    nextBtn.disabled = true;
+                }
+            } catch (err) {
+                emailTestPassed = false;
+                status.innerHTML = `<span class="text-rose-400 font-semibold">✗ Connection failed: ${err.message}</span>`;
+                nextBtn.disabled = true;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="mail-check" class="w-3.5 h-3.5"></i><span>Test Email Connection</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // 3. Google OAuth Credential Test
+        async function testGoogleCredential() {
+            const btn = document.getElementById('gTestBtn');
+            const status = document.getElementById('googleTestStatus');
+            const nextBtn = document.getElementById('googleNextBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Testing…</span>';
+            lucide.createIcons();
+
+            const formData = new FormData();
+            formData.append('csrf_token', document.getElementById('csrf_token').value);
+            formData.append('google_client_id', document.getElementById('google_client_id').value);
+            formData.append('google_client_secret', document.getElementById('google_client_secret').value);
+
+            try {
+                const res = await fetch('/setup/test-google-sso', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    googleTestPassed = true;
+                    status.innerHTML = `<span class="text-emerald-400 font-semibold flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> ${data.message}</span>`;
+                    lucide.createIcons();
+                    nextBtn.disabled = false;
+                } else {
+                    googleTestPassed = false;
+                    status.innerHTML = `<span class="text-rose-400 font-semibold">✗ ${data.error}</span>`;
+                    nextBtn.disabled = true;
+                }
+            } catch (err) {
+                googleTestPassed = false;
+                status.innerHTML = `<span class="text-rose-400 font-semibold">✗ Verification error: ${err.message}</span>`;
+                nextBtn.disabled = true;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="shield-check" class="w-3.5 h-3.5"></i><span>Test Credential</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // 4. Logo Uploader & Drag-and-Drop Implementation
+        const dropZone = document.getElementById('logoDropZone');
+        const fileInput = document.getElementById('logoFileInput');
+        const previewImg = document.getElementById('logoPreviewImg');
+        const defaultIcon = document.getElementById('logoDefaultIcon');
+        const actionBtns = document.getElementById('logoActionBtns');
+        const base64Input = document.getElementById('logo_base64');
+
+        function triggerLogoBrowse() {
+            fileInput.click();
+        }
+
+        dropZone.addEventListener('click', triggerLogoBrowse);
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleLogoFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleLogoFile(e.target.files[0]);
+            }
+        });
+
+        function handleLogoFile(file) {
+            if (!file.type.match(/^image\/(svg\+xml|png|jpeg|webp|gif)$/i)) {
+                showModal({
+                    title: 'Unsupported Image Format',
+                    message: 'Please upload an image file in SVG, PNG, JPG, WEBP, or GIF format.',
+                    type: 'error'
+                });
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                showModal({
+                    title: 'File Exceeds Size Limit',
+                    message: 'Image file size must be less than 2MB.',
+                    type: 'error'
+                });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewImg.classList.remove('hidden');
+                defaultIcon.classList.add('hidden');
+                actionBtns.classList.remove('hidden');
+                base64Input.value = e.target.result;
+                const headerLogo = document.getElementById('headerAppLogo');
+                if (headerLogo) headerLogo.src = e.target.result;
+                const pageFavicon = document.getElementById('pageFavicon');
+                if (pageFavicon) pageFavicon.href = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogo() {
+            fileInput.value = '';
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+            defaultIcon.classList.remove('hidden');
+            actionBtns.classList.add('hidden');
+            base64Input.value = '';
+            const headerLogo = document.getElementById('headerAppLogo');
+            if (headerLogo) headerLogo.src = '/assets/icons/logo.svg';
+            const pageFavicon = document.getElementById('pageFavicon');
+            if (pageFavicon) pageFavicon.href = '/assets/icons/logo.svg';
+        }
+
+        const appNameField = document.getElementById('app_name');
+        if (appNameField) {
+            appNameField.addEventListener('input', () => {
+                const val = appNameField.value.trim() || 'SocietyApp';
+                const headerAppName = document.getElementById('headerAppName');
+                if (headerAppName) headerAppName.textContent = val;
+            });
+        }
+
+        // 5. Google Admin SSO (Google Identity Services without redirect URI)
+        function decodeJwtPayload(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.warn('Failed to decode JWT payload:', e);
+                return null;
+            }
+        }
+
+        function applyGoogleAdminProfile(data) {
+            if (!data || !data.email) return;
+
+            const nameInput = document.getElementById('admin_name');
+            const emailInput = document.getElementById('admin_email');
+            const gidInput = document.getElementById('admin_google_id');
+            const unlinkedCard = document.getElementById('googleAdminUnlinkedCard');
+            const linkedCard = document.getElementById('googleAdminLinkedCard');
+            const emailSpan = document.getElementById('linkedGoogleEmail');
+            const nameSpan = document.getElementById('linkedGoogleName');
+            const avatarImg = document.getElementById('linkedGoogleAvatar');
+            const avatarFallback = document.getElementById('linkedGoogleAvatarFallback');
+
+            // 1. Fill Email
+            if (emailInput) {
+                emailInput.value = data.email;
+                emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            // 2. Fill Name (fall back to email prefix if blank)
+            const displayName = (data.name && data.name.trim()) ? data.name.trim() : data.email.split('@')[0];
+            if (nameInput) {
+                nameInput.value = displayName;
+                nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            // 3. Fill Google ID
+            if (gidInput && data.google_id) {
+                gidInput.value = data.google_id;
+            }
+
+            // 4. Update Linked Card display
+            if (emailSpan) emailSpan.textContent = data.email;
+            if (nameSpan) nameSpan.textContent = displayName;
+
+            if (avatarImg && avatarFallback) {
+                if (data.picture) {
+                    avatarImg.src = data.picture;
+                    avatarImg.classList.remove('hidden');
+                    avatarFallback.classList.add('hidden');
+                } else {
+                    avatarImg.classList.add('hidden');
+                    avatarFallback.classList.remove('hidden');
+                }
+            }
+
+            if (unlinkedCard) unlinkedCard.classList.add('hidden');
+            if (linkedCard) linkedCard.classList.remove('hidden');
+            lucide.createIcons();
+
+            // Dismiss One Tap prompt once linked
+            if (window.google?.accounts?.id) {
+                google.accounts.id.cancel();
+            }
+
+            // 5. Validate Admin form & update Continue button state
+            checkAdminValidity();
+        }
+
+        function initGoogleOneTapInSetup(retryCount = 0) {
+            // Must strictly only prompt on Step 6 (Super Administrator setup)
+            if (currentStep !== 6) return;
+
+            const googleClientId = document.getElementById('google_client_id')?.value.trim();
+            if (!googleClientId) return;
+
+            // Only prompt if not linked yet
+            const isLinked = !!document.getElementById('admin_google_id')?.value;
+            if (isLinked) return;
+
+            if (!window.google || !google.accounts || !google.accounts.id) {
+                if (retryCount < 25) {
+                    setTimeout(() => initGoogleOneTapInSetup(retryCount + 1), 200);
+                }
+                return;
+            }
+
+            try {
+                // Clear Google One Tap cooldown cookie (g_state) so the prompt reliably appears on Step 6
+                document.cookie = 'g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+                google.accounts.id.initialize({
+                    client_id: googleClientId,
+                    callback: handleGoogleAdminOneTap,
+                    auto_select: false,
+                    cancel_on_tap_outside: false,
+                    itp_support: true
+                });
+
+                // Display Google One Tap top-right prompt
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed()) {
+                        console.log('One Tap not displayed reason:', notification.getNotDisplayedReason());
+                    } else if (notification.isSkippedMoment()) {
+                        console.log('One Tap skipped reason:', notification.getSkippedReason());
+                    } else if (notification.isDismissedMoment()) {
+                        console.log('One Tap dismissed reason:', notification.getDismissedReason());
+                    }
+                });
+            } catch (e) {
+                console.warn('Google Identity Services init error:', e);
+            }
+        }
+
+        async function handleGoogleAdminOneTap(response) {
+            if (!response || !response.credential) return;
+
+            // Immediately parse JWT client-side for instantaneous UI form prefilling
+            const jwtData = decodeJwtPayload(response.credential);
+            if (jwtData && jwtData.email) {
+                const name = jwtData.name || ((jwtData.given_name || '') + ' ' + (jwtData.family_name || '')).trim() || jwtData.email.split('@')[0];
+                applyGoogleAdminProfile({
+                    email: jwtData.email,
+                    name: name,
+                    google_id: jwtData.sub,
+                    picture: jwtData.picture
+                });
+            }
+
+            // Also verify with server endpoint
+            try {
+                const res = await fetch('/auth/google-one-tap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        credential: response.credential,
+                        context: 'setup_admin'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    applyGoogleAdminProfile({
+                        email: data.email,
+                        name: data.name,
+                        google_id: data.google_id,
+                        picture: data.picture
+                    });
+                }
+            } catch (err) {
+                console.error('Google One Tap server sync error:', err);
+            }
+        }
+
+        function triggerGoogleAdminPrefill() {
+            const googleClientId = document.getElementById('google_client_id')?.value.trim();
+            if (!googleClientId) {
+                showModal({
+                    title: 'Configuration Required',
+                    message: 'Please configure and verify your Google Client ID first in Step 5 before signing in.',
+                    type: 'warning',
+                    confirmText: 'Go to Step 5',
+                    onConfirm: () => goToStep(5)
+                });
+                return;
+            }
+
+            // Try One Tap prompt
+            if (window.google && google.accounts && google.accounts.id) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: googleClientId,
+                        callback: handleGoogleAdminOneTap,
+                        auto_select: false,
+                        cancel_on_tap_outside: false
+                    });
+                    google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                            openGoogleTokenClient(googleClientId);
+                        }
+                    });
+                    return;
+                } catch (e) {
+                    console.warn('GIS prompt error:', e);
+                }
+            }
+
+            openGoogleTokenClient(googleClientId);
+        }
+
+        function openGoogleTokenClient(googleClientId) {
+            if (window.google && google.accounts && google.accounts.oauth2) {
+                try {
+                    const tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: googleClientId,
+                        scope: 'email profile openid',
+                        callback: async (tokenResponse) => {
+                            if (tokenResponse && tokenResponse.access_token) {
+                                try {
+                                    const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                                    });
+                                    const profile = await userInfoRes.json();
+                                    applyGoogleAdminProfile({
+                                        email: profile.email,
+                                        name: profile.name || ((profile.given_name || '') + ' ' + (profile.family_name || '')).trim() || profile.email.split('@')[0],
+                                        google_id: profile.sub,
+                                        picture: profile.picture
+                                    });
+                                } catch (e) {
+                                    console.error('Failed to fetch userinfo from Google:', e);
+                                }
+                            }
+                        }
+                    });
+                    tokenClient.requestAccessToken({ prompt: 'select_account' });
+                } catch (e) {
+                    console.warn('oauth2 token client failed:', e);
+                }
+            }
+        }
+
+        function unlinkGoogleAccount() {
+            const gidInput = document.getElementById('admin_google_id');
+            if (gidInput) gidInput.value = '';
+
+            const unlinkedCard = document.getElementById('googleAdminUnlinkedCard');
+            const linkedCard = document.getElementById('googleAdminLinkedCard');
+            if (linkedCard) linkedCard.classList.add('hidden');
+            if (unlinkedCard) unlinkedCard.classList.remove('hidden');
+            lucide.createIcons();
+
+            checkAdminValidity();
+            if (currentStep === 6) {
+                initGoogleOneTapInSetup();
+            }
+        }
+
+        function switchGoogleAccount() {
+            const googleClientId = document.getElementById('google_client_id')?.value.trim();
+            if (!googleClientId) return;
+            openGoogleTokenClient(googleClientId);
+        }
+
+        function syncGoogleLinkState() {
+            const isLinked = !!document.getElementById('admin_google_id')?.value;
+            const unlinkedCard = document.getElementById('googleAdminUnlinkedCard');
+            const linkedCard = document.getElementById('googleAdminLinkedCard');
+            if (!unlinkedCard || !linkedCard) return;
+
+            if (isLinked) {
+                unlinkedCard.classList.add('hidden');
+                linkedCard.classList.remove('hidden');
+            } else {
+                linkedCard.classList.add('hidden');
+                unlinkedCard.classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        // 6. Reset Test Status on Form Changes
+        ['db_host', 'db_port', 'db_name', 'db_user', 'db_pass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    dbTestPassed = false;
+                    document.getElementById('dbNextBtn').disabled = true;
+                    document.getElementById('dbTestStatus').innerHTML = '<span class="text-amber-400 text-xs">Values changed. Please re-test connection.</span>';
+                });
+            }
+        });
+
+        ['mail_host', 'mail_port', 'mail_username', 'mail_password'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    emailTestPassed = false;
+                    document.getElementById('emailNextBtn').disabled = true;
+                    document.getElementById('emailTestStatus').innerHTML = '<span class="text-amber-400 text-xs">SMTP settings changed. Please re-test connection.</span>';
+                });
+            }
+        });
+
+        ['google_client_id', 'google_client_secret'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    googleTestPassed = false;
+                    document.getElementById('googleNextBtn').disabled = true;
+                    document.getElementById('googleTestStatus').innerHTML = '<span class="text-amber-400 text-xs">Credentials changed. Please re-test with Google.</span>';
+                });
+            }
+        });
+
+        // App Name sync & Tagline character counter
+        const appNameInput = document.getElementById('app_name');
+        if (appNameInput) {
+            appNameInput.addEventListener('input', (e) => {
+                const val = e.target.value.trim() || 'SocietyApp';
+                document.getElementById('headerAppName').textContent = val;
+                checkBrandingValidity();
+            });
+        }
+
+        const appDescInput = document.getElementById('app_desc');
+        const descCharCount = document.getElementById('descCharCount');
+        if (appDescInput && descCharCount) {
+            descCharCount.textContent = appDescInput.value.length;
+            appDescInput.addEventListener('input', (e) => {
+                descCharCount.textContent = e.target.value.length;
+                checkBrandingValidity();
+            });
+        }
+
+        ['admin_name', 'admin_email', 'admin_password', 'admin_password_confirm'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', checkAdminValidity);
+        });
+
+        // Mobile Number with Country Dropdown & Pattern Restriction
+        let phoneInputInitialized = false;
+        function initAdminPhoneInput() {
+            const hiddenPhone = document.getElementById('admin_phone');
+            const countrySelect = document.getElementById('admin_phone_country');
+            const nationalInput = document.getElementById('admin_phone_national');
+            const badgeEl = document.getElementById('admin_phone_badge');
+            const errEl = document.getElementById('admin_phone_error');
+            const validIcon = document.getElementById('admin_phone_valid_icon');
+            const hintEl = document.getElementById('admin_phone_hint');
+
+            if (!hiddenPhone || !countrySelect || !nationalInput) return;
+
+            // Parse initial value if present (e.g. "+91 9876543210")
+            const rawVal = hiddenPhone.value.trim();
+            if (rawVal) {
+                let matched = false;
+                for (const opt of countrySelect.options) {
+                    const code = opt.value;
+                    if (code && rawVal.startsWith(code)) {
+                        countrySelect.value = code;
+                        nationalInput.value = rawVal.substring(code.length).replace(/\D/g, '');
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    countrySelect.value = '+91';
+                    nationalInput.value = rawVal.replace(/\D/g, '').slice(-10);
+                }
+            } else {
+                countrySelect.value = '+91';
+            }
+
+            function updatePhoneState() {
+                const selectedOpt = countrySelect.options[countrySelect.selectedIndex];
+                const countryCode = selectedOpt ? selectedOpt.value : '+91';
+                const patternStr = selectedOpt?.getAttribute('data-pattern') || '^[6-9]\\d{9}$';
+                const digits = selectedOpt?.getAttribute('data-digits') || '10';
+                const placeholder = selectedOpt?.getAttribute('data-placeholder') || '98765 43210';
+                const hint = selectedOpt?.getAttribute('data-hint') || '10-digit number starting with 6, 7, 8, or 9';
+
+                nationalInput.placeholder = placeholder;
+                nationalInput.maxLength = parseInt(digits, 10) || 15;
+
+                if (badgeEl && selectedOpt) {
+                    badgeEl.textContent = selectedOpt.text.split('(')[0].trim() + ' (' + (countryCode || 'Other') + ')';
+                }
+                if (hintEl && selectedOpt) {
+                    hintEl.textContent = countryCode === '+91'
+                        ? 'Default: India (+91) • Enter 10-digit mobile number starting with 6, 7, 8, or 9'
+                        : `${selectedOpt.text.split('(')[0].trim()} • ${hint}`;
+                }
+
+                // Strip non-digits and leading zeros / country code if accidentally pasted
+                let rawDigits = nationalInput.value.replace(/\D/g, '');
+                if (countryCode === '+91') {
+                    if (rawDigits.startsWith('91') && rawDigits.length > 10) {
+                        rawDigits = rawDigits.substring(2);
+                    } else if (rawDigits.startsWith('0') && rawDigits.length > 10) {
+                        rawDigits = rawDigits.substring(1);
+                    }
+                    if (rawDigits.length > 10) {
+                        rawDigits = rawDigits.slice(0, 10);
+                    }
+                } else if (countryCode === '+1') {
+                    if (rawDigits.startsWith('1') && rawDigits.length > 10) {
+                        rawDigits = rawDigits.substring(1);
+                    }
+                    if (rawDigits.length > 10) {
+                        rawDigits = rawDigits.slice(0, 10);
+                    }
+                }
+                nationalInput.value = rawDigits;
+
+                const regex = new RegExp(patternStr);
+                let isValid = false;
+
+                if (rawDigits.length === 0) {
+                    // Optional field: valid when blank
+                    hiddenPhone.value = '';
+                    if (errEl) {
+                        errEl.classList.add('hidden');
+                        errEl.innerHTML = '';
+                    }
+                    if (validIcon) validIcon.classList.add('hidden');
+                    isValid = true;
+                } else if (regex.test(rawDigits)) {
+                    hiddenPhone.value = countryCode ? `${countryCode} ${rawDigits}` : rawDigits;
+                    if (errEl) {
+                        errEl.classList.add('hidden');
+                        errEl.innerHTML = '';
+                    }
+                    if (validIcon) validIcon.classList.remove('hidden');
+                    isValid = true;
+                } else {
+                    hiddenPhone.value = countryCode ? `${countryCode} ${rawDigits}` : rawDigits;
+                    if (validIcon) validIcon.classList.add('hidden');
+                    if (errEl) {
+                        errEl.classList.remove('hidden');
+                        if (countryCode === '+91') {
+                            if (!/^[6-9]/.test(rawDigits)) {
+                                errEl.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>Indian mobile number must start with 6, 7, 8, or 9</span>';
+                            } else if (rawDigits.length < 10) {
+                                errEl.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>Must be exactly 10 digits (${rawDigits.length}/10 entered)</span>`;
+                            } else {
+                                errEl.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>Invalid 10-digit mobile number format</span>';
+                            }
+                        } else {
+                            errEl.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i><span>Please enter a valid mobile number (${hint})</span>`;
+                        }
+                        lucide.createIcons();
+                    }
+                    isValid = false;
+                }
+
+                checkAdminValidity();
+                return isValid;
+            }
+
+            if (!phoneInputInitialized) {
+                countrySelect.addEventListener('change', updatePhoneState);
+                nationalInput.addEventListener('input', updatePhoneState);
+                nationalInput.addEventListener('keypress', (e) => {
+                    if (!/[\d]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                    }
+                });
+                nationalInput.addEventListener('paste', (e) => {
+                    const pasted = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                    for (const opt of countrySelect.options) {
+                        const code = opt.value;
+                        if (code && pasted.trim().startsWith(code)) {
+                            countrySelect.value = code;
+                            setTimeout(() => {
+                                nationalInput.value = pasted.trim().substring(code.length).replace(/\D/g, '');
+                                updatePhoneState();
+                            }, 0);
+                            return;
+                        }
+                    }
+                });
+                phoneInputInitialized = true;
+            }
+
+            updatePhoneState();
+        }
+
+        // Toggle password view
+        function togglePassVisibility(id) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Copy text helper with visual tick confirmation (replaces icon with check and reverts)
+        function copyText(elementId, btn) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const text = (el.value !== undefined ? el.value : el.textContent).trim();
+            navigator.clipboard.writeText(text).then(() => {
+                if (btn) {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>';
+                    btn.classList.add('!bg-emerald-500/20', '!border-emerald-500/40');
+                    lucide.createIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('!bg-emerald-500/20', '!border-emerald-500/40');
+                        lucide.createIcons();
+                    }, 2000);
+                }
+            });
+        }
+
+        // Modal Dialog System (replaces default alert & prompt)
+        let modalConfirmCallback = null;
+
+        function showModal({
+            title = 'Action Required',
+            message = '',
+            type = 'warning',
+            confirmText = 'Understood',
+            showCancel = false,
+            cancelText = 'Cancel',
+            isPrompt = false,
+            promptValue = '',
+            onConfirm = null
+        }) {
+            const modal = document.getElementById('systemModal');
+            const iconContainer = document.getElementById('modalIconContainer');
+            const icon = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+            const promptContainer = document.getElementById('modalPromptContainer');
+            const promptInput = document.getElementById('modalPromptInput');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            confirmBtn.textContent = confirmText;
+            cancelBtn.textContent = cancelText;
+
+            if (type === 'error') {
+                iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/20 text-rose-400';
+                icon.setAttribute('data-lucide', 'alert-circle');
+            } else if (type === 'success') {
+                iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-400';
+                icon.setAttribute('data-lucide', 'check-circle-2');
+            } else if (type === 'info') {
+                iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/20 text-blue-400';
+                icon.setAttribute('data-lucide', 'info');
+            } else {
+                iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-400';
+                icon.setAttribute('data-lucide', 'alert-triangle');
+            }
+
+            if (showCancel) {
+                cancelBtn.classList.remove('hidden');
+            } else {
+                cancelBtn.classList.add('hidden');
+            }
+
+            if (isPrompt) {
+                promptContainer.classList.remove('hidden');
+                promptInput.value = promptValue;
+                setTimeout(() => promptInput.focus(), 60);
+            } else {
+                promptContainer.classList.add('hidden');
+            }
+
+            modalConfirmCallback = onConfirm;
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('systemModal')?.classList.add('hidden');
+            modalConfirmCallback = null;
+        }
+
+        function confirmModal() {
+            const inputVal = document.getElementById('modalPromptInput')?.value || '';
+            const cb = modalConfirmCallback;
+            closeModal();
+            if (typeof cb === 'function') {
+                cb(inputVal);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Enter') {
+                const modal = document.getElementById('systemModal');
+                if (modal && !modal.classList.contains('hidden') && e.target.id === 'modalPromptInput') {
+                    confirmModal();
+                }
+            }
+        });
+
+        document.getElementById('systemModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'systemModal') closeModal();
+        });
+
+        // 7. Final Deployment Submission
+        async function submitDeployment() {
+            const deployBtn = document.getElementById('deployBtn');
+            const errBanner = document.getElementById('deployErrorBanner');
+            const errText = document.getElementById('deployErrorText');
+
+            errBanner.classList.add('hidden');
+            deployBtn.disabled = true;
+            deployBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Deploying & Initializing…</span>';
+            lucide.createIcons();
+
+            const form = document.getElementById('setupWizardForm');
+            const formData = new FormData(form);
+            const currentCsrf = document.getElementById('csrf_token')?.value || '';
+
+            try {
+                const res = await fetch('/setup/install', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-Token': currentCsrf }
+                });
+                const data = await res.json();
+
+                if (data.csrf_token || data.new_csrf_token) {
+                    const csrfInput = document.getElementById('csrf_token');
+                    if (csrfInput) csrfInput.value = data.csrf_token || data.new_csrf_token;
+                }
+
+                if (data.success) {
+                    deployBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>Deployment Complete!</span>';
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/admin';
+                    }, 800);
+                } else {
+                    errText.textContent = data.error || 'Failed to complete deployment.';
+                    errBanner.classList.remove('hidden');
+                    deployBtn.disabled = false;
+                    deployBtn.innerHTML = '<i data-lucide="rocket" class="w-5 h-5"></i><span>Retry Deployment</span>';
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                errText.textContent = 'Server request failed: ' + err.message;
+                errBanner.classList.remove('hidden');
+                deployBtn.disabled = false;
+                deployBtn.innerHTML = '<i data-lucide="rocket" class="w-5 h-5"></i><span>Retry Deployment</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // Handle browser Back / Forward buttons
+        window.addEventListener('popstate', (e) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const stepParam = urlParams.get('step');
+            if (stepParam) {
+                const stepNum = isNaN(stepParam) ? slugToStep[stepParam.toLowerCase()] : parseInt(stepParam, 10);
+                if (stepNum && stepNum >= 1 && stepNum <= totalSteps) {
+                    goToStep(stepNum, false);
+                    return;
+                }
+            }
+            goToStep(1, false);
+        });
+
+        // Initialize state on load
+        document.addEventListener('DOMContentLoaded', () => {
+            goToStep(currentStep, false);
+
+            checkBrandingValidity();
+            checkAdminValidity();
+
+            if (completedSteps.database) {
+                dbTestPassed = true;
+                const dbBtn = document.getElementById('dbNextBtn');
+                if (dbBtn) dbBtn.disabled = false;
+                const dbStatus = document.getElementById('dbTestStatus');
+                if (dbStatus) dbStatus.innerHTML = '<span class="text-emerald-400 font-semibold">✓ Database verified in database</span>';
+            }
+            if (completedSteps.email) {
+                emailTestPassed = true;
+                const emailBtn = document.getElementById('emailNextBtn');
+                if (emailBtn) emailBtn.disabled = false;
+                const emailStatus = document.getElementById('emailTestStatus');
+                if (emailStatus) emailStatus.innerHTML = '<span class="text-emerald-400 font-semibold">✓ SMTP verified in database</span>';
+            }
+            if (completedSteps.google) {
+                googleTestPassed = true;
+                const gBtn = document.getElementById('googleNextBtn');
+                if (gBtn) gBtn.disabled = false;
+                const gStatus = document.getElementById('googleTestStatus');
+                if (gStatus) gStatus.innerHTML = '<span class="text-emerald-400 font-semibold">✓ Google SSO verified in database</span>';
+            }
+
+            initAdminPhoneInput();
+            syncGoogleLinkState();
+            updateReviewSummary();
+            if (currentStep === 6) {
+                initGoogleOneTapInSetup();
+            }
+
+            // Ensure URL parameter matches current step if not present
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('step')) {
+                const slug = stepSlugs[currentStep];
+                window.history.replaceState({ step: currentStep, slug: slug }, '', window.location.pathname + '?step=' + slug);
+            }
+
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Join Requests | {{ society.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    <div class="flex items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/committee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Pending Join Requests</h1>
+            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Review and approve resident access</p>
+        </div>
+    </div>
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
+    </div>
+    {% endif %}
+    {% if flash.error %}
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <span>{{ flash.error }}</span>
+    </div>
+    {% endif %}
+
+    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-surface-200/80">
+                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                    <tr>
+                        <th class="py-3.5 px-4 font-semibold">Resident Name</th>
+                        <th class="py-3.5 px-4 font-semibold">Requested Unit</th>
+                        <th class="py-3.5 px-4 font-semibold">Contact Email & Phone</th>
+                        <th class="py-3.5 px-4 font-semibold">Requested Role</th>
+                        <th class="py-3.5 px-4 font-semibold">Date Requested</th>
+                        <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for req in requests %}
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="py-3.5 px-4 font-medium text-white">
+                            {{ req.user_name }}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-brand-300">
+                            {{ req.wing }}-{{ req.flat_no }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <p class="text-white">{{ req.user_phone ?: '-' }}</p>
+                            <p class="text-surface-200/50">{{ req.user_email }}</p>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-surface-200 border border-white/10 capitalize">
+                                {{ req.role }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-surface-200/50 font-mono">
+                            {{ req.created_at|date('M d, Y H:i') }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center gap-2">
+                                <form action="/committee/requests/{{ req.id }}/approve" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                        <span>Approve</span>
+                                    </button>
+                                </form>
+                                <form action="/committee/requests/{{ req.id }}/reject" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        <span>Reject</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-surface-200/50">
+                            <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60"></i>
+                            <p class="font-medium text-white">All caught up!</p>
+                            <p class="text-xs mt-1">There are no pending join requests for {{ society.name }}.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "layouts/base.html.twig" %}
+
+{% block title %}Join {{ society.name }} | SocietyApp{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-16 px-4 flex items-center justify-center">
+    <div class="max-w-xl w-full">
+
+        <!-- Society Hero Card -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-500/25 mb-4">
+                <i data-lucide="building-2" class="w-8 h-8"></i>
+            </div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 mb-2">
+                Invitation Code: {{ society.society_code }}
+            </span>
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">{{ society.name }}</h1>
+            <p class="text-sm text-surface-200/60 mt-1">
+                {{ society.address ? society.address ~ ', ' : '' }}{{ society.city }}
+            </p>
+        </div>
+
+        {% if flash.error %}
+        <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            <span>{{ flash.error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="glass-panel rounded-2xl p-6 sm:p-8 border border-white/10 bg-surface-900/60">
+            {% if user %}
+            <!-- Form for Logged In User -->
+            <form action="/join/{{ society.society_code }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+                <div class="mb-5 pb-4 border-b border-white/5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-sm text-white">
+                        {{ user.name|first|upper }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-white">Joining as {{ user.name }}</p>
+                        <p class="text-xs text-surface-200/50">{{ user.email }}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Select Your Unit / Flat <span class="text-brand-400">*</span></label>
+                        <select name="flat_id" required class="input-glass w-full text-sm font-mono">
+                            <option value="">-- Choose Flat --</option>
+                            {% for f in flats %}
+                            <option value="{{ f.id }}">
+                                Flat {{ f.wing }}-{{ f.flat_no }} ({{ f.flat_type }}, Floor {{ f.floor ?: '-' }}, {{ f.area_sqft }} sqft)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Are you the Flat Owner or Tenant?</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/5 cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="role" value="owner" checked class="text-brand-500 focus:ring-0">
+                                <span class="text-xs font-medium text-white">Owner</span>
+                            </label>
+                            <label class="p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/5 cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="role" value="tenant" class="text-brand-500 focus:ring-0">
+                                <span class="text-xs font-medium text-white">Tenant</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary w-full !py-3 text-sm font-semibold flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>Send Join Request to Committee</span>
+                </button>
+            </form>
+            {% else %}
+            <!-- Call to Action for Non-Logged In User -->
+            <div class="text-center py-4">
+                <p class="text-sm text-surface-200/80 mb-6">You have been invited to join <b class="text-white">{{ society.name }}</b> on SocietyApp. Please log in or create an account to select your flat.</p>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <a href="/auth/register?return_url=/join/{{ society.society_code }}" class="btn-primary !py-2.5 !px-6 text-sm font-semibold">
+                        Create Account
+                    </a>
+                    <a href="/auth/login?return_url=/join/{{ society.society_code }}" class="px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-semibold text-white">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-6 text-center text-xs text-surface-200/40">
+            &copy; 2026 SocietyApp Digital Platform
+        </div>
+    </div>
+</div>
+{% endblock %}

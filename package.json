@@ -24,6 +24,8 @@
   },
   "homepage": "https://github.com/mahankals/societyapp#readme",
   "devDependencies": {
+    "@parcel/watcher-linux-x64-glibc": "^2.6.0",
+    "puppeteer-core": "^25.12.0",
     "tailwindcss": "^4.2.2"
   },
   "dependencies": {

@@ -13,12 +13,16 @@ class Session {
 
         $config = require __DIR__ . '/../../config/session.php';
 
+        $isSecure = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+
         session_name($config['name']);
         session_set_cookie_params([
             'lifetime' => $config['lifetime'],
             'path' => '/',
             'domain' => '',
-            'secure' => isset($_SERVER['HTTPS']),
+            'secure' => $isSecure,
             'httponly' => true,
             'samesite' => 'Lax'
         ]);
@@ -30,7 +34,6 @@ class Session {
         self::$started = true;
 
         if (!isset($_SESSION['initiated'])) {
-            session_regenerate_id(true);
             $_SESSION['initiated'] = true;
             $_SESSION['created_at'] = time();
         }

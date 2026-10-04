@@ -1,7 +1,7 @@
 {
-    "name": "SocietyApp",
-    "short_name": "SocietyApp",
-    "description": "The premium digital platform for modern residential communities.",
+    "name": "Society App",
+    "short_name": "Society App",
+    "description": "Test description",
     "start_url": "/auth/login",
     "display": "standalone",
     "background_color": "#09090b",
@@ -10,13 +10,13 @@
     "scope": "/",
     "icons": [
         {
-            "src": "/assets/icons/logo.png",
+            "src": "/uploads/branding/app-logo.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/assets/icons/logo.png",
+            "src": "/uploads/branding/app-logo.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
@@ -38,7 +38,10 @@
             "label": "Dashboard on Mobile"
         }
     ],
-    "categories": ["business", "productivity"],
+    "categories": [
+        "business",
+        "productivity"
+    ],
     "lang": "en",
     "dir": "ltr",
     "prefer_related_applications": false

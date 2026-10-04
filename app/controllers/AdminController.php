@@ -31,12 +31,11 @@ class AdminController
             FROM maintenance_bills
         ");
         
-        $thisMonth = date('Y-m');
         $monthlyRevenue = Database::fetchOne("
             SELECT COALESCE(SUM(amount), 0) as total 
             FROM maintenance_bills 
-            WHERE status = 'paid' AND DATE_FORMAT(paid_date, '%Y-%m') = ?
-        ", [$thisMonth]);
+            WHERE status = 'paid' AND DATE_FORMAT(paid_at, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+        ");
         
         $membersByRole = Database::fetchAll("
             SELECT role, COUNT(*) as count FROM users GROUP BY role

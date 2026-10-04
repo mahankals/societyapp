@@ -3,179 +3,223 @@
 {% block title %}Dashboard | SocietyApp{% endblock %}
 
 {% block content %}
-{% if profileComplete < 100 %}
-<div class="mb-6 glass-panel rounded-2xl p-4 border border-amber-500/30 bg-amber-500/10">
-    <div class="flex items-center gap-3 mb-3">
-        <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400"></i>
-        <h3 class="text-amber-400 font-semibold">Complete Your Profile</h3>
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
     </div>
-    <div class="w-full bg-white/10 rounded-full h-2 mb-2">
-        <div class="bg-amber-500 h-2 rounded-full" style="width: {{ profileComplete }}%"></div>
+    {% endif %}
+    {% if flash.info %}
+    <div class="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm flex items-center gap-2">
+        <i data-lucide="info" class="w-4 h-4"></i>
+        <span>{{ flash.info }}</span>
     </div>
-    <p class="text-sm text-surface-200/60 mb-3">{{ profileComplete }}% complete</p>
-    <a href="/tenant/profile" class="text-sm text-amber-400 hover:text-amber-300 font-medium">Complete Now →</a>
-</div>
-{% endif %}
+    {% endif %}
 
-{% if unpaidBillsCount > 0 %}
-<div class="mb-6 glass-panel rounded-2xl p-4 border border-red-500/30 bg-red-500/10">
-    <div class="flex items-center justify-between">
-        <div>
-            <p class="text-sm text-surface-200/60">Unpaid Bills</p>
-            <p class="text-2xl font-bold text-white">₹{{ unpaidBillsTotal|number_format(2) }}</p>
-            <p class="text-sm text-red-400">{{ unpaidBillsCount }} pending bill{{ unpaidBillsCount > 1 ? 's' : '' }}</p>
-        </div>
-        <a href="/tenant/bills" class="btn-primary !py-2 !px-4">Pay Now</a>
-    </div>
-</div>
-{% endif %}
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-    <a href="/tenant/bills" class="glass-panel rounded-xl p-4 text-center">
-        <p class="text-2xl font-bold text-white">{{ unpaidBillsCount }}</p>
-        <p class="text-xs text-surface-200/60">Pending Bills</p>
-    </a>
-    <a href="/tenant/requests" class="glass-panel rounded-xl p-4 text-center">
-        <p class="text-2xl font-bold text-white">{{ pendingRequestsCount }}</p>
-        <p class="text-xs text-surface-200/60">Open Requests</p>
-    </a>
-    <a href="/tenant/notifications" class="glass-panel rounded-xl p-4 text-center">
-        <p class="text-2xl font-bold text-white">{{ unreadNotifications }}</p>
-        <p class="text-xs text-surface-200/60">Notifications</p>
-    </a>
-    <a href="/tenant/profile" class="glass-panel rounded-xl p-4 text-center">
-        <p class="text-2xl font-bold text-white">{{ profileComplete }}%</p>
-        <p class="text-xs text-surface-200/60">Profile</p>
-    </a>
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <a href="/tenant/bills" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                <i data-lucide="receipt" class="w-6 h-6 text-blue-400"></i>
-            </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Maintenance Bills</h3>
-        <p class="text-sm text-surface-200/40">View and pay your monthly bills</p>
-    </a>
-
-    <a href="/tenant/documents" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                <i data-lucide="file-text" class="w-6 h-6 text-purple-400"></i>
-            </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">My Documents</h3>
-        <p class="text-sm text-surface-200/40">Upload and manage documents</p>
-    </a>
-
-    <a href="/tenant/requests" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                <i data-lucide="wrench" class="w-6 h-6 text-orange-400"></i>
-            </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Service Requests</h3>
-        <p class="text-sm text-surface-200/40">Submit and track requests</p>
-    </a>
-
-    <a href="/tenant/notifications" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center relative">
-                <i data-lucide="bell" class="w-6 h-6 text-green-400"></i>
-                {% if unreadNotifications > 0 %}
-                <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">{{ unreadNotifications }}</span>
+    <!-- Welcome & Profile Banner (Society Mitra Member Header) -->
+    <div class="mb-6 glass-panel rounded-2xl p-5 sm:p-6 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="relative">
+                {% if profile.profile_photo %}
+                <img src="{{ profile.profile_photo }}" alt="{{ user.name }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-brand-500/30">
+                {% else %}
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-brand-500/25">
+                    {{ user.name|first|upper }}
+                </div>
                 {% endif %}
             </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Notifications</h3>
-        <p class="text-sm text-surface-200/40">View society announcements</p>
-    </a>
-
-    <a href="/tenant/profile" class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-                <i data-lucide="user" class="w-6 h-6 text-cyan-400"></i>
-            </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">My Profile</h3>
-        <p class="text-sm text-surface-200/40">Update your personal info</p>
-    </a>
-
-    <div class="glass-panel rounded-2xl p-6 hover:bg-white/5 transition-all group">
-        <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
-                <i data-lucide="calendar" class="w-6 h-6 text-pink-400"></i>
-            </div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/20 group-hover:text-brand-400 transition-colors"></i>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Events</h3>
-        <p class="text-sm text-surface-200/40">Upcoming society events</p>
-    </div>
-</div>
-
-{% if recentBills or recentRequests %}
-<div class="mt-8">
-    <h2 class="text-xl font-bold text-white mb-4">Recent Activity</h2>
-    
-    {% if recentBills %}
-    <div class="glass-panel rounded-2xl p-4 mb-4">
-        <h3 class="font-semibold text-white mb-3 flex items-center gap-2">
-            <i data-lucide="receipt" class="w-4 h-4 text-blue-400"></i>
-            Recent Bills
-        </h3>
-        {% for bill in recentBills %}
-        <div class="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
             <div>
-                <p class="text-white text-sm">{{ bill.description }}</p>
-                <p class="text-surface-200/40 text-xs">{{ bill.created_at|date('M d, Y') }}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-white font-medium">₹{{ bill.amount|number_format(2) }}</p>
-                <span class="text-xs px-2 py-0.5 rounded-full {% if bill.status == 'paid' %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
-                    {{ bill.status }}
-                </span>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-white">{{ user.name }}</h1>
+                    {% if isCommittee %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                        Committee
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-surface-200/50 mt-0.5">{{ user.email }} &middot; {{ user.phone ?: 'No phone added' }}</p>
+                <p class="text-[11px] text-surface-200/40 mt-1">Updated at {{ 'now'|date('h:i A, d M Y') }}</p>
             </div>
         </div>
-        {% endfor %}
+
+        <div class="flex flex-wrap items-center gap-2">
+            {% if isCommittee %}
+            <a href="/committee" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-2 shadow-lg shadow-brand-500/20">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+                <span>Committee Dashboard</span>
+            </a>
+            {% endif %}
+            <a href="/tenant/profile" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white flex items-center gap-1.5 transition-colors">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-surface-200/60"></i>
+                <span>Edit Profile</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- My Flats & Societies (Society Mitra Multi-Flat Card) -->
+    <div class="mb-6 glass-panel rounded-2xl p-6 border border-white/10">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="home" class="w-4 h-4 text-brand-400"></i>
+                <span>My Associated Flats & Societies</span>
+            </h2>
+            <a href="/tenant/link-flat" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Link Flat</span>
+            </a>
+        </div>
+
+        {% if myFlats|length > 0 %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {% for flat in myFlats %}
+            <div class="p-4 rounded-xl border {{ flat.status == 'active' ? 'border-white/10 bg-white/[0.02]' : 'border-amber-500/20 bg-amber-500/5' }} flex items-start justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-mono font-bold text-white text-base">
+                            {{ flat.wing ? flat.wing ~ '-' : '' }}{{ flat.flat_no ?: 'Unit Pending' }}
+                        </span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full {{ flat.status == 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300' }}">
+                            {{ flat.status|capitalize }}
+                        </span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-surface-200/70 capitalize">
+                            {{ flat.role }}
+                        </span>
+                    </div>
+                    <p class="text-xs font-medium text-surface-200/80">{{ flat.society_name }}</p>
+                    <p class="text-[11px] text-surface-200/50 mt-0.5">{{ flat.area_sqft ? flat.area_sqft ~ ' sqft' : '' }} &middot; Code: <span class="font-mono text-brand-300">{{ flat.society_code }}</span></p>
+                </div>
+                <div class="text-right">
+                    <a href="/tenant/bills" class="inline-flex items-center gap-1 text-xs text-brand-400 hover:underline mt-2">
+                        <span>Dues</span>
+                        <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State matching Society Mitra -->
+        <div class="p-6 rounded-xl border border-dashed border-white/10 text-center">
+            <i data-lucide="building" class="w-8 h-8 text-surface-200/30 mx-auto mb-2"></i>
+            <p class="text-sm font-medium text-white mb-1">Currently you are not mapped with any society.</p>
+            <p class="text-xs text-surface-200/50 max-w-md mx-auto mb-4">
+                Contact your society committee member / flat owner to add you, or send a linking request below.
+            </p>
+            <a href="/tenant/link-flat" class="btn-primary !px-5 !py-2 text-xs font-semibold inline-flex items-center gap-2">
+                <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+                <span>Request to Link Flat</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Outstanding Dues Banner (if any) -->
+    {% if unpaidBillsCount > 0 %}
+    <div class="mb-6 glass-panel rounded-2xl p-5 border border-red-500/30 bg-red-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+                <span class="text-xs font-semibold uppercase tracking-wider text-red-400">Outstanding Society Dues</span>
+            </div>
+            <p class="text-3xl font-extrabold text-white font-mono">₹{{ unpaidBillsTotal|number_format(2) }}</p>
+            <p class="text-xs text-surface-200/60 mt-1">{{ unpaidBillsCount }} maintenance bill{{ unpaidBillsCount > 1 ? 's' : '' }} pending payment</p>
+        </div>
+        <a href="/tenant/bills" class="btn-primary !py-2.5 !px-6 text-sm font-semibold flex items-center justify-center gap-2 shrink-0">
+            <i data-lucide="qr-code" class="w-4 h-4"></i>
+            <span>Pay with UPI / QR</span>
+        </a>
     </div>
     {% endif %}
-    
-    {% if recentRequests %}
-    <div class="glass-panel rounded-2xl p-4">
-        <h3 class="font-semibold text-white mb-3 flex items-center gap-2">
-            <i data-lucide="wrench" class="w-4 h-4 text-orange-400"></i>
-            Recent Requests
-        </h3>
-        {% for request in recentRequests %}
-        <div class="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
-            <div>
-                <p class="text-white text-sm">{{ request.category }}</p>
-                <p class="text-surface-200/40 text-xs">{{ request.created_at|date('M d, Y') }}</p>
-            </div>
-            <span class="text-xs px-2 py-0.5 rounded-full 
-                {% if request.status == 'completed' %}bg-green-500/20 text-green-400
-                {% elseif request.status == 'in_progress' %}bg-blue-500/20 text-blue-400
-                {% elseif request.status == 'pending' %}bg-yellow-500/20 text-yellow-400
-                {% else %}bg-red-500/20 text-red-400{% endif %}">
-                {{ request.status|replace({'_': ' '}) }}
-            </span>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
-{% endif %}
-{% endblock %}
 
-{% block scripts %}
-<script>
-    lucide.createIcons();
-</script>
+    <!-- Core App Features Grid (Society Mitra Navigation) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <a href="/tenant/bills" class="glass-panel rounded-xl p-4 text-center hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+            <p class="text-sm font-bold text-white">Bills & Dues</p>
+            <p class="text-[11px] text-surface-200/50 mt-0.5">{{ unpaidBillsCount }} Pending</p>
+        </a>
+
+        <a href="/tenant/receipts" class="glass-panel rounded-xl p-4 text-center hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <i data-lucide="file-check-2" class="w-5 h-5"></i>
+            </div>
+            <p class="text-sm font-bold text-white">Receipts</p>
+            <p class="text-[11px] text-surface-200/50 mt-0.5">Payment Ledger</p>
+        </a>
+
+        <a href="/tenant/directory" class="glass-panel rounded-xl p-4 text-center hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <p class="text-sm font-bold text-white">Directory</p>
+            <p class="text-[11px] text-surface-200/50 mt-0.5">Call & SMS Neighbors</p>
+        </a>
+
+        <a href="/society/contribute" class="glass-panel rounded-xl p-4 text-center hover:bg-white/5 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <p class="text-sm font-bold text-white">Add Society</p>
+            <p class="text-[11px] text-surface-200/50 mt-0.5">Contribute / Register</p>
+        </a>
+    </div>
+
+    <!-- Recent Maintenance Bills & Receipts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Bills -->
+        <div class="glass-panel rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-white">Recent Maintenance Dues</h3>
+                <a href="/tenant/bills" class="text-xs text-brand-400 hover:underline">View All →</a>
+            </div>
+            <div class="divide-y divide-white/5">
+                {% for b in recentBills %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-white">{{ b.title }}</p>
+                        <p class="text-xs text-surface-200/50">{{ b.society_name }} &middot; Due {{ b.due_date|date('M d, Y') }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold font-mono text-white">₹{{ b.amount|number_format(2) }}</p>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full {{ b.status == 'paid' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300' }}">
+                            {{ b.status|capitalize }}
+                        </span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="py-4 text-center text-xs text-surface-200/40">No recent maintenance bills.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Receipts -->
+        <div class="glass-panel rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-white">Recent Payment Receipts</h3>
+                <a href="/tenant/receipts" class="text-xs text-brand-400 hover:underline">View All →</a>
+            </div>
+            <div class="divide-y divide-white/5">
+                {% for r in recentReceipts %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-white font-mono text-brand-300">{{ r.receipt_no }}</p>
+                        <p class="text-xs text-surface-200/50">{{ r.particulars }} &middot; {{ r.payment_date|date('M d, Y') }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold font-mono text-white">₹{{ r.amount|number_format(2) }}</p>
+                        <a href="/tenant/receipts/{{ r.id }}" target="_blank" class="text-[11px] text-brand-400 hover:underline">Print Voucher</a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="py-4 text-center text-xs text-surface-200/40">No receipts issued yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
 {% endblock %}

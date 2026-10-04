@@ -1,0 +1,193 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Committee Dashboard | {{ society.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
+    </div>
+    {% endif %}
+    {% if flash.error %}
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <span>{{ flash.error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Society Header & Banner -->
+    <div class="mb-6 glass-panel rounded-2xl p-6 border border-brand-500/20 bg-gradient-to-br from-brand-950/40 via-surface-900/60 to-surface-950/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                        {{ society.society_code }}
+                    </span>
+                    {% if society.registration_no %}
+                    <span class="text-xs text-surface-200/50">Reg: {{ society.registration_no }}</span>
+                    {% endif %}
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">{{ society.name }}</h1>
+                <p class="text-xs text-surface-200/60 mt-1">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 inline mr-1 text-surface-200/40"></i>
+                    {{ society.address ? society.address ~ ', ' : '' }}{{ society.city }}
+                </p>
+            </div>
+
+            <!-- Quick Action Links -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="copyShareLink()" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white flex items-center gap-2 transition-all">
+                    <i data-lucide="share-2" class="w-4 h-4 text-brand-400"></i>
+                    <span>Share Invite Link</span>
+                </button>
+                <a href="https://api.whatsapp.com/send?text=Join%20our%20society%20on%20SocietyApp:%20{{ shareUrl|url_encode }}" target="_blank" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-xs font-medium text-emerald-300 flex items-center gap-2 transition-all">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    <span>WhatsApp</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <a href="/committee/flats" class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all group">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-surface-200/60">Total Units</span>
+                <i data-lucide="home" class="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform"></i>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ totalFlats }}</p>
+            <p class="text-[11px] text-surface-200/50 mt-1">{{ occupiedFlats }} occupied &middot; {{ totalFlats - occupiedFlats }} vacant</p>
+        </a>
+
+        <a href="/committee/members" class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all group">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-surface-200/60">Residents</span>
+                <i data-lucide="users" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ totalMembers }}</p>
+            <p class="text-[11px] text-emerald-400 mt-1">Active Members</p>
+        </a>
+
+        <a href="/committee/requests" class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all group {{ pendingRequests > 0 ? 'border-amber-500/30 bg-amber-500/5' : '' }}">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-surface-200/60">Join Requests</span>
+                <i data-lucide="user-plus" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ pendingRequests }}</p>
+            <p class="text-[11px] {{ pendingRequests > 0 ? 'text-amber-400 font-semibold' : 'text-surface-200/50' }} mt-1">
+                {{ pendingRequests > 0 ? 'Needs Approval' : 'No Pending' }}
+            </p>
+        </a>
+
+        <div class="glass-panel rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-surface-200/60">Maintenance Collection</span>
+                <i data-lucide="indian-rupee" class="w-4 h-4 text-brand-400"></i>
+            </div>
+            <p class="text-2xl font-bold text-white">₹{{ billsStats.totalCollected|number_format(0) }}</p>
+            <p class="text-[11px] text-rose-400 mt-1">₹{{ billsStats.totalPending|number_format(0) }} pending</p>
+        </div>
+    </div>
+
+    <!-- Navigation Hub Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="/committee/flats" class="glass-panel rounded-2xl p-5 hover:bg-white/5 border border-white/10 transition-all flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <i data-lucide="building" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-white mb-1">Flats Management</h3>
+                <p class="text-xs text-surface-200/60">Add, edit, or delete flats, wings, and floor layouts.</p>
+            </div>
+        </a>
+
+        <a href="/committee/members" class="glass-panel rounded-2xl p-5 hover:bg-white/5 border border-white/10 transition-all flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <i data-lucide="contact-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-white mb-1">Member Directory</h3>
+                <p class="text-xs text-surface-200/60">Assign residents to flats, manage roles and permissions.</p>
+            </div>
+        </a>
+
+        <a href="/committee/requests" class="glass-panel rounded-2xl p-5 hover:bg-white/5 border border-white/10 transition-all flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <i data-lucide="inbox" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-white mb-1">Join Requests</h3>
+                <p class="text-xs text-surface-200/60">Review incoming flat linking requests from residents.</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Pending Requests List (if any) -->
+    {% if recentRequests|length > 0 %}
+    <div class="mb-8 glass-panel rounded-2xl p-6 border border-amber-500/20">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                Pending Join Requests ({{ recentRequests|length }})
+            </h3>
+            <a href="/committee/requests" class="text-xs text-brand-400 hover:text-brand-300">View All →</a>
+        </div>
+        <div class="divide-y divide-white/5">
+            {% for req in recentRequests %}
+            <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium text-white">{{ req.user_name }} &middot; <span class="font-mono text-brand-300">{{ req.wing }}-{{ req.flat_no }}</span></p>
+                    <p class="text-xs text-surface-200/50">{{ req.user_email }} &middot; {{ req.user_phone }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <form action="/committee/requests/{{ req.id }}/approve" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-medium">Approve</button>
+                    </form>
+                    <form action="/committee/requests/{{ req.id }}/reject" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-medium">Reject</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Building Wings & Flats Overview -->
+    <div class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-white">Flats & Occupancy Snapshot</h3>
+            <a href="/committee/flats" class="text-xs text-brand-400 hover:text-brand-300">Manage Flats →</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            {% for flat in flats %}
+            <div class="p-3 rounded-xl border {{ flat.member_name ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-white/5 bg-white/[0.02]' }}">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold font-mono text-white">{{ flat.wing }}-{{ flat.flat_no }}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded {{ flat.member_name ? 'bg-emerald-500/20 text-emerald-300' : 'bg-surface-700/50 text-surface-300' }}">
+                        {{ flat.member_name ? 'Occupied' : 'Vacant' }}
+                    </span>
+                </div>
+                <p class="text-[11px] text-surface-200/60 truncate">{{ flat.member_name ?: 'No resident assigned' }}</p>
+                <p class="text-[10px] text-surface-200/40 mt-0.5">{{ flat.area_sqft }} sqft &middot; {{ flat.flat_type }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function copyShareLink() {
+        const url = "{{ shareUrl }}";
+        navigator.clipboard.writeText(url).then(() => {
+            alert("Society invitation link copied to clipboard!\n\n" + url);
+        });
+    }
+</script>
+{% endblock %}

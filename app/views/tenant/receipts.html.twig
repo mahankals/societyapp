@@ -1,0 +1,84 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Payment Receipts | SocietyApp{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    <div class="flex items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Payment Receipts</h1>
+            <p class="text-xs text-surface-200/60">Official maintenance receipts and transaction ledger</p>
+        </div>
+        <a href="/tenant/bills" class="btn-primary !px-4 !py-2 text-xs font-semibold">View Bills & Dues</a>
+    </div>
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
+    </div>
+    {% endif %}
+
+    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-surface-200/80">
+                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                    <tr>
+                        <th class="py-3.5 px-4 font-semibold">Receipt No</th>
+                        <th class="py-3.5 px-4 font-semibold">Society & Flat</th>
+                        <th class="py-3.5 px-4 font-semibold">Particulars</th>
+                        <th class="py-3.5 px-4 font-semibold">Payment Date</th>
+                        <th class="py-3.5 px-4 font-semibold">Method / Ref</th>
+                        <th class="py-3.5 px-4 font-semibold">Amount</th>
+                        <th class="py-3.5 px-4 text-right font-semibold">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for r in receipts %}
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="py-3.5 px-4 font-mono font-bold text-brand-300">
+                            {{ r.receipt_no }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <p class="text-white font-medium">{{ r.society_name }}</p>
+                            <p class="text-xs text-surface-200/50 font-mono">{{ r.wing ? r.wing ~ '-' : '' }}{{ r.flat_no }}</p>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-surface-200/80">
+                            {{ r.particulars }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs font-mono text-surface-200/60">
+                            {{ r.payment_date|date('M d, Y') }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <span class="uppercase font-semibold text-white">{{ r.payment_method }}</span>
+                            {% if r.transaction_ref %}
+                            <p class="text-[11px] text-surface-200/40 font-mono">{{ r.transaction_ref }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-white text-base">
+                            ₹{{ r.amount|number_format(2) }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="/tenant/receipts/{{ r.id }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-white border border-white/10 transition-colors">
+                                <i data-lucide="printer" class="w-3.5 h-3.5 text-brand-400"></i>
+                                <span>Receipt</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-surface-200/50">
+                            <i data-lucide="receipt" class="w-8 h-8 text-surface-200/30 mx-auto mb-2"></i>
+                            <p class="font-medium text-white">No payment receipts found.</p>
+                            <p class="text-xs mt-1">Receipts are automatically generated when maintenance dues are paid.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

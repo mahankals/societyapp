@@ -1,4 +1,8 @@
 <?php
+if (!defined('ROOT_PATH')) {
+    define('ROOT_PATH', dirname(__DIR__, 2));
+}
+
 /**
  * Auth Helper Functions
  */
@@ -84,8 +88,28 @@ function generateCSRFToken(): string {
     return Session::get('csrf_token');
 }
 
-function verifyCSRFToken(string $token): bool {
-    return Session::has('csrf_token') && hash_equals(Session::get('csrf_token'), $token);
+function verifyCSRFToken(?string $token = null): bool {
+    if ($token === null || $token === '') {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    }
+    return !empty($token) && Session::has('csrf_token') && hash_equals((string)Session::get('csrf_token'), (string)$token);
+}
+
+function isCommitteeMember(?int $userId = null): bool {
+    if (!$userId && isLoggedIn()) {
+        $userId = (int)Session::get('user_id');
+    }
+    if (!$userId) return false;
+    if (isAdmin()) return true;
+    try {
+        $mem = Database::fetchOne("
+            SELECT id FROM society_members 
+            WHERE user_id = ? AND role IN ('admin', 'secretary', 'treasurer', 'president', 'committee') AND status = 'active'
+        ", [$userId]);
+        return (bool)$mem;
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function view(string $name, array $data = []): string {
@@ -97,9 +121,319 @@ function view(string $name, array $data = []): string {
     ]);
 
     $data['appConfig'] = $config;
+
+    // Dynamic Application Branding (Logo, Favicon, Name, Description)
+    $brandingVersion = getSetting('branding_updated_at', '1');
+    $appName = getSetting('app_name', getenv('APP_NAME') ?: ($config['app']['name'] ?? 'SocietyApp'));
+    $appLogoRaw = getSetting('app_logo', '');
+    $appFaviconRaw = getSetting('app_favicon', $appLogoRaw ?: '/assets/icons/logo.svg');
+
+    $appLogo = !empty($appLogoRaw) ? ($appLogoRaw . '?v=' . $brandingVersion) : '/assets/icons/logo.svg';
+    $appFavicon = !empty($appFaviconRaw) ? ($appFaviconRaw . '?v=' . $brandingVersion) : '/assets/icons/logo.svg';
+    $appDesc = getSetting('app_desc', 'Cooperative Housing Society Management & Resident Portal');
+
+    $data['appName'] = $data['appName'] ?? $appName;
+    $data['appLogo'] = $data['appLogo'] ?? $appLogo;
+    $data['appFavicon'] = $data['appFavicon'] ?? $appFavicon;
+    $data['appDesc'] = $data['appDesc'] ?? $appDesc;
+
+    if (isLoggedIn()) {
+        if (!isset($data['user'])) {
+            $data['user'] = getUser();
+        }
+        if (!isset($data['profile'])) {
+            $data['profile'] = getUserProfile();
+        }
+        if (!isset($data['isCommittee'])) {
+            $data['isCommittee'] = isCommitteeMember();
+        }
+    }
+    if (!isset($data['currentRoute'])) {
+        $data['currentRoute'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+    }
+
     return $twig->render($name . '.html.twig', $data);
+}
+
+
+function isAppSetupCompleted(): bool {
+    try {
+        $db = Database::getInstance();
+
+        // 1. Check if required tables exist
+        $tables = $db->query("SHOW TABLES LIKE 'settings'")->fetch();
+        if (!$tables) return false;
+
+        $userTable = $db->query("SHOW TABLES LIKE 'users'")->fetch();
+        if (!$userTable) return false;
+
+        $socTable = $db->query("SHOW TABLES LIKE 'societies'")->fetch();
+        if (!$socTable) return false;
+
+        // 2. Check active admin user exists in database
+        $admin = $db->query("SELECT id, email FROM users WHERE role = 'admin' AND is_active = 1 LIMIT 1")->fetch();
+        if (!$admin || empty(trim((string)($admin['email'] ?? '')))) {
+            return false;
+        }
+
+        // 3. Check Google SSO setting exists and is non-empty in database
+        $sso = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'google_client_id' LIMIT 1")->fetch();
+        if (!$sso || empty(trim((string)($sso['setting_value'] ?? '')))) {
+            return false;
+        }
+
+        // 4. Check Email setting exists and is non-empty in database
+        $email = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'mail_host' LIMIT 1")->fetch();
+        if (!$email || empty(trim((string)($email['setting_value'] ?? '')))) {
+            return false;
+        }
+
+        // 5. Check if setup was actually sealed/completed in step 7
+        $setupDone = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'setup_completed' LIMIT 1")->fetch();
+        if ($setupDone && ($setupDone['setting_value'] === '1' || $setupDone['setting_value'] === 'true')) {
+            return true;
+        }
+
+        // If step 7 was reached and sealed, auto-heal setup_completed in settings
+        $setupStep = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'setup_step' LIMIT 1")->fetch();
+        if ($setupStep && $setupStep['setting_value'] === '7') {
+            $db->exec("INSERT INTO settings (setting_key, setting_value, setting_group) VALUES ('setup_completed', '1', 'system') ON DUPLICATE KEY UPDATE setting_value = '1'");
+            return true;
+        }
+
+        return false;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Application encryption key & AES-256 secret vault
+ */
+function getAppEncryptionKey(): string {
+    $key = getenv('APP_KEY');
+    if (!empty($key)) {
+        return $key;
+    }
+    $envFile = ROOT_PATH . '/.env';
+    if (file_exists($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), 'APP_KEY=')) {
+                $val = trim(substr(trim($line), 8), " \t\n\r\0\x0B\"'");
+                if (!empty($val)) {
+                    putenv("APP_KEY={$val}");
+                    $_ENV['APP_KEY'] = $val;
+                    return $val;
+                }
+            }
+        }
+    }
+    // Generate secure 32-byte hex key if not found
+    $newKey = bin2hex(random_bytes(32));
+    if (file_exists($envFile)) {
+        file_put_contents($envFile, "\nAPP_KEY=\"{$newKey}\"\n", FILE_APPEND);
+    }
+    putenv("APP_KEY={$newKey}");
+    $_ENV['APP_KEY'] = $newKey;
+    return $newKey;
+}
+
+function encryptSecret(?string $plain): string {
+    if ($plain === null || $plain === '') {
+        return '';
+    }
+    // If already encrypted, return as is
+    if (str_starts_with($plain, 'enc:')) {
+        return $plain;
+    }
+    $key = hash('sha256', getAppEncryptionKey(), true);
+    $iv = random_bytes(16);
+    $cipherText = openssl_encrypt($plain, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+    if ($cipherText === false) {
+        return $plain;
+    }
+    return 'enc:' . base64_encode($iv . $cipherText);
+}
+
+function decryptSecret(?string $cipher): string {
+    if ($cipher === null || $cipher === '') {
+        return '';
+    }
+    if (!str_starts_with($cipher, 'enc:')) {
+        // Plaintext fallback (legacy or pre-encryption data)
+        return $cipher;
+    }
+    $raw = base64_decode(substr($cipher, 4));
+    if ($raw === false || strlen($raw) < 17) {
+        return '';
+    }
+    $iv = substr($raw, 0, 16);
+    $cipherText = substr($raw, 16);
+    $key = hash('sha256', getAppEncryptionKey(), true);
+    $decrypted = openssl_decrypt($cipherText, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+    return $decrypted !== false ? $decrypted : '';
+}
+
+const ENCRYPTED_SETTING_KEYS = ['google_client_secret', 'mail_password', 'db_pass'];
+
+function getSetting(string $key, ?string $default = null): ?string {
+    try {
+        $db = Database::getInstance();
+        $hasSettings = (bool)$db->query("SHOW TABLES LIKE 'settings'")->fetch();
+        if ($hasSettings) {
+            // Database is the ONLY trusted source of settings
+            $row = Database::fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
+            if ($row) {
+                if ($row['setting_value'] !== null && $row['setting_value'] !== '') {
+                    $val = $row['setting_value'];
+                    if (in_array($key, ENCRYPTED_SETTING_KEYS, true)) {
+                        return decryptSecret($val);
+                    }
+                    return $val;
+                }
+                return $default;
+            }
+            // Key does not exist in database settings table -> return default (NEVER fallback to .env)
+            return $default;
+        }
+    } catch (Throwable $e) {
+        // Fallback to env only when database is unavailable (e.g. initial prefill in setup)
+    }
+
+    $envVal = getenv(strtoupper($key));
+    if ($envVal !== false && $envVal !== '') {
+        if (in_array($key, ENCRYPTED_SETTING_KEYS, true)) {
+            return decryptSecret($envVal);
+        }
+        return $envVal;
+    }
+    return $default;
+}
+
+function setSetting(string $key, ?string $value, string $group = 'general'): void {
+    try {
+        if ($value !== null && $value !== '' && in_array($key, ENCRYPTED_SETTING_KEYS, true)) {
+            $value = encryptSecret($value);
+        }
+        $existing = Database::fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+        if ($existing) {
+            Database::update('settings', [
+                'setting_value' => $value,
+                'setting_group' => $group,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], 'id = ?', [$existing['id']]);
+        } else {
+            Database::insert('settings', [
+                'setting_key' => $key,
+                'setting_value' => $value,
+                'setting_group' => $group,
+            ]);
+        }
+    } catch (Throwable $e) {
+        error_log("Failed to save setting {$key}: " . $e->getMessage());
+    }
 }
 
 function asset(string $path): string {
     return '/assets/' . ltrim($path, '/');
 }
+
+/**
+ * Detect runtime environment: 'ddev', 'docker', 'local', or 'production' (shared hosting)
+ */
+function detectEnvironment(): string {
+    if (!empty(getenv('IS_DDEV_PROJECT')) || !empty(getenv('DDEV_PROJECT'))) {
+        return 'ddev';
+    }
+    if (file_exists('/.dockerenv') || !empty(getenv('DOCKER_CONTAINER'))) {
+        return 'docker';
+    }
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $cleanHost = parse_url('http://' . $host, PHP_URL_HOST) ?? 'localhost';
+    if (in_array($cleanHost, ['localhost', '127.0.0.1', '::1']) || str_ends_with($cleanHost, '.local') || str_ends_with($cleanHost, '.test')) {
+        return 'local';
+    }
+    return 'production';
+}
+
+/**
+ * Returns intelligent defaults for DB, Mail, and URL depending on detected runtime environment
+ */
+function getEnvironmentDefaults(): array {
+    $env = detectEnvironment();
+    $host = $_SERVER['HTTP_HOST'] ?? 'societyapp.ddev.site';
+    $domain = preg_replace('/:\d+$/', '', $host);
+    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
+    $defaultMailFrom = 'no-reply@' . $domain;
+
+    switch ($env) {
+        case 'ddev':
+            return [
+                'environment' => 'ddev',
+                'app_url' => getenv('DDEV_PRIMARY_URL') ?: ($scheme . $host),
+                'db_host' => 'db',
+                'db_port' => '3306',
+                'db_name' => 'db',
+                'db_user' => 'db',
+                'db_pass' => 'db',
+                'mail_host' => '127.0.0.1',
+                'mail_port' => '1025',
+                'mail_from_address' => $defaultMailFrom,
+                'mail_from_name' => 'Society App Notifications',
+            ];
+
+        case 'docker':
+            // Standard / Generic Docker Compose
+            $dbHost = getenv('DB_HOST') ?: getenv('MYSQL_HOST') ?: 'db';
+            $mailHost = getenv('MAIL_HOST') ?: (gethostbyname('mailpit') !== 'mailpit' ? 'mailpit' : (gethostbyname('mailhog') !== 'mailhog' ? 'mailhog' : '127.0.0.1'));
+            return [
+                'environment' => 'docker',
+                'app_url' => getenv('APP_URL') ?: ($scheme . $host),
+                'db_host' => $dbHost,
+                'db_port' => (string)(getenv('DB_PORT') ?: 3306),
+                'db_name' => getenv('DB_NAME') ?: getenv('MYSQL_DATABASE') ?: 'societyapp',
+                'db_user' => getenv('DB_USER') ?: getenv('MYSQL_USER') ?: 'root',
+                'db_pass' => getenv('DB_PASS') ?: getenv('MYSQL_PASSWORD') ?: '',
+                'mail_host' => $mailHost,
+                'mail_port' => (string)(getenv('MAIL_PORT') ?: 1025),
+                'mail_from_address' => getenv('MAIL_FROM_ADDRESS') ?: $defaultMailFrom,
+                'mail_from_name' => 'Society App Notifications',
+            ];
+
+        case 'local':
+            // XAMPP, WAMP, native PHP server
+            return [
+                'environment' => 'local',
+                'app_url' => $scheme . $host,
+                'db_host' => '127.0.0.1',
+                'db_port' => '3306',
+                'db_name' => 'societyapp',
+                'db_user' => 'root',
+                'db_pass' => '',
+                'mail_host' => '127.0.0.1',
+                'mail_port' => '1025',
+                'mail_from_address' => $defaultMailFrom,
+                'mail_from_name' => 'Society App Notifications',
+            ];
+
+        case 'production':
+        default:
+            // Shared Hosting (cPanel / Plesk) or Production VPS
+            return [
+                'environment' => 'production',
+                'app_url' => $scheme . $host,
+                'db_host' => 'localhost',
+                'db_port' => '3306',
+                'db_name' => '', // Clean placeholder: requires real cPanel database
+                'db_user' => '', // Clean placeholder: requires real cPanel user
+                'db_pass' => '',
+                'mail_host' => '', // Clean placeholder: requires real SMTP server
+                'mail_port' => '587',
+                'mail_from_address' => '',
+                'mail_from_name' => 'SocietyApp Notifications',
+            ];
+    }
+}
+
+

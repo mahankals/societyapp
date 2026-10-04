@@ -1,0 +1,99 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Resident Directory | {{ society.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    <!-- Header & Search -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Resident Directory</h1>
+            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Connect with your neighbors</p>
+        </div>
+
+        <form action="/tenant/directory" method="GET" class="relative max-w-sm w-full">
+            <i data-lucide="search" class="w-4 h-4 text-surface-200/40 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by name, flat, phone..." class="input-glass w-full !pl-10 !py-2 text-xs">
+            {% if search %}
+            <a href="/tenant/directory" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-surface-200/40 hover:text-white">✕</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Residents List Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for r in residents %}
+        <div class="glass-panel rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between">
+            <div>
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-3">
+                        {% if r.profile_photo %}
+                        <img src="{{ r.profile_photo }}" alt="{{ r.name }}" class="w-12 h-12 rounded-xl object-cover border border-white/10">
+                        {% else %}
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-700/30 text-brand-400 border border-brand-500/20 flex items-center justify-center font-bold text-base">
+                            {{ r.name|first|upper }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-base font-semibold text-white leading-tight">{{ r.name }}</h3>
+                            <p class="text-xs font-mono font-bold text-brand-400 mt-0.5">
+                                {{ r.wing ? r.wing ~ '-' : '' }}{{ r.flat_no ?: 'Unit pending' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Role Badge -->
+                    {% if r.member_role in ['chairman', 'secretary', 'treasurer', 'committee'] %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase">
+                        {{ r.member_role }}
+                    </span>
+                    {% elseif r.member_role == 'tenant' %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Tenant
+                    </span>
+                    {% else %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-surface-200/70 border border-white/10">
+                        Owner
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if r.email %}
+                <p class="text-xs text-surface-200/50 truncate mb-1">
+                    <i data-lucide="mail" class="w-3.5 h-3.5 inline mr-1 text-surface-200/30"></i>
+                    {{ r.email }}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- 1-Tap Call & SMS Action Buttons (Society Mitra Parity) -->
+            <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                {% if r.phone %}
+                <a href="tel:{{ r.phone }}" class="flex-1 py-2 px-3 rounded-xl bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 text-xs font-medium text-white flex items-center justify-center gap-1.5 transition-colors">
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Call</span>
+                </a>
+                <a href="sms:{{ r.phone }}" class="flex-1 py-2 px-3 rounded-xl bg-white/5 hover:bg-blue-500/20 hover:text-blue-300 border border-white/10 text-xs font-medium text-white flex items-center justify-center gap-1.5 transition-colors">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5 text-blue-400"></i>
+                    <span>SMS</span>
+                </a>
+                <a href="https://api.whatsapp.com/send?phone={{ r.phone|replace({' ': '', '+': '', '-': ''}) }}" target="_blank" class="py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-medium text-emerald-300 flex items-center justify-center transition-colors" title="WhatsApp">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </a>
+                {% else %}
+                <span class="text-xs text-surface-200/40 italic py-1">No phone number listed</span>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full py-16 text-center text-surface-200/50">
+            <i data-lucide="users" class="w-10 h-10 text-surface-200/30 mx-auto mb-2"></i>
+            <p class="font-medium text-white text-base">No residents found</p>
+            <p class="text-xs mt-1">Try searching for a different name or flat number.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

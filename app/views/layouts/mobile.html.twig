@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="SocietyApp — The premium digital platform for modern residential communities.">
+    <meta name="description" content="{{ appDesc|default('SocietyApp — The premium digital platform for modern residential communities.') }}">
     <meta name="theme-color" content="#10b981">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SocietyApp">
+    <meta name="apple-mobile-web-app-title" content="{{ appName|default('SocietyApp') }}">
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="/assets/icons/logo.svg">
-    <link rel="apple-touch-icon" href="/assets/icons/logo.svg">
-    <title>{% block title %}SocietyApp{% endblock %}</title>
+    <link rel="icon" href="{{ appFavicon|default('/assets/icons/logo.svg') }}">
+    <link rel="apple-touch-icon" href="{{ appLogo|default('/assets/icons/logo.svg') }}">
+    <title>{% block title %}{{ appName|default('SocietyApp') }}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,16 +35,44 @@
 <body class="min-h-screen bg-surface-950">
     <div class="noise-overlay"></div>
 
-    <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950 border-b border-white/10 shadow-lg" style="padding-top: env(safe-area-inset-top);">
+    <header class="fixed top-0 left-0 right-0 z-[100] bg-surface-950/95 backdrop-blur-md border-b border-white/10 shadow-lg" style="padding-top: env(safe-area-inset-top);">
         <nav class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-6">
                 <a href="{{ user.role == 'admin' and currentRoute starts with '/admin' ? '/admin' : '/tenant' }}" class="flex items-center gap-3 group">
-                    <img src="/assets/icons/logo.svg" alt="SocietyApp" class="w-9 h-9 rounded-lg">
-                    <span class="text-lg font-bold text-white tracking-tight">SocietyApp</span>
+                    <img src="{{ appLogo|default('/assets/icons/logo.svg') }}" alt="{{ appName|default('SocietyApp') }}" class="w-9 h-9 rounded-lg object-contain">
+                    <span class="text-lg font-bold text-white tracking-tight">{{ appName|default('SocietyApp') }}</span>
                 </a>
+
+                <!-- Desktop Navigation Links -->
+                {% if user %}
+                <div class="hidden md:flex items-center gap-1 text-sm font-medium">
+                    <a href="/tenant" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute == '/tenant' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                        Dashboard
+                    </a>
+                    <a href="/tenant/bills" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/tenant/bills' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                        Bills & Dues
+                    </a>
+                    <a href="/tenant/receipts" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/tenant/receipts' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                        Receipts
+                    </a>
+                    <a href="/tenant/directory" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/tenant/directory' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                        Directory
+                    </a>
+                    <a href="/tenant/link-flat" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/tenant/link-flat' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                        Link Flat
+                    </a>
+                    {% if isCommittee or user.role == 'admin' %}
+                    <a href="/committee" class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 {{ currentRoute starts with '/committee' ? 'text-amber-400 bg-amber-500/10' : 'text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10' }}">
+                        <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                        <span>Committee</span>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
+
             <div class="flex items-center gap-2">
-                <a href="/tenant/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                <a href="/tenant/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all" title="Notifications">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     {% if unreadNotifications is defined and unreadNotifications > 0 %}
                     <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">{{ unreadNotifications }}</span>
@@ -55,36 +83,58 @@
                         {% if profile.profile_photo %}
                         <img src="{{ profile.profile_photo }}" alt="{{ user.name }}" class="w-8 h-8 rounded-lg object-cover">
                         {% else %}
-                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-500/20">
                             <span class="text-sm font-semibold text-white">{{ user.name|first|upper }}</span>
                         </div>
                         {% endif %}
                         <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
                     </button>
-                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 glass-panel rounded-xl overflow-hidden shadow-xl shadow-black/20">
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 glass-panel rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10 z-50">
                         <div class="p-3 border-b border-white/5">
-                            <p class="text-sm font-semibold text-white">{{ user.name }}</p>
-                            <p class="text-xs text-surface-200/40">{{ user.email }}</p>
+                            <p class="text-sm font-semibold text-white truncate">{{ user.name }}</p>
+                            <p class="text-xs text-surface-200/40 truncate">{{ user.email }}</p>
                         </div>
-                        <div class="p-1.5">
+                        <div class="p-1.5 space-y-0.5">
+                            {% if isCommittee or user.role == 'admin' %}
+                            <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                Committee Admin
+                            </a>
+                            {% endif %}
                             {% if user.role == 'admin' %}
                             {% if currentRoute starts with '/tenant' %}
-                            <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                                <i data-lucide="shield" class="w-4 h-4"></i>
-                                Admin View
+                            <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="settings" class="w-4 h-4"></i>
+                                System Admin
                             </a>
                             {% else %}
-                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                                Tenant View
+                                Resident View
                             </a>
                             {% endif %}
                             {% endif %}
-                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <a href="/tenant/bills" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="receipt" class="w-4 h-4"></i>
+                                Bills & Dues
+                            </a>
+                            <a href="/tenant/receipts" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                                Receipts Ledger
+                            </a>
+                            <a href="/tenant/directory" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="phone-call" class="w-4 h-4"></i>
+                                Resident Directory
+                            </a>
+                            <a href="/tenant/link-flat" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                <i data-lucide="home" class="w-4 h-4"></i>
+                                Link Flat
+                            </a>
+                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                                 <i data-lucide="user" class="w-4 h-4"></i>
                                 Profile
                             </a>
-                            <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all">
+                            <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all">
                                 <i data-lucide="log-out" class="w-4 h-4"></i>
                                 Logout
                             </a>
@@ -95,9 +145,45 @@
         </nav>
     </header>
 
-    <main class="pt-20 pb-8" style="padding-bottom: env(safe-area-inset-bottom);">
+    <main class="pt-20 pb-24 md:pb-8" style="padding-bottom: max(env(safe-area-inset-bottom), 5rem);">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    {% if user %}
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[95] bg-surface-950/95 backdrop-blur-xl border-t border-white/10 px-3 py-2" style="padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);">
+        <div class="flex items-center justify-around">
+            <a href="/tenant" class="flex flex-col items-center gap-1 {{ currentRoute == '/tenant' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </a>
+            <a href="/tenant/bills" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/tenant/bills' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Bills</span>
+            </a>
+            <a href="/tenant/receipts" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/tenant/receipts' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Receipts</span>
+            </a>
+            <a href="/tenant/directory" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/tenant/directory' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Directory</span>
+            </a>
+            {% if isCommittee or user.role == 'admin' %}
+            <a href="/committee" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/committee' ? 'text-amber-400' : 'text-amber-400/70 hover:text-amber-300' }} transition-colors">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Committee</span>
+            </a>
+            {% else %}
+            <a href="/tenant/link-flat" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/tenant/link-flat' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <i data-lucide="building" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">Flats</span>
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
 
     <script>
         lucide.createIcons();

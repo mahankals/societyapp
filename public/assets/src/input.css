@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-@source "../../../app/views/**/*.twig";
-@source "../../**/*.php";
-@source "../../../**/*.php";
+@source "../../../app";
+@source "../../../public";
+@source "../../../routes.php";
 
 /* ===== Custom Design System ===== */
 
@@ -281,6 +281,27 @@
       linear-gradient(oklch(1 0 0 / 0.03) 1px, transparent 1px),
       linear-gradient(90deg, oklch(1 0 0 / 0.03) 1px, transparent 1px);
     background-size: 60px 60px;
+  }
+
+  .hero-mockup-wrapper {
+    position: relative;
+    z-index: 10;
+  }
+
+  @media (max-width: 1023px) {
+    .hero-mockup-wrapper {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.12;
+      pointer-events: none;
+      overflow: hidden;
+      transform: translateY(30px) scale(0.9);
+      filter: blur(1.5px);
+    }
   }
 }
 
