@@ -481,9 +481,9 @@ $router->post('/join/{code}', [$society, 'handleJoin']);
 $router->get('/society/contribute', [$society, 'contribute']);
 $router->post('/society/contribute', [$society, 'handleContribute']);
 
-// ==================== Committee Routes (/comitee/ and /committee/) ====================
+// ==================== Committee Routes (/comitee/, /committee/, and /committe/) ====================
 
-foreach (['/comitee', '/committee'] as $cPrefix) {
+foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
     $router->get($cPrefix, [$society, 'dashboard'], ['auth']);
     $router->get($cPrefix . '/flats', [$society, 'flats'], ['auth']);
     $router->post($cPrefix . '/flats', [$society, 'addFlat'], ['auth']);
@@ -499,9 +499,9 @@ foreach (['/comitee', '/committee'] as $cPrefix) {
 $router->get('/admin/committee', function() { redirect('/comitee'); }, ['auth']);
 $router->get('/admin/commitee', function() { redirect('/comitee'); }, ['auth']);
 
-// ==================== Resident Routes (/resident/ and /tenant/) ====================
+// ==================== Resident Routes (/resident/, /residential/, and /tenant/) ====================
 
-foreach (['/resident', '/tenant'] as $rPrefix) {
+foreach (['/resident', '/residential', '/tenant'] as $rPrefix) {
     $router->get($rPrefix, [$resident, 'index'], ['auth']);
     $router->get($rPrefix . '/notifications', [$resident, 'notifications'], ['auth']);
     $router->post($rPrefix . '/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
