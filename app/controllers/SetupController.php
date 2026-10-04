@@ -67,7 +67,17 @@ class SetupController
             $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
             $adminUser = null;
             if ($hasUsers) {
-                $adminUser = $db->query("SELECT id, name, email, phone, google_id FROM users WHERE role = 'admin' AND is_active = 1 LIMIT 1")->fetch();
+                $hasProfiles = (bool)$db->query("SHOW TABLES LIKE 'user_profiles'")->fetch();
+                if ($hasProfiles) {
+                    $adminUser = $db->query("SELECT u.id, u.name, u.email, u.phone, u.google_id, p.profile_photo 
+                        FROM users u 
+                        LEFT JOIN user_profiles p ON p.user_id = u.id 
+                        WHERE u.role = 'admin' AND u.is_active = 1 LIMIT 1")->fetch();
+                } else {
+                    $adminUser = $db->query("SELECT id, name, email, phone, google_id, NULL as profile_photo 
+                        FROM users 
+                        WHERE role = 'admin' AND is_active = 1 LIMIT 1")->fetch();
+                }
                 if ($adminUser && !empty(trim((string)($adminUser['email'] ?? '')))) {
                     $completedSteps['admin'] = true;
                 }
@@ -140,6 +150,7 @@ class SetupController
             'admin_email' => $adminUser['email'] ?? '',
             'admin_phone' => $adminUser['phone'] ?? '',
             'admin_google_id' => $adminUser['google_id'] ?? '',
+            'admin_avatar' => $adminUser['profile_photo'] ?? getSetting('admin_avatar', ''),
         ];
 
         echo view('setup/index', [
@@ -621,6 +632,7 @@ class SetupController
                     }
 
                     $adminGoogleId = trim($_POST['admin_google_id'] ?? '');
+                    $adminAvatar = trim($_POST['admin_avatar'] ?? '');
 
                     $passwordHash = password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]);
                     $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
@@ -645,8 +657,13 @@ class SetupController
                         $adminId = (int)$db->lastInsertId();
                     }
 
-                    $db->prepare("INSERT INTO user_profiles (user_id, phone) VALUES (?, ?) ON DUPLICATE KEY UPDATE phone = VALUES(phone)")
-                        ->execute([$adminId, $adminPhone]);
+                    $db->prepare("INSERT INTO user_profiles (user_id, phone, profile_photo) VALUES (?, ?, ?) 
+                        ON DUPLICATE KEY UPDATE phone = VALUES(phone), profile_photo = COALESCE(NULLIF(VALUES(profile_photo), ''), profile_photo)")
+                        ->execute([$adminId, $adminPhone, !empty($adminAvatar) ? $adminAvatar : null]);
+
+                    if (!empty($adminAvatar)) {
+                        setSetting('admin_avatar', $adminAvatar, 'admin');
+                    }
 
                     setSetting('setup_step', '6', 'system');
                     loginUser($adminId, 'admin', $adminEmail);
@@ -836,6 +853,7 @@ class SetupController
 
             // Create Super Admin User (NO committee/society linkage at setup)
             $adminGoogleId = trim($_POST['admin_google_id'] ?? '');
+            $adminAvatar = trim($_POST['admin_avatar'] ?? '');
             $passwordHash = password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]);
             $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->execute([$adminEmail]);
@@ -860,8 +878,9 @@ class SetupController
             }
 
             // Create Profile for Super Admin
-            $pdo->prepare("INSERT INTO user_profiles (user_id, phone) VALUES (?, ?) ON DUPLICATE KEY UPDATE phone = VALUES(phone)")
-                ->execute([$adminId, $adminPhone]);
+            $pdo->prepare("INSERT INTO user_profiles (user_id, phone, profile_photo) VALUES (?, ?, ?) 
+                ON DUPLICATE KEY UPDATE phone = VALUES(phone), profile_photo = COALESCE(NULLIF(VALUES(profile_photo), ''), profile_photo)")
+                ->execute([$adminId, $adminPhone, !empty($adminAvatar) ? $adminAvatar : null]);
 
             // Save Settings Table
             $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
