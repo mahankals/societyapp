@@ -327,3 +327,23 @@
 @utility animate-delay-700 {
   animation-delay: 700ms;
 }
+
+/* Ensure Profile Dropdown is 100% solid & opaque on all routes/browsers */
+#profile-dropdown {
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#profile-dropdown-header {
+  background-color: #090d16 !important;
+  background: #090d16 !important;
+}
+
+#profile-dropdown-body {
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+}
+

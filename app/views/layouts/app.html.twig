@@ -15,12 +15,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="/assets/dist/output.css?v=5" rel="stylesheet">
+    <link href="/assets/dist/output.css?v=6" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/assets/js/offline.js"></script>
     <style>
         .glass-panel { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .noise-overlay { position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); opacity: 0.015; pointer-events: none; z-index: 9999; }
+        #profile-dropdown {
+            background-color: #0f172a !important;
+            background: #0f172a !important;
+            opacity: 1 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        #profile-dropdown-header {
+            background-color: #090d16 !important;
+            background: #090d16 !important;
+        }
+        #profile-dropdown-body {
+            background-color: #0f172a !important;
+            background: #0f172a !important;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-surface-950">
@@ -53,30 +68,93 @@
                         <span class="text-sm font-medium text-white hidden sm:block">{{ user.name }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
                     </button>
-                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 border border-white/20 rounded-xl overflow-hidden shadow-2xl shadow-black/90 z-50" style="background-color: #0f172a !important;">
-                        <div class="p-3 border-b border-white/10" style="background-color: #090d16 !important;">
-                            <p class="text-sm font-semibold text-white">{{ user.name }}</p>
-                            <p class="text-xs text-surface-200/50">{{ user.email }}</p>
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 border border-white/20 rounded-xl overflow-hidden shadow-2xl shadow-black/90 z-50 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important; opacity: 1 !important;">
+                        <div id="profile-dropdown-header" class="p-3 border-b border-white/10 bg-[#090d16]" style="background-color: #090d16 !important; background: #090d16 !important;">
+                            <p class="text-sm font-semibold text-white truncate">{{ user.name }}</p>
+                            <p class="text-xs text-surface-200/50 truncate">{{ user.email }}</p>
                         </div>
-                        <div class="p-1.5 space-y-0.5" style="background-color: #0f172a !important;">
-                            {% if user.role == 'admin' %}
-                            {% if currentRoute starts with '/tenant' %}
-                            <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-brand-300 bg-brand-500/10 hover:text-white hover:bg-brand-500/20 rounded-lg transition-all">
-                                <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
-                                As Admin
-                            </a>
-                            {% else %}
-                            <a href="/tenant" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-brand-300 bg-brand-500/10 hover:text-white hover:bg-brand-500/20 rounded-lg transition-all">
-                                <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400"></i>
-                                Resident View
-                            </a>
+                        <div id="profile-dropdown-body" class="p-1.5 space-y-0.5 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important;">
+                            {# View Switchers based strictly on role capabilities #}
+                            {% if userCaps.isAdmin and userCaps.isResident and userCaps.isCommittee %}
+                                {# for admin + Resident + Committee member: Admin view, Committee/Resident view #}
+                                {% if currentRoute starts with '/admin' %}
+                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
+                                    Committee View
+                                </a>
+                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+                                    Resident View
+                                </a>
+                                {% elseif currentRoute starts with '/committee' %}
+                                <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                                    Admin View
+                                </a>
+                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+                                    Resident View
+                                </a>
+                                {% else %}
+                                <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                                    Admin View
+                                </a>
+                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
+                                    Committee View
+                                </a>
+                                {% endif %}
+                                <div class="h-px bg-white/10 my-1"></div>
+                            {% elseif userCaps.isAdmin and userCaps.isResident %}
+                                {# for admin + Resident: Admin/Resident view #}
+                                {% if currentRoute starts with '/admin' %}
+                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+                                    Resident View
+                                </a>
+                                {% else %}
+                                <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                                    Admin View
+                                </a>
+                                {% endif %}
+                                <div class="h-px bg-white/10 my-1"></div>
+                            {% elseif userCaps.isCommittee and userCaps.isResident %}
+                                {# for committee member: Committee/Resident view #}
+                                {% if currentRoute starts with '/committee' %}
+                                <a href="/tenant" class="flex items-center gap-3 px-3 py-2 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-lg transition-all">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+                                    Resident View
+                                </a>
+                                {% else %}
+                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
+                                    Committee View
+                                </a>
+                                {% endif %}
+                                <div class="h-px bg-white/10 my-1"></div>
+                            {% elseif userCaps.isAdmin and userCaps.isCommittee %}
+                                {# for admin + Committee #}
+                                {% if currentRoute starts with '/admin' %}
+                                <a href="/committee" class="flex items-center gap-3 px-3 py-2 text-sm text-amber-300 hover:text-white hover:bg-amber-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
+                                    Committee View
+                                </a>
+                                {% else %}
+                                <a href="/admin" class="flex items-center gap-3 px-3 py-2 text-sm text-brand-300 hover:text-white hover:bg-brand-500/15 rounded-lg transition-all">
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                                    Admin View
+                                </a>
+                                {% endif %}
+                                <div class="h-px bg-white/10 my-1"></div>
                             {% endif %}
-                            {% endif %}
-                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2.5 text-sm text-surface-200/90 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                            {# Base items: Profile & Logout #}
+                            <a href="/tenant/profile" class="flex items-center gap-3 px-3 py-2 text-sm text-surface-200/90 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                                 <i data-lucide="user" class="w-4 h-4"></i>
                                 Profile
                             </a>
-                            <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all">
+                            <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all">
                                 <i data-lucide="log-out" class="w-4 h-4"></i>
                                 Logout
                             </a>

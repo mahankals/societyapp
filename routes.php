@@ -502,6 +502,8 @@ $router->get('/tenant', [$tenant, 'index'], ['auth']);
 $router->get('/tenant/notifications', [$tenant, 'notifications'], ['auth']);
 $router->post('/tenant/notifications/mark-read', [$tenant, 'markNotificationsRead'], ['auth']);
 $router->get('/tenant/profile', [$tenant, 'profile'], ['auth']);
+$router->get('/profile', function() { redirect('/tenant/profile'); }, ['auth']);
+$router->get('/admin/profile', function() { redirect('/tenant/profile'); }, ['auth']);
 $router->post('/tenant/profile', [$tenant, 'updateProfile'], ['auth']);
 $router->post('/tenant/profile/photo', [$tenant, 'uploadPhoto'], ['auth']);
 $router->get('/tenant/documents', [$tenant, 'documents'], ['auth']);

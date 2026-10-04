@@ -89,21 +89,73 @@ function verifyCSRFToken(?string $token = null): bool {
     return !empty($token) && Session::has('csrf_token') && hash_equals((string)Session::get('csrf_token'), (string)$token);
 }
 
-function isCommitteeMember(?int $userId = null): bool {
+function getUserCapabilities(?int $userId = null): array {
     if (!$userId && isLoggedIn()) {
         $userId = (int)Session::get('user_id');
     }
-    if (!$userId) return false;
-    if (isAdmin()) return true;
-    try {
-        $mem = Database::fetchOne("
-            SELECT id FROM society_members 
-            WHERE user_id = ? AND role IN ('admin', 'secretary', 'treasurer', 'president', 'committee') AND status = 'active'
-        ", [$userId]);
-        return (bool)$mem;
-    } catch (Throwable $e) {
-        return false;
+    if (!$userId) {
+        return [
+            'isAdmin' => false,
+            'isCommittee' => false,
+            'isResident' => false,
+        ];
     }
+    try {
+        $user = Database::fetchOne("SELECT id, role FROM users WHERE id = ?", [$userId]);
+        if (!$user) {
+            return [
+                'isAdmin' => false,
+                'isCommittee' => false,
+                'isResident' => false,
+            ];
+        }
+
+        $isAdmin = ($user['role'] === 'admin');
+
+        // Check committee status:
+        // User has committee capability if role is 'committee' in users table OR active in society_members with committee role
+        $isCommittee = ($user['role'] === 'committee');
+        if (!$isCommittee) {
+            $commMem = Database::fetchOne("
+                SELECT id FROM society_members 
+                WHERE user_id = ? AND role IN ('chairman', 'secretary', 'treasurer', 'president', 'committee') AND status = 'active'
+                LIMIT 1
+            ", [$userId]);
+            $isCommittee = (bool)$commMem;
+        }
+
+        // Check resident status:
+        // A user whose primary role is 'resident' is a resident.
+        // For admin users, they are a resident if they have an active resident record or assigned flat in society_members.
+        $isResident = false;
+        if ($user['role'] === 'resident') {
+            $isResident = true;
+        } else {
+            $resMem = Database::fetchOne("
+                SELECT id FROM society_members 
+                WHERE user_id = ? AND status = 'active' AND (flat_id IS NOT NULL OR role IN ('owner', 'tenant', 'family'))
+                LIMIT 1
+            ", [$userId]);
+            $isResident = (bool)$resMem;
+        }
+
+        return [
+            'isAdmin' => $isAdmin,
+            'isCommittee' => $isCommittee,
+            'isResident' => $isResident,
+        ];
+    } catch (Throwable $e) {
+        return [
+            'isAdmin' => false,
+            'isCommittee' => false,
+            'isResident' => false,
+        ];
+    }
+}
+
+function isCommitteeMember(?int $userId = null): bool {
+    $caps = getUserCapabilities($userId);
+    return $caps['isCommittee'];
 }
 
 function view(string $name, array $data = []): string {
@@ -131,15 +183,27 @@ function view(string $name, array $data = []): string {
     $data['appFavicon'] = $data['appFavicon'] ?? $appFavicon;
     $data['appDesc'] = $data['appDesc'] ?? $appDesc;
 
-    if (isLoggedIn()) {
+    if (isLoggedIn() || isset($data['user'])) {
         if (!isset($data['user'])) {
             $data['user'] = getUser();
         }
         if (!isset($data['profile'])) {
             $data['profile'] = getUserProfile();
         }
+        if (!isset($data['userCaps'])) {
+            $userId = isset($data['user']['id']) ? (int)$data['user']['id'] : null;
+            $data['userCaps'] = getUserCapabilities($userId);
+        }
         if (!isset($data['isCommittee'])) {
-            $data['isCommittee'] = isCommitteeMember();
+            $data['isCommittee'] = $data['userCaps']['isCommittee'];
+        }
+    } else {
+        if (!isset($data['userCaps'])) {
+            $data['userCaps'] = [
+                'isAdmin' => false,
+                'isCommittee' => false,
+                'isResident' => false,
+            ];
         }
     }
     if (!isset($data['currentRoute'])) {
