@@ -1,7 +1,7 @@
 {
     "name": "Society App",
     "short_name": "Society App",
-    "description": "Test description",
+    "description": "Cooperative Housing Society Management & Resident Portal",
     "start_url": "/auth/login",
     "display": "standalone",
     "background_color": "#09090b",

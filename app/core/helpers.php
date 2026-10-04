@@ -188,20 +188,13 @@ function isAppSetupCompleted(): bool {
             return false;
         }
 
-        // 5. Check if setup was actually sealed/completed in step 7
+        // 5. If all core requirements (database tables, active super admin, Google SSO, and email) exist in the database, setup is complete!
         $setupDone = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'setup_completed' LIMIT 1")->fetch();
-        if ($setupDone && ($setupDone['setting_value'] === '1' || $setupDone['setting_value'] === 'true')) {
-            return true;
-        }
-
-        // If step 7 was reached and sealed, auto-heal setup_completed in settings
-        $setupStep = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'setup_step' LIMIT 1")->fetch();
-        if ($setupStep && $setupStep['setting_value'] === '7') {
+        if (!$setupDone || ($setupDone['setting_value'] !== '1' && $setupDone['setting_value'] !== 'true')) {
             $db->exec("INSERT INTO settings (setting_key, setting_value, setting_group) VALUES ('setup_completed', '1', 'system') ON DUPLICATE KEY UPDATE setting_value = '1'");
-            return true;
         }
 
-        return false;
+        return true;
     } catch (Throwable $e) {
         return false;
     }

@@ -69,12 +69,12 @@ class SetupController
             if ($hasUsers) {
                 $hasProfiles = (bool)$db->query("SHOW TABLES LIKE 'user_profiles'")->fetch();
                 if ($hasProfiles) {
-                    $adminUser = $db->query("SELECT u.id, u.name, u.email, u.phone, u.google_id, p.profile_photo 
+                    $adminUser = $db->query("SELECT u.id, u.name, u.email, u.phone, u.google_id, u.password_hash, p.profile_photo 
                         FROM users u 
                         LEFT JOIN user_profiles p ON p.user_id = u.id 
                         WHERE u.role = 'admin' AND u.is_active = 1 LIMIT 1")->fetch();
                 } else {
-                    $adminUser = $db->query("SELECT id, name, email, phone, google_id, NULL as profile_photo 
+                    $adminUser = $db->query("SELECT id, name, email, phone, google_id, password_hash, NULL as profile_photo 
                         FROM users 
                         WHERE role = 'admin' AND is_active = 1 LIMIT 1")->fetch();
                 }
@@ -151,6 +151,8 @@ class SetupController
             'admin_phone' => $adminUser['phone'] ?? '',
             'admin_google_id' => $adminUser['google_id'] ?? '',
             'admin_avatar' => $adminUser['profile_photo'] ?? getSetting('admin_avatar', ''),
+            'has_admin_user' => !empty($adminUser['email'] ?? ''),
+            'has_admin_password' => !empty($adminUser['password_hash'] ?? ''),
         ];
 
         echo view('setup/index', [
@@ -593,8 +595,23 @@ class SetupController
                     $adminPassword = $_POST['admin_password'] ?? '';
                     $adminPhone = trim($_POST['admin_phone'] ?? '');
 
-                    if (!$adminEmail || strlen($adminPassword) < 8 || empty($adminName)) {
-                        echo json_encode(['success' => false, 'error' => 'Please provide a valid Admin name, email, and password (at least 8 characters).']);
+                    $db = Database::getInstance();
+                    $stmt = $db->prepare("SELECT id, password_hash FROM users WHERE email = ?");
+                    $stmt->execute([$adminEmail]);
+                    $existingAdmin = $stmt->fetch();
+
+                    if (!$adminEmail || empty($adminName)) {
+                        echo json_encode(['success' => false, 'error' => 'Please provide a valid Admin name and email.']);
+                        exit;
+                    }
+
+                    if (!$existingAdmin && strlen($adminPassword) < 8) {
+                        echo json_encode(['success' => false, 'error' => 'Please provide a password of at least 8 characters.']);
+                        exit;
+                    }
+
+                    if ($existingAdmin && !empty($adminPassword) && strlen($adminPassword) < 8) {
+                        echo json_encode(['success' => false, 'error' => 'Password must be at least 8 characters.']);
                         exit;
                     }
 
@@ -611,8 +628,6 @@ class SetupController
                             exit;
                         }
                     }
-
-                    $db = Database::getInstance();
 
                     // Ensure users and user_profiles table exist
                     $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
@@ -634,8 +649,9 @@ class SetupController
                     $adminGoogleId = trim($_POST['admin_google_id'] ?? '');
                     $adminAvatar = trim($_POST['admin_avatar'] ?? '');
 
-                    $passwordHash = password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]);
-                    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+                    $passwordHash = !empty($adminPassword)
+                        ? password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12])
+                        : ($existingAdmin['password_hash'] ?? '');
                     $stmt->execute([$adminEmail]);
                     $existingAdmin = $stmt->fetch();
 
@@ -854,10 +870,12 @@ class SetupController
             // Create Super Admin User (NO committee/society linkage at setup)
             $adminGoogleId = trim($_POST['admin_google_id'] ?? '');
             $adminAvatar = trim($_POST['admin_avatar'] ?? '');
-            $passwordHash = password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]);
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt = $pdo->prepare("SELECT id, password_hash FROM users WHERE email = ?");
             $stmt->execute([$adminEmail]);
             $existingAdmin = $stmt->fetch();
+            $passwordHash = !empty($adminPassword) 
+                ? password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12]) 
+                : ($existingAdmin['password_hash'] ?? '');
 
             if ($existingAdmin) {
                 $adminId = (int)$existingAdmin['id'];
