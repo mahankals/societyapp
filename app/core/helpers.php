@@ -41,19 +41,13 @@ function getUser(): ?array {
         return null;
     }
     return Database::fetchOne(
-        "SELECT id, email, name, google_id, role, pin_hash, created_at FROM users WHERE id = ?",
+        "SELECT * FROM users WHERE id = ?",
         [Session::get('user_id')]
     );
 }
 
 function getUserProfile(): ?array {
-    if (!isLoggedIn()) {
-        return null;
-    }
-    return Database::fetchOne(
-        "SELECT * FROM user_profiles WHERE user_id = ?",
-        [Session::get('user_id')]
-    );
+    return getUser();
 }
 
 function loginUser(int $userId, string $role, string $email): void {

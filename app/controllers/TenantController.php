@@ -17,8 +17,7 @@ class TenantController
         $user = getUser();
         $flash = Session::getFlash();
         $userId = (int)Session::get('user_id');
-
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         // 1. Fetch all flats linked to this resident (Society Mitra multi-society / multi-flat core)
         $myFlats = Database::fetchAll("
@@ -121,7 +120,7 @@ class TenantController
             ORDER BY mb.status ASC, mb.due_date DESC
         ", [$userId]);
 
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         echo view('tenant/bills', [
             'basePath' => '/',
@@ -203,7 +202,7 @@ class TenantController
             ORDER BY t.payment_date DESC, t.id DESC
         ", [$userId]);
 
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         echo view('tenant/receipts', [
             'basePath' => '/',
@@ -275,14 +274,12 @@ class TenantController
         }
 
         $residents = Database::fetchAll("
-            SELECT u.id as user_id, u.name, u.email, u.phone, 
+            SELECT u.id as user_id, u.name, u.email, u.phone, u.profile_photo,
                    sm.role as member_role, sm.ownership_type,
-                   f.flat_no, f.wing, f.floor,
-                   up.profile_photo
+                   f.flat_no, f.wing, f.floor
             FROM society_members sm
             JOIN users u ON sm.user_id = u.id
             LEFT JOIN flats f ON sm.flat_id = f.id
-            LEFT JOIN user_profiles up ON u.id = up.user_id
             WHERE sm.society_id = ? AND sm.status = 'active' {$searchSql}
             ORDER BY f.wing ASC, f.flat_no ASC, u.name ASC
         ", $params);
@@ -293,7 +290,7 @@ class TenantController
             'society' => $society,
             'residents' => $residents,
             'search' => $search,
-            'profile' => Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]),
+            'profile' => $user,
             'currentRoute' => '/tenant/directory',
         ]);
     }
@@ -326,7 +323,7 @@ class TenantController
             'vacantFlats' => $vacantFlats,
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
-            'profile' => Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]),
+            'profile' => $user,
             'currentRoute' => '/tenant/link-flat',
         ]);
     }
@@ -406,7 +403,7 @@ class TenantController
 
         if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
             $webPath = '/uploads/profile/' . $filename;
-            Database::query("INSERT INTO user_profiles (user_id, profile_photo) VALUES (?, ?) ON DUPLICATE KEY UPDATE profile_photo = VALUES(profile_photo)", [$userId, $webPath]);
+            Database::query("UPDATE users SET profile_photo = ? WHERE id = ?", [$webPath, $userId]);
             Session::flash('success', 'Profile photo updated successfully!');
         } else {
             Session::flash('error', 'Failed to save photo.');
@@ -425,7 +422,7 @@ class TenantController
             "SELECT * FROM notifications WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC LIMIT 50",
             [$userId]
         );
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         echo view('tenant/notifications', [
             'basePath' => '/',
@@ -451,7 +448,7 @@ class TenantController
         requireLogin();
         $user = getUser();
         $userId = (int)Session::get('user_id');
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         $myFlats = Database::fetchAll("
             SELECT sm.*, f.flat_no, f.wing, s.name as society_name
@@ -489,7 +486,8 @@ class TenantController
         $emergency_name = filter_input(INPUT_POST, 'emergency_contact_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $emergency_phone = filter_input(INPUT_POST, 'emergency_contact_phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-        $profileData = [
+        $userData = [
+            'name' => $name,
             'phone' => $phone,
             'address' => $address,
             'apartment' => $apartment,
@@ -497,15 +495,7 @@ class TenantController
             'emergency_contact_phone' => $emergency_phone,
         ];
 
-        $existing = Database::fetchOne("SELECT id FROM user_profiles WHERE user_id = ?", [$userId]);
-        if ($existing) {
-            Database::update('user_profiles', $profileData, 'user_id = ?', [$userId]);
-        } else {
-            $profileData['user_id'] = $userId;
-            Database::insert('user_profiles', $profileData);
-        }
-
-        Database::update('users', ['name' => $name, 'phone' => $phone], 'id = ?', [$userId]);
+        Database::update('users', $userData, 'id = ?', [$userId]);
 
         Session::flash('success', 'Profile updated successfully!');
         redirect('/tenant/profile');
@@ -518,7 +508,7 @@ class TenantController
         $userId = (int)Session::get('user_id');
 
         $documents = Database::fetchAll("SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC", [$userId]);
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         echo view('tenant/documents', [
             'basePath' => '/',
@@ -585,7 +575,7 @@ class TenantController
         $userId = (int)Session::get('user_id');
 
         $requests = Database::fetchAll("SELECT * FROM service_requests WHERE user_id = ? ORDER BY created_at DESC", [$userId]);
-        $profile = Database::fetchOne("SELECT * FROM user_profiles WHERE user_id = ?", [$userId]);
+        $profile = $user;
 
         echo view('tenant/requests', [
             'basePath' => '/',

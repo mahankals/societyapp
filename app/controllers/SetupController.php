@@ -67,14 +67,14 @@ class SetupController
             $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
             $adminUser = null;
             if ($hasUsers) {
-                $hasProfiles = (bool)$db->query("SHOW TABLES LIKE 'user_profiles'")->fetch();
-                if ($hasProfiles) {
-                    $adminUser = $db->query("SELECT u.id, u.name, u.email, u.phone, u.google_id, u.password_hash, p.profile_photo 
-                        FROM users u 
-                        LEFT JOIN user_profiles p ON p.user_id = u.id 
-                        WHERE u.role = 'admin' AND u.is_active = 1 LIMIT 1")->fetch();
-                } else {
-                    $adminUser = $db->query("SELECT id, name, email, phone, google_id, password_hash, NULL as profile_photo 
+                $superadminId = getSetting('superadmin_id');
+                if (!empty($superadminId)) {
+                    $stmt = $db->prepare("SELECT id, name, email, phone, google_id, password_hash, profile_photo FROM users WHERE id = ? LIMIT 1");
+                    $stmt->execute([$superadminId]);
+                    $adminUser = $stmt->fetch();
+                }
+                if (!$adminUser) {
+                    $adminUser = $db->query("SELECT id, name, email, phone, google_id, password_hash, profile_photo 
                         FROM users 
                         WHERE role = 'admin' AND is_active = 1 LIMIT 1")->fetch();
                 }
@@ -150,7 +150,7 @@ class SetupController
             'admin_email' => $adminUser['email'] ?? '',
             'admin_phone' => $adminUser['phone'] ?? '',
             'admin_google_id' => $adminUser['google_id'] ?? '',
-            'admin_avatar' => $adminUser['profile_photo'] ?? getSetting('admin_avatar', ''),
+            'admin_avatar' => $adminUser['profile_photo'] ?? '',
             'has_admin_user' => !empty($adminUser['email'] ?? ''),
             'has_admin_password' => !empty($adminUser['password_hash'] ?? ''),
         ];
@@ -596,6 +596,24 @@ class SetupController
                     $adminPhone = trim($_POST['admin_phone'] ?? '');
 
                     $db = Database::getInstance();
+
+                    // Ensure users table exists
+                    $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
+                    if (!$hasUsers) {
+                        $schemaFile = APP_PATH . '/schema.sql';
+                        if (file_exists($schemaFile)) {
+                            $sql = file_get_contents($schemaFile);
+                            $sql = preg_replace('/^\s*CREATE\s+DATABASE\s+[^;]+;/mi', '', $sql);
+                            $sql = preg_replace('/^\s*USE\s+[^;]+;/mi', '', $sql);
+                            $queries = array_filter(array_map('trim', explode(';', $sql)));
+                            foreach ($queries as $query) {
+                                if (!empty($query)) {
+                                    $db->exec($query);
+                                }
+                            }
+                        }
+                    }
+
                     $stmt = $db->prepare("SELECT id, password_hash FROM users WHERE email = ?");
                     $stmt->execute([$adminEmail]);
                     $existingAdmin = $stmt->fetch();
@@ -629,36 +647,21 @@ class SetupController
                         }
                     }
 
-                    // Ensure users and user_profiles table exist
-                    $hasUsers = (bool)$db->query("SHOW TABLES LIKE 'users'")->fetch();
-                    if (!$hasUsers) {
-                        $schemaFile = APP_PATH . '/schema.sql';
-                        if (file_exists($schemaFile)) {
-                            $sql = file_get_contents($schemaFile);
-                            $sql = preg_replace('/^\s*CREATE\s+DATABASE\s+[^;]+;/mi', '', $sql);
-                            $sql = preg_replace('/^\s*USE\s+[^;]+;/mi', '', $sql);
-                            $queries = array_filter(array_map('trim', explode(';', $sql)));
-                            foreach ($queries as $query) {
-                                if (!empty($query)) {
-                                    $db->exec($query);
-                                }
-                            }
-                        }
-                    }
-
                     $adminGoogleId = trim($_POST['admin_google_id'] ?? '');
                     $adminAvatar = trim($_POST['admin_avatar'] ?? '');
 
                     $passwordHash = !empty($adminPassword)
                         ? password_hash($adminPassword, PASSWORD_DEFAULT, ['cost' => 12])
                         : ($existingAdmin['password_hash'] ?? '');
-                    $stmt->execute([$adminEmail]);
-                    $existingAdmin = $stmt->fetch();
 
                     if ($existingAdmin) {
                         $adminId = (int)$existingAdmin['id'];
                         $sql = "UPDATE users SET name = ?, password_hash = ?, phone = ?, role = 'admin', is_active = 1";
                         $params = [$adminName, $passwordHash, $adminPhone];
+                        if (!empty($adminAvatar)) {
+                            $sql .= ", profile_photo = ?";
+                            $params[] = $adminAvatar;
+                        }
                         if (!empty($adminGoogleId)) {
                             $sql .= ", google_id = ?";
                             $params[] = $adminGoogleId;
@@ -668,19 +671,12 @@ class SetupController
                         $updateUser = $db->prepare($sql);
                         $updateUser->execute($params);
                     } else {
-                        $insertUser = $db->prepare("INSERT INTO users (email, password_hash, name, phone, google_id, role, is_active, email_verified_at) VALUES (?, ?, ?, ?, ?, 'admin', 1, NOW())");
-                        $insertUser->execute([$adminEmail, $passwordHash, $adminName, $adminPhone, !empty($adminGoogleId) ? $adminGoogleId : null]);
+                        $insertUser = $db->prepare("INSERT INTO users (email, password_hash, name, phone, google_id, profile_photo, role, is_active, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, 'admin', 1, NOW())");
+                        $insertUser->execute([$adminEmail, $passwordHash, $adminName, $adminPhone, !empty($adminGoogleId) ? $adminGoogleId : null, !empty($adminAvatar) ? $adminAvatar : null]);
                         $adminId = (int)$db->lastInsertId();
                     }
 
-                    $db->prepare("INSERT INTO user_profiles (user_id, phone, profile_photo) VALUES (?, ?, ?) 
-                        ON DUPLICATE KEY UPDATE phone = VALUES(phone), profile_photo = COALESCE(NULLIF(VALUES(profile_photo), ''), profile_photo)")
-                        ->execute([$adminId, $adminPhone, !empty($adminAvatar) ? $adminAvatar : null]);
-
-                    if (!empty($adminAvatar)) {
-                        setSetting('admin_avatar', $adminAvatar, 'admin');
-                    }
-
+                    setSetting('superadmin_id', (string)$adminId, 'system');
                     setSetting('setup_step', '6', 'system');
                     loginUser($adminId, 'admin', $adminEmail);
 
@@ -881,6 +877,10 @@ class SetupController
                 $adminId = (int)$existingAdmin['id'];
                 $sql = "UPDATE users SET name = ?, password_hash = ?, phone = ?, role = 'admin', is_active = 1";
                 $params = [$adminName, $passwordHash, $adminPhone];
+                if (!empty($adminAvatar)) {
+                    $sql .= ", profile_photo = ?";
+                    $params[] = $adminAvatar;
+                }
                 if (!empty($adminGoogleId)) {
                     $sql .= ", google_id = ?";
                     $params[] = $adminGoogleId;
@@ -890,15 +890,10 @@ class SetupController
                 $updateUser = $pdo->prepare($sql);
                 $updateUser->execute($params);
             } else {
-                $insertUser = $pdo->prepare("INSERT INTO users (email, password_hash, name, phone, google_id, role, is_active, email_verified_at) VALUES (?, ?, ?, ?, ?, 'admin', 1, NOW())");
-                $insertUser->execute([$adminEmail, $passwordHash, $adminName, $adminPhone, !empty($adminGoogleId) ? $adminGoogleId : null]);
+                $insertUser = $pdo->prepare("INSERT INTO users (email, password_hash, name, phone, google_id, profile_photo, role, is_active, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, 'admin', 1, NOW())");
+                $insertUser->execute([$adminEmail, $passwordHash, $adminName, $adminPhone, !empty($adminGoogleId) ? $adminGoogleId : null, !empty($adminAvatar) ? $adminAvatar : null]);
                 $adminId = (int)$pdo->lastInsertId();
             }
-
-            // Create Profile for Super Admin
-            $pdo->prepare("INSERT INTO user_profiles (user_id, phone, profile_photo) VALUES (?, ?, ?) 
-                ON DUPLICATE KEY UPDATE phone = VALUES(phone), profile_photo = COALESCE(NULLIF(VALUES(profile_photo), ''), profile_photo)")
-                ->execute([$adminId, $adminPhone, !empty($adminAvatar) ? $adminAvatar : null]);
 
             // Save Settings Table
             $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
@@ -947,6 +942,7 @@ class SetupController
             $saveSetting->execute(['google_sso_enabled', '1', 'sso']);
 
             // Seal setup
+            $saveSetting->execute(['superadmin_id', (string)$adminId, 'system']);
             $saveSetting->execute(['setup_step', '7', 'system']);
             $saveSetting->execute(['setup_completed', '1', 'system']);
 

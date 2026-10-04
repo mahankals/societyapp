@@ -12,7 +12,13 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NULL,
     google_id VARCHAR(255) NULL UNIQUE,
+    profile_photo VARCHAR(255) NULL,
     role ENUM('admin', 'committee', 'resident') DEFAULT 'resident',
+    address TEXT NULL,
+    apartment VARCHAR(50) NULL,
+    emergency_contact_name VARCHAR(100) NULL,
+    emergency_contact_phone VARCHAR(20) NULL,
+    date_of_birth DATE NULL,
     pin_hash VARCHAR(255) NULL,
     is_active TINYINT(1) DEFAULT 1,
     email_verified_at TIMESTAMP NULL,
@@ -173,23 +179,6 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     INDEX idx_user_id (user_id),
     INDEX idx_action (action),
     INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- User Profiles (extended info)
-CREATE TABLE IF NOT EXISTS user_profiles (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id INT UNSIGNED NOT NULL UNIQUE,
-    phone VARCHAR(20) NULL,
-    address TEXT NULL,
-    apartment VARCHAR(50) NULL,
-    emergency_contact_name VARCHAR(100) NULL,
-    emergency_contact_phone VARCHAR(20) NULL,
-    date_of_birth DATE NULL,
-    profile_photo VARCHAR(255) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Notifications

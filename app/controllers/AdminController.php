@@ -92,7 +92,7 @@ class AdminController
         }
         
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $users = Database::fetchAll("SELECT u.*, up.phone, up.apartment FROM users u LEFT JOIN user_profiles up ON u.id = up.user_id {$whereClause} ORDER BY u.created_at DESC", $params);
+        $users = Database::fetchAll("SELECT * FROM users {$whereClause} ORDER BY created_at DESC", $params);
         
         echo view('admin/users', [
             'basePath' => '/',
@@ -109,7 +109,7 @@ class AdminController
     public function editUser($id)
     {
         requireAdmin();
-        $targetUser = Database::fetchOne("SELECT u.*, up.phone, up.address, up.apartment, up.emergency_contact_name, up.emergency_contact_phone FROM users u LEFT JOIN user_profiles up ON u.id = up.user_id WHERE u.id = ?", [$id]);
+        $targetUser = Database::fetchOne("SELECT * FROM users WHERE id = ?", [$id]);
         if (!$targetUser) {
             Session::flash('error', 'User not found.');
             redirect('/admin/users');
