@@ -296,11 +296,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.12;
+      opacity: 0.16;
       pointer-events: none;
       overflow: hidden;
-      transform: translateY(30px) scale(0.9);
-      filter: blur(1.5px);
+      transform: translateY(20px) scale(0.92);
+      filter: blur(10px);
     }
   }
 }
