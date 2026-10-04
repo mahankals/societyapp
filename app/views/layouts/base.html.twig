@@ -29,10 +29,17 @@
                     <a href="/#how-it-works" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">How it Works</a>
                     <a href="/#stats" class="px-4 py-2 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200">Impact</a>
                     <div class="w-px h-5 bg-white/10 mx-2"></div>
+                    {% if user %}
+                    <a href="{{ user.role == 'admin' ? '/admin' : '/tenant' }}" class="btn-primary !py-2.5 !px-5 !text-sm !rounded-xl !shadow-none hover:!shadow-lg hover:!shadow-brand-500/20">
+                        Dashboard
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    {% else %}
                     <a href="/auth/login" class="btn-primary !py-2.5 !px-5 !text-sm !rounded-xl !shadow-none hover:!shadow-lg hover:!shadow-brand-500/20">
                         Get Started
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
+                    {% endif %}
                 </div>
                 <button id="mobile-menu-toggle" class="md:hidden p-2.5 text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all" aria-label="Toggle Menu">
                     <i data-lucide="menu" class="w-5 h-5" id="mobile-menu-icon"></i>
@@ -44,10 +51,17 @@
                     <a href="/#how-it-works" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">How it Works</a>
                     <a href="/#stats" class="px-4 py-3 text-sm font-medium text-surface-200/80 hover:text-white hover:bg-white/5 rounded-xl transition-all">Impact</a>
                     <div class="h-px bg-white/10 my-2"></div>
+                    {% if user %}
+                    <a href="{{ user.role == 'admin' ? '/admin' : '/tenant' }}" class="btn-primary mt-1 !rounded-xl">
+                        Dashboard
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    {% else %}
                     <a href="/auth/login" class="btn-primary mt-1 !rounded-xl">
                         Get Started
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </nav>

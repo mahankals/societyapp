@@ -34,7 +34,10 @@ $router->middleware('admin', function() {
 // ==================== Landing & Auth ====================
 
 $router->get('/', function() {
-    echo view('pages/index', ['basePath' => '/']);
+    echo view('pages/index', [
+        'basePath' => '/',
+        'user' => getUser(),
+    ]);
 });
 
 $router->get('/auth/login', function() {
@@ -405,8 +408,15 @@ $router->post('/auth/google-one-tap', function() {
     );
 
     if ($existingUser) {
+        $updates = [];
         if (empty($existingUser['google_id'])) {
-            Database::update('users', ['google_id' => $googleId], 'id = ?', [$existingUser['id']]);
+            $updates['google_id'] = $googleId;
+        }
+        if (!empty($avatar) && empty($existingUser['profile_photo'])) {
+            $updates['profile_photo'] = $avatar;
+        }
+        if (!empty($updates)) {
+            Database::update('users', $updates, 'id = ?', [$existingUser['id']]);
         }
         loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
         $redirectUrl = ($existingUser['role'] === 'admin') ? '/admin' : '/tenant';
@@ -432,6 +442,7 @@ $router->post('/auth/google-one-tap', function() {
         'email' => $email,
         'name' => $name,
         'google_id' => $googleId,
+        'profile_photo' => $avatar ?: null,
         'role' => 'resident',
         'is_active' => 1,
         'email_verified_at' => date('Y-m-d H:i:s'),
@@ -471,7 +482,11 @@ $router->post('/society/contribute', [$society, 'handleContribute']);
 // ==================== Committee Routes ====================
 
 $router->get('/committee', [$society, 'dashboard'], ['auth']);
+$router->get('/commitee', function() { redirect('/committee'); }, ['auth']);
+$router->get('/admin/committee', function() { redirect('/committee'); }, ['auth']);
+$router->get('/admin/commitee', function() { redirect('/committee'); }, ['auth']);
 $router->get('/committee/flats', [$society, 'flats'], ['auth']);
+$router->post('/committee/flats', [$society, 'addFlat'], ['auth']);
 $router->post('/committee/flats/add', [$society, 'addFlat'], ['auth']);
 $router->post('/committee/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
 $router->get('/committee/members', [$society, 'members'], ['auth']);

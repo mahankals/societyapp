@@ -194,25 +194,55 @@
 {% if googleClientId and googleClientId != 'YOUR_GOOGLE_CLIENT_ID' %}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-    window.addEventListener('load', function() {
-        if (window.google && google.accounts && google.accounts.id) {
-            google.accounts.id.initialize({
-                client_id: "{{ googleClientId }}",
-                callback: handleGoogleOneTapLogin,
-                auto_select: false,
-                cancel_on_tap_outside: true
-            });
-            // Automatically prompt Google One Tap floating box in top-right
-            google.accounts.id.prompt((notification) => {
-                if (notification.isNotDisplayed()) {
-                    console.log('Google One Tap suppressed:', notification.getNotDisplayedReason());
-                }
-            });
-        }
-    });
+    let googleTokenClient = null;
 
-    async function handleGoogleOneTapLogin(response) {
-        if (!response.credential) return;
+    function initGoogleAuth() {
+        if (!window.google || !google.accounts) return;
+
+        // 1. Initialize One Tap (passive)
+        if (google.accounts.id) {
+            try {
+                google.accounts.id.initialize({
+                    client_id: "{{ googleClientId }}",
+                    callback: handleGoogleAuthResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed()) {
+                        console.log('Google One Tap suppressed:', notification.getNotDisplayedReason());
+                    }
+                });
+            } catch (e) {
+                console.warn('Google One Tap init error:', e);
+            }
+        }
+
+        // 2. Initialize OAuth2 Token Client for button clicks (active popup)
+        if (google.accounts.oauth2) {
+            try {
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: "{{ googleClientId }}",
+                    scope: 'email profile openid',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            await handleGoogleAuthResponse({ credential: tokenResponse.access_token });
+                        } else if (tokenResponse && tokenResponse.error) {
+                            console.error('Google token error:', tokenResponse);
+                            alert('Google Sign-In was cancelled or failed: ' + (tokenResponse.error_description || tokenResponse.error));
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('Google OAuth2 init error:', e);
+            }
+        }
+    }
+
+    window.addEventListener('load', initGoogleAuth);
+
+    async function handleGoogleAuthResponse(response) {
+        if (!response || !response.credential) return;
         try {
             const res = await fetch('/auth/google-one-tap', {
                 method: 'POST',
@@ -221,23 +251,47 @@
             });
             const data = await res.json();
             if (data.success) {
-                window.location.href = data.redirect || '/';
+                window.location.href = data.redirect || '/tenant';
             } else {
                 alert(data.error || 'Google Sign-In failed.');
             }
         } catch (err) {
-            console.error('Google One Tap error:', err);
+            console.error('Google Auth error:', err);
+            alert('An unexpected error occurred during Google Sign-In.');
         }
     }
 
     function triggerGoogleSignInPrompt() {
-        if (window.google && google.accounts) {
-            if (google.accounts.id) {
-                google.accounts.id.prompt();
+        if (googleTokenClient) {
+            googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+            return;
+        }
+        if (window.google && google.accounts && google.accounts.oauth2) {
+            try {
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: "{{ googleClientId }}",
+                    scope: 'email profile openid',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            await handleGoogleAuthResponse({ credential: tokenResponse.access_token });
+                        }
+                    }
+                });
+                googleTokenClient.requestAccessToken({ prompt: 'select_account' });
                 return;
+            } catch (e) {
+                console.warn('OAuth2 client init error:', e);
             }
         }
-        window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id={{ googleClientId }}&redirect_uri={{ basePath }}auth/google-callback&response_type=code&scope=email%20profile&access_type=offline";
+        // Fallback to full OAuth redirect with absolute redirect URI
+        const redirectUri = encodeURIComponent(window.location.origin + '/auth/google-callback');
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id={{ googleClientId }}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&access_type=offline`;
+    }
+</script>
+{% else %}
+<script>
+    function triggerGoogleSignInPrompt() {
+        alert('Google Sign-In is not configured yet on this platform.');
     }
 </script>
 {% endif %}

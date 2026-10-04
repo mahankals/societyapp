@@ -46,6 +46,12 @@ CREATE TABLE IF NOT EXISTS societies (
     INDEX idx_society_code (society_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Default Initial Society
+INSERT INTO societies (name, society_code, address, city, state)
+SELECT 'Society App', 'SOC-MAIN', 'Main Campus', 'Metro', 'State'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM societies LIMIT 1);
+
 -- Flats / Units Table
 CREATE TABLE IF NOT EXISTS flats (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

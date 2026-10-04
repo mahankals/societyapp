@@ -23,6 +23,19 @@ class SocietyController
         // System admin always has access
         if ($user && $user['role'] === 'admin') {
             $society = Database::fetchOne("SELECT * FROM societies ORDER BY id ASC LIMIT 1");
+            if (!$society) {
+                $appName = getSetting('app_name', 'Society App') ?: 'Society App';
+                $cleanName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $appName));
+                $code = 'SOC-' . (strlen($cleanName) >= 4 ? substr($cleanName, 0, 4) : 'MAIN') . '1';
+                $societyId = Database::insert('societies', [
+                    'name' => $appName,
+                    'society_code' => $code,
+                    'address' => 'Main Campus',
+                    'city' => 'Metro',
+                    'state' => 'State',
+                ]);
+                $society = Database::fetchOne("SELECT * FROM societies WHERE id = ?", [$societyId]);
+            }
             return ['user' => $user, 'society' => $society, 'role' => 'admin'];
         }
 
