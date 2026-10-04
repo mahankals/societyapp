@@ -28,6 +28,7 @@ class Session {
         ]);
 
         if (session_status() === PHP_SESSION_NONE) {
+            session_cache_limiter(''); // Disable PHP's automatic no-cache headers
             session_start();
         }
 

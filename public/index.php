@@ -77,6 +77,12 @@ if (!$isSetupRoute && !$isAsset) {
     }
 }
 
+// Cache-Control: dynamic pages must not be cached; assets served by nginx have their own caching
+if (!$isAsset) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    header('Pragma: no-cache');
+}
+
 
 // Create Router
 $router = new Router();

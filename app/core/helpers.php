@@ -210,6 +210,12 @@ function view(string $name, array $data = []): string {
         $data['currentRoute'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
     }
 
+    // Auto-versioning for assets — uses file mtime so browser cache-busts on every CSS/JS change
+    if (!isset($data['cssVersion'])) {
+        $cssFile = PUBLIC_PATH . '/assets/dist/output.css';
+        $data['cssVersion'] = file_exists($cssFile) ? filemtime($cssFile) : 6;
+    }
+
     $viewDir = __DIR__ . '/../views';
     if (!file_exists($viewDir . '/' . $name . '.html.twig')) {
         if (str_starts_with($name, 'tenant/')) {
