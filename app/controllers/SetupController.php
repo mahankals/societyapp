@@ -8,8 +8,8 @@ class SetupController
 {
     public function index()
     {
-        // If already installed and completed, redirect to login unless admin
-        if ($this->isSetupCompleted() && !isAdmin()) {
+        // In production: if already installed and completed, redirect to login unless admin
+        if ($this->isSetupCompleted() && !isAdmin() && detectEnvironment() === 'production') {
             redirect('/auth/login');
         }
 
