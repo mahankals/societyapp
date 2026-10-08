@@ -72,10 +72,7 @@ if (!defined('ROOT_PATH')) {
 
     // 2. Admin routes and authentication routes MUST pass through to public/index.php
     $isAdminRoute = (strpos($requestUri, '/admin') === 0);
-    $isAuthLoginRoute = (strpos($requestUri, '/auth/login') === 0) 
-        || (strpos($requestUri, '/auth/logout') === 0)
-        || (strpos($requestUri, '/auth/google-callback') === 0)
-        || (strpos($requestUri, '/auth/google-one-tap') === 0);
+    $isAuthLoginRoute = (strpos($requestUri, '/auth/') === 0);
 
     if ($isAdminRoute || $isAuthLoginRoute) {
         return; // Allow through to public/index.php
@@ -141,7 +138,7 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title><?= htmlspecialchars($title) ?></title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E">
+    <link rel="icon" href="/favicon.ico">
     <style>
         :root {
             --bg-base: #06090e;
@@ -633,12 +630,12 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
                     <span class="pulse-dot"></span>
                     <span><?= $isComingSoon ? 'Coming Soon' : 'Maintenance' ?></span>
                 </div>
-                <a href="/auth/login" class="admin-link-btn" title="Administrator Login">
+                <a href="/admin" class="admin-link-btn" title="Staff Portal">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
-                    <span>Admin Access</span>
+                    <span>Staff Portal</span>
                 </a>
             </div>
         </header>
@@ -756,19 +753,19 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
 
         <!-- Notify Me Box -->
         <section class="notify-box">
-            <h3 class="notify-title">Get Notified Instantly When We Launch</h3>
-            <p class="notify-desc">Leave your email below and we'll ping you the second the gates are unlocked.</p>
-            <form class="notify-form" id="notifyForm" onsubmit="handleNotifySubmit(event)">
-                <input type="email" class="notify-input" id="notifyEmail" placeholder="Enter your email address..." required>
-                <button type="submit" class="notify-btn">Notify Me</button>
-            </form>
-            <div class="notify-success-msg" id="notifySuccess">🎉 Thank you! We have logged your email and will notify you when live!</div>
+            <h3 class="notify-title">Stay Tuned for Community Launch</h3>
+            <p class="notify-desc">We are adding the final touches to your society portal. Save this page or register for instant updates below.</p>
+            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                <button type="button" class="notify-btn" id="btnNotifyMe" onclick="handleNotifyClick()">🔔 Notify Me on Launch</button>
+                <button type="button" class="sound-toggle-btn" onclick="copyPageLink()">📋 Share Link</button>
+            </div>
+            <div class="notify-success-msg" id="notifySuccess" style="display:none; margin-top: 14px;">🎉 Thank you! You will be alerted as soon as the portal is live!</div>
         </section>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; <?= date('Y') ?> SocietyApp — Built with pride for residential communities.</p>
-            <p style="margin-top: 6px;">Need urgent support? <a href="mailto:support@societyapp.ddev.site">Contact Society Committee</a> &middot; <a href="/auth/login">Admin Sign In</a></p>
+            <p>&copy; <?= date('Y') ?> SocietyApp &mdash; Built with pride for residential communities.</p>
+            <p style="margin-top: 6px;">Need urgent support? <a href="mailto:support@societyapp.ddev.site">Contact Society Committee</a> &middot; <a href="/admin">Staff Portal</a></p>
         </footer>
     </div>
 
@@ -1160,22 +1157,24 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             draw();
         })();
 
-        // Handle Notify Form
-        function handleNotifySubmit(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('notifyEmail');
+        // Handle Launch Notification
+        function handleNotifyClick() {
+            const btn = document.getElementById('btnNotifyMe');
             const successMsg = document.getElementById('notifySuccess');
-            if (emailInput && emailInput.value) {
-                // Save subscriber to localStorage
-                const subs = JSON.parse(localStorage.getItem('societyapp_subscribers') || '[]');
-                subs.push({ email: emailInput.value, date: new Date().toISOString() });
-                localStorage.setItem('societyapp_subscribers', JSON.stringify(subs));
-
-                emailInput.value = '';
+            if (btn) btn.disabled = true;
+            if (successMsg) {
                 successMsg.style.display = 'block';
                 setTimeout(() => {
                     successMsg.style.display = 'none';
-                }, 6000);
+                    if (btn) btn.disabled = false;
+                }, 5000);
+            }
+        }
+
+        function copyPageLink() {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Portal link copied to clipboard!');
             }
         }
     </script>
