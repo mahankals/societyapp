@@ -349,6 +349,32 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
+            transition: all 0.25s ease;
+        }
+        .activity-card:fullscreen,
+        .activity-card:-webkit-full-screen,
+        .activity-card.is-fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100% !important;
+            border-radius: 0 !important;
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            background: #06090e !important;
+            box-sizing: border-box !important;
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            margin: 0 !important;
+        }
+        .activity-card:fullscreen .canvas-wrapper,
+        .activity-card:-webkit-full-screen .canvas-wrapper,
+        .activity-card.is-fullscreen .canvas-wrapper {
+            flex: 1 1 auto;
+            height: auto;
+            min-height: 280px;
         }
         .activity-header {
             display: flex;
@@ -592,13 +618,13 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             </div>
         </main>
 
-        <!-- INTERACTIVE ACTIVITY: SOCIETY SKYLINE ARCADE -->
+        <!-- INTERACTIVE ACTIVITY: SKYLINE ARCADE -->
         <section class="activity-card">
             <div class="activity-header">
                 <div class="activity-title-group">
                     <h3>
                         <span>🏢</span>
-                        <span>Society Skyline Arcade</span>
+                        <span>Skyline Arcade</span>
                     </h3>
                     <p>Pass the time while we upgrade! Break all apartment blocks to restore the community.</p>
                 </div>
@@ -641,9 +667,9 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
                     <span>💡 Controls: Move mouse / touch & drag paddle, or use <strong>← / →</strong> or <strong>A / D</strong> keys.</span>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button type="button" class="sound-toggle-btn" id="btnSoundToggle">
-                        <span id="soundIcon">🔊</span>
-                        <span id="soundText">Sound ON</span>
+                    <button type="button" class="sound-toggle-btn" id="btnFullscreen" title="Toggle Fullscreen">
+                        <span id="fsIcon">⛶</span>
+                        <span id="fsText">Fullscreen</span>
                     </button>
                     <button type="button" class="sound-toggle-btn" id="btnRestartGame">
                         <span>🔄 Restart</span>
@@ -676,9 +702,11 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             const btnPlay = document.getElementById('btnPlayGame');
             const hudScore = document.getElementById('hudScore');
             const hudHigh = document.getElementById('hudHigh');
-            const hudLives = document.getElementById('hudLives');
-            const btnSound = document.getElementById('btnSoundToggle');
+            const btnFullscreen = document.getElementById('btnFullscreen');
             const btnRestart = document.getElementById('btnRestartGame');
+            const fsIcon = document.getElementById('fsIcon');
+            const fsText = document.getElementById('fsText');
+            const activityCard = document.querySelector('.activity-card');
 
             let score = 0;
             let lives = 3;
@@ -775,11 +803,55 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
                 paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, touchX - paddle.width / 2));
             }, { passive: false });
 
-            // Sound Toggle
-            btnSound.addEventListener('click', () => {
-                soundEnabled = !soundEnabled;
-                document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
-                document.getElementById('soundText').textContent = soundEnabled ? 'Sound ON' : 'Sound OFF';
+            // Fullscreen Toggle
+            function toggleFullscreen() {
+                const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || (activityCard && activityCard.classList.contains('is-fullscreen')));
+                if (!isFs) {
+                    if (activityCard && activityCard.requestFullscreen) {
+                        activityCard.requestFullscreen().catch(() => {
+                            activityCard.classList.add('is-fullscreen');
+                            updateFsUI(true);
+                        });
+                    } else if (activityCard && activityCard.webkitRequestFullscreen) {
+                        activityCard.webkitRequestFullscreen();
+                    } else if (activityCard) {
+                        activityCard.classList.add('is-fullscreen');
+                        updateFsUI(true);
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                    if (activityCard) activityCard.classList.remove('is-fullscreen');
+                    updateFsUI(false);
+                }
+            }
+
+            function updateFsUI(isFs) {
+                if (fsIcon) fsIcon.textContent = isFs ? '✕' : '⛶';
+                if (fsText) fsText.textContent = isFs ? 'Exit Fullscreen' : 'Fullscreen';
+                setTimeout(() => {
+                    resizeCanvas();
+                    resetEntities();
+                    if (gameState !== 'playing') draw();
+                }, 80);
+            }
+
+            if (btnFullscreen) {
+                btnFullscreen.addEventListener('click', toggleFullscreen);
+            }
+
+            document.addEventListener('fullscreenchange', () => {
+                const isFs = Boolean(document.fullscreenElement);
+                if (activityCard) activityCard.classList.toggle('is-fullscreen', isFs);
+                updateFsUI(isFs);
+            });
+            document.addEventListener('webkitfullscreenchange', () => {
+                const isFs = Boolean(document.webkitFullscreenElement);
+                if (activityCard) activityCard.classList.toggle('is-fullscreen', isFs);
+                updateFsUI(isFs);
             });
 
             // Start / Restart Buttons
