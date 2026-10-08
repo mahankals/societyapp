@@ -76,15 +76,13 @@ if (!defined('ROOT_PATH')) {
         return; // Allow through to public/index.php
     }
 
-    // 3. Admin routes and authentication routes MUST pass through to public/index.php
+    // 3. Admin routes always pass through to public/index.php
     $isAdminRoute = (strpos($requestUri, '/admin') === 0);
-    $isAuthLoginRoute = (strpos($requestUri, '/auth/') === 0);
-
-    if ($isAdminRoute || $isAuthLoginRoute) {
+    if ($isAdminRoute) {
         return; // Allow through to public/index.php
     }
 
-    // 3. Secret bypass key check (?bypass=...)
+    // 4. Secret bypass key check (?bypass=...) and authenticated Administrator check
     $maintenanceData = [];
     if (file_exists($maintenanceFile)) {
         $maintenanceData = json_decode(@file_get_contents($maintenanceFile), true) ?: [];
@@ -104,13 +102,49 @@ if (!defined('ROOT_PATH')) {
             return;
         }
 
-        // 4. If current session is an authenticated Administrator, allow browsing
+        // If current session is an authenticated Administrator, allow browsing
         if (Session::get('role') === 'admin') {
             return;
         }
     }
 
-    // 5. Block all other traffic (residents, committee, public visitors) and show Maintenance Page
+    // 5. In maintenance mode, login is ONLY allowed if requested from '/admin'
+    $isAuthLoginRoute = (strpos($requestUri, '/auth/') === 0);
+    if ($isAuthLoginRoute) {
+        $returnUrl = $_GET['return_url'] ?? '';
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $queryString = $_SERVER['QUERY_STRING'] ?? '';
+
+        $fromAdmin = (strpos($returnUrl, '/admin') === 0)
+            || (strpos($queryString, 'return_url=%2Fadmin') !== false)
+            || (strpos($queryString, 'return_url=/admin') !== false)
+            || (strpos($referer, '/admin') !== false);
+
+        if (!$fromAdmin && class_exists('Session')) {
+            $sessReturn = Session::get('return_url', '');
+            if (strpos($sessReturn, '/admin') === 0) {
+                $fromAdmin = true;
+            }
+        }
+
+        // If submitting login credentials with return_url to /admin, allow through
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $requestUri === '/auth/login') {
+            $postReturn = $_POST['return_url'] ?? '';
+            if (strpos($postReturn, '/admin') === 0 || $fromAdmin) {
+                return;
+            }
+        }
+
+        if ($fromAdmin && ($requestUri === '/auth/login' || $requestUri === '/auth/google-callback')) {
+            return; // Allow through to public/index.php to render login page
+        }
+
+        // Not requested from /admin -> render maintenance page
+        renderComingSoonOrMaintenance('maintenance', $maintenanceData);
+        exit;
+    }
+
+    // 6. Block all other traffic (residents, committee, public visitors) and show Maintenance Page
     renderComingSoonOrMaintenance('maintenance', $maintenanceData);
     exit;
 })();

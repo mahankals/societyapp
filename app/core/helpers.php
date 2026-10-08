@@ -20,6 +20,7 @@ function requireLogin(): void {
         $currentUrl = $_SERVER['REQUEST_URI'] ?? '/';
         if (!empty($currentUrl) && $currentUrl !== '/') {
             Session::put('return_url', $currentUrl);
+            redirect('/auth/login?return_url=' . urlencode($currentUrl));
         }
         redirect('/auth/login');
     }
@@ -159,35 +160,6 @@ function isCommitteeMember(?int $userId = null): bool {
 }
 
 function getUserRoleDashboardUrl(?array $user = null): string {
-    if (!$user && isLoggedIn()) {
-        $user = getUser();
-    }
-    if (!$user) {
-        return '/resident';
-    }
-
-    if (($user['role'] ?? '') === 'admin') {
-        return '/admin';
-    }
-
-    // Check if user is a tenant
-    try {
-        if (($user['role'] ?? '') === 'tenant') {
-            return '/tenant';
-        }
-        $userId = (int)($user['id'] ?? 0);
-        if ($userId > 0) {
-            $member = Database::fetchOne("
-                SELECT role, ownership_type FROM society_members 
-                WHERE user_id = ? AND status = 'active'
-                LIMIT 1
-            ", [$userId]);
-            if ($member && (($member['role'] ?? '') === 'tenant' || ($member['ownership_type'] ?? '') === 'tenant')) {
-                return '/tenant';
-            }
-        }
-    } catch (\Throwable $e) {}
-
     return '/resident';
 }
 

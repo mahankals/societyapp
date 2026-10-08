@@ -21,7 +21,7 @@ $society = new SocietyController();
 
 $router->middleware('guest', function() {
     if (isLoggedIn()) {
-        redirect(Session::get('role') === 'admin' ? '/admin' : '/resident');
+        redirect('/resident');
     }
 });
 
@@ -39,14 +39,23 @@ $router->get('/', function() {
     echo view('pages/index', [
         'basePath' => '/',
         'user' => getUser(),
-        'isMaintenance' => isMaintenanceModeActive(),
-        'maintenance' => getMaintenanceDetails(),
     ]);
 });
 
 $router->get('/auth/login', function() {
-    $returnUrl = Session::get('return_url', '');
+    $returnUrl = $_GET['return_url'] ?? Session::get('return_url', '');
     Session::forget('return_url');
+
+    // In maintenance mode: login page only accessible if requested from /admin
+    if (isMaintenanceModeActive()) {
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $fromAdmin = (strpos($returnUrl, '/admin') === 0)
+            || (strpos($referer, '/admin') !== false);
+        if (!$fromAdmin) {
+            redirect('/maintenance');
+        }
+    }
+
     echo view('auth/login', [
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
@@ -54,6 +63,11 @@ $router->get('/auth/login', function() {
         'returnUrl' => $returnUrl,
     ]);
 }, ['guest']);
+
+$router->get('/admin/login', function() {
+    Session::put('return_url', '/admin');
+    redirect('/auth/login?return_url=' . urlencode('/admin'));
+});
 
 $router->post('/auth/login', function() {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
@@ -83,7 +97,7 @@ $router->post('/auth/login', function() {
         }
         loginUser($user['id'], $user['role'], $user['email']);
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-        $redirectUrl = $returnUrl ?: getUserRoleDashboardUrl($user);
+        $redirectUrl = (!empty($returnUrl) && $returnUrl !== '/') ? $returnUrl : '/resident';
         redirect($redirectUrl);
     } else {
         Session::flash('error', 'Invalid email or password.');
