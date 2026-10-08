@@ -615,6 +615,7 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
 
             <!-- Status Grid -->
             <div class="status-grid">
+                <?php if (!empty($estimatedEnd)): ?>
                 <div class="status-card">
                     <div class="status-icon-box">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -624,9 +625,10 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
                     </div>
                     <div>
                         <div class="status-label">Estimated Resumption</div>
-                        <div class="status-val"><?= !empty($estimatedEnd) ? htmlspecialchars($estimatedEnd) : ($isComingSoon ? 'Spring 2026' : 'Within 60 Minutes') ?></div>
+                        <div class="status-val"><?= htmlspecialchars($estimatedEnd) ?></div>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <div class="status-card">
                     <div class="status-icon-box" style="background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.25); color: #38bdf8;">

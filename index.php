@@ -20,7 +20,7 @@ if ($uriPath === '/icon.png' || $uriPath === '/icon.php') {
 // Site branding and Open Graph configuration for WhatsApp & Social Sharing
 $siteConfig = [
     'title' => 'SocietyApp — Smart Residential Living Platform',
-    'description' => 'SocietyApp is a modern, transparent, and intelligent digital living platform for residential housing communities. Our team is finalizing deployment setup.',
+    'description' => 'The premium management platform for modern residential communities.',
     'icon' => '/icon.php',
 ];
 

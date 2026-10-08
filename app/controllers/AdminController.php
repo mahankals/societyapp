@@ -625,6 +625,11 @@ class AdminController
             'sessionLifetime' => config('session.lifetime', 3600) / 60 . ' mins',
         ];
 
+        $activeTab = $_GET['tab'] ?? 'general';
+        if (!in_array($activeTab, ['general', 'email', 'maintenance'], true)) {
+            $activeTab = 'general';
+        }
+
         echo view('admin/settings', [
             'basePath' => '/',
             'user' => $user,
@@ -636,6 +641,7 @@ class AdminController
             'maintenance' => $maintenanceDetails,
             'settings' => $settings,
             'diagnostics' => $diagnostics,
+            'activeTab' => $activeTab,
         ]);
     }
 
@@ -709,8 +715,13 @@ class AdminController
             'description' => "Updated system configuration (Maintenance: " . ($enableMaintenance ? 'ON' : 'OFF') . ")",
         ]);
 
+        $activeTab = $_POST['active_tab'] ?? 'general';
+        if (!in_array($activeTab, ['general', 'email', 'maintenance'], true)) {
+            $activeTab = 'general';
+        }
+
         Session::flash('success', 'System settings saved successfully!');
-        redirect('/admin/settings');
+        redirect('/admin/settings?tab=' . urlencode($activeTab));
     }
 
     public function toggleMaintenance()
@@ -718,7 +729,7 @@ class AdminController
         requireAdmin();
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid security token.');
-            redirect('/admin/settings');
+            redirect('/admin/settings?tab=maintenance');
         }
 
         $user = getUser();
@@ -748,6 +759,6 @@ class AdminController
             'description' => "Maintenance mode toggled to " . ($newState ? 'ENABLED' : 'DISABLED'),
         ]);
 
-        redirect('/admin/settings');
+        redirect('/admin/settings?tab=maintenance');
     }
 }

@@ -134,7 +134,7 @@ class SetupController
         $defaults = [
             'environment' => $envDefaults['environment'],
             'app_name' => $savedAppName,
-            'app_desc' => getSetting('app_desc', 'Cooperative Housing Society Management & Resident Portal'),
+            'app_desc' => getSetting('app_desc', 'The premium management platform for modern residential communities.'),
             'app_logo' => getSetting('app_logo', ''),
             'app_url' => getSetting('app_url', getenv('APP_URL') ?: $envDefaults['app_url']),
             'db_host' => getSetting('db_host', getenv('DB_HOST') ?: $envDefaults['db_host']),
@@ -724,7 +724,7 @@ class SetupController
 
         // 1. Branding Inputs
         $appName = trim($_POST['app_name'] ?? 'SocietyApp');
-        $appDesc = trim($_POST['app_desc'] ?? 'Cooperative Housing Society Management & Resident Portal');
+        $appDesc = trim($_POST['app_desc'] ?? 'The premium management platform for modern residential communities.');
         $appUrl = trim($_POST['app_url'] ?? ('https://' . ($_SERVER['HTTP_HOST'] ?? 'societyapp.ddev.site')));
         $logoBase64 = $_POST['logo_base64'] ?? '';
 

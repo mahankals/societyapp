@@ -220,7 +220,7 @@ function view(string $name, array $data = []): string {
 
     $appLogo = !empty($appLogoRaw) ? ($appLogoRaw . '?v=' . $brandingVersion) : '/assets/icons/logo.svg';
     $appFavicon = !empty($appFaviconRaw) ? ($appFaviconRaw . '?v=' . $brandingVersion) : '/assets/icons/logo.svg';
-    $appDesc = getSetting('app_desc', 'Cooperative Housing Society Management & Resident Portal');
+    $appDesc = getSetting('app_desc', 'The premium management platform for modern residential communities.');
 
     $data['appName'] = $data['appName'] ?? $appName;
     $data['appLogo'] = $data['appLogo'] ?? $appLogo;
