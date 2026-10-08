@@ -9,6 +9,6 @@
     ],
     "require": {
         "php": ">=8.2",
-        "twig/twig": "3.19"
+        "twig/twig": "^3.20"
     }
 }
