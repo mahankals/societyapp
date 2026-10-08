@@ -84,12 +84,6 @@
                         <span>Committee</span>
                     </a>
                     {% endif %}
-                    {% if userCaps.isAdmin %}
-                    <a href="/admin" class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 {{ currentRoute starts with '/admin' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                        <span>Admin</span>
-                    </a>
-                    {% endif %}
                 </div>
                 {% endif %}
             </div>
