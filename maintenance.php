@@ -264,28 +264,6 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.4; transform: scale(0.8); }
         }
-
-        .admin-link-btn {
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-glass);
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .admin-link-btn:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
         /* Hero Content */
         .hero {
             text-align: center;
@@ -521,76 +499,6 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             color: #ffffff;
             background: rgba(255, 255, 255, 0.12);
         }
-
-        /* Notify Form */
-        .notify-box {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.05));
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            margin-bottom: 32px;
-            position: relative;
-        }
-        .notify-title {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 6px;
-        }
-        .notify-desc {
-            font-size: 0.8125rem;
-            color: var(--text-muted);
-            margin-bottom: 18px;
-        }
-        .notify-form {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            max-width: 440px;
-            margin: 0 auto;
-            flex-wrap: wrap;
-        }
-        .notify-input {
-            flex: 1;
-            min-width: 240px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(0, 0, 0, 0.35);
-            color: #ffffff;
-            font-size: 0.875rem;
-            outline: none;
-            transition: border-color 0.2s ease;
-        }
-        .notify-input:focus {
-            border-color: var(--brand-500);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
-        }
-        .notify-btn {
-            background: #ffffff;
-            color: #0f172a;
-            font-weight: 700;
-            font-size: 0.875rem;
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .notify-btn:hover {
-            background: #e2e8f0;
-            transform: translateY(-1px);
-        }
-        .notify-success-msg {
-            display: none;
-            color: var(--brand-400);
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-top: 12px;
-        }
-
         /* Footer */
         .footer {
             border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -630,13 +538,6 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
                     <span class="pulse-dot"></span>
                     <span><?= $isComingSoon ? 'Coming Soon' : 'Maintenance' ?></span>
                 </div>
-                <a href="/admin" class="admin-link-btn" title="Staff Portal">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                    <span>Staff Portal</span>
-                </a>
             </div>
         </header>
 
@@ -751,21 +652,10 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             </div>
         </section>
 
-        <!-- Notify Me Box -->
-        <section class="notify-box">
-            <h3 class="notify-title">Stay Tuned for Community Launch</h3>
-            <p class="notify-desc">We are adding the final touches to your society portal. Save this page or register for instant updates below.</p>
-            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
-                <button type="button" class="notify-btn" id="btnNotifyMe" onclick="handleNotifyClick()">🔔 Notify Me on Launch</button>
-                <button type="button" class="sound-toggle-btn" onclick="copyPageLink()">📋 Share Link</button>
-            </div>
-            <div class="notify-success-msg" id="notifySuccess" style="display:none; margin-top: 14px;">🎉 Thank you! You will be alerted as soon as the portal is live!</div>
-        </section>
-
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; <?= date('Y') ?> SocietyApp &mdash; Built with pride for residential communities.</p>
-            <p style="margin-top: 6px;">Need urgent support? <a href="mailto:support@societyapp.ddev.site">Contact Society Committee</a> &middot; <a href="/admin">Staff Portal</a></p>
+            <p style="margin-top: 6px;">Need urgent support? <a href="mailto:support@societyapp.ddev.site">Contact Society Committee</a></p>
         </footer>
     </div>
 
@@ -1129,26 +1019,6 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
             draw();
         })();
 
-        // Handle Launch Notification
-        function handleNotifyClick() {
-            const btn = document.getElementById('btnNotifyMe');
-            const successMsg = document.getElementById('notifySuccess');
-            if (btn) btn.disabled = true;
-            if (successMsg) {
-                successMsg.style.display = 'block';
-                setTimeout(() => {
-                    successMsg.style.display = 'none';
-                    if (btn) btn.disabled = false;
-                }, 5000);
-            }
-        }
-
-        function copyPageLink() {
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Portal link copied to clipboard!');
-            }
-        }
     </script>
 </body>
 </html>
