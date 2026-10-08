@@ -225,6 +225,9 @@
                         <a href="/admin/invitations" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/admin/invitations' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                             Invitations
                         </a>
+                        <a href="/admin/settings" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/admin/settings' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                            Settings
+                        </a>
                     {% elseif isCommitteeView %}
                         {# Committee Top Bar Items #}
                         <a href="/comitee" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute == '/comitee' or currentRoute == '/committee' ? 'text-amber-400 bg-amber-500/10' : 'text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10' }}">
@@ -471,6 +474,10 @@
                 <a href="/admin/invitations" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/admin/invitations' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                     <i data-lucide="mail-plus" class="w-5 h-5"></i>
                     <span class="text-[10px] font-medium">Invites</span>
+                </a>
+                <a href="/admin/settings" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/admin/settings' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">Settings</span>
                 </a>
             {% elseif isCommitteeView %}
                 {# Committee Mobile Bottom Items #}

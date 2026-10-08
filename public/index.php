@@ -21,6 +21,9 @@ if (!defined('VIEW_PATH')) {
     define('VIEW_PATH', APP_PATH . '/views');
 }
 
+// Maintenance & Coming Soon Handler
+require_once ROOT_PATH . '/maintenance.php';
+
 // Load environment
 $envFile = ROOT_PATH . '/.env';
 if (file_exists($envFile)) {

@@ -595,4 +595,159 @@ class AdminController
         Session::flash('success', 'Notification sent successfully!');
         redirect('/admin/notifications');
     }
+
+    /**
+     * Admin System Settings & Maintenance Mode Management
+     */
+    public function settings()
+    {
+        requireAdmin();
+        $user = getUser();
+        $flash = Session::getFlash();
+
+        $maintenanceDetails = getMaintenanceDetails();
+        $isMaintenanceOn = isMaintenanceModeActive();
+
+        // Load settings from database
+        $settingsRows = Database::fetchAll("SELECT setting_key, setting_value, setting_group FROM settings");
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+
+        // Server and environment diagnostics
+        $diagnostics = [
+            'phpVersion' => phpversion(),
+            'serverSoftware' => $_SERVER['SERVER_SOFTWARE'] ?? 'Nginx / PHP-FPM',
+            'envFileExists' => file_exists(ROOT_PATH . '/.env'),
+            'maintenanceFileExists' => file_exists(ROOT_PATH . '/.maintenance'),
+            'databaseVersion' => Database::fetchOne("SELECT VERSION() as v")['v'] ?? 'Unknown',
+            'sessionLifetime' => config('session.lifetime', 3600) / 60 . ' mins',
+        ];
+
+        echo view('admin/settings', [
+            'basePath' => '/',
+            'user' => $user,
+            'flash' => $flash,
+            'profile' => getUserProfile(),
+            'currentRoute' => '/admin/settings',
+            'csrfToken' => generateCSRFToken(),
+            'isMaintenanceOn' => $isMaintenanceOn,
+            'maintenance' => $maintenanceDetails,
+            'settings' => $settings,
+            'diagnostics' => $diagnostics,
+        ]);
+    }
+
+    public function updateSettings()
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/settings');
+        }
+
+        $user = getUser();
+        $maintenanceFile = ROOT_PATH . '/.maintenance';
+
+        // 1. Maintenance Mode Setting
+        $enableMaintenance = isset($_POST['maintenance_enabled']) && $_POST['maintenance_enabled'] === '1';
+        $maintenanceTitle = trim($_POST['maintenance_title'] ?? 'Scheduled System Maintenance');
+        $maintenanceMessage = trim($_POST['maintenance_message'] ?? 'Our engineering team is performing scheduled improvements.');
+        $maintenanceEstimatedEnd = trim($_POST['maintenance_estimated_end'] ?? '');
+        $maintenanceBypassKey = trim($_POST['maintenance_bypass_key'] ?? '');
+
+        if ($enableMaintenance) {
+            $maintenanceData = [
+                'enabled' => true,
+                'title' => $maintenanceTitle,
+                'headline' => $maintenanceTitle,
+                'message' => $maintenanceMessage,
+                'estimated_end' => $maintenanceEstimatedEnd,
+                'bypass_key' => $maintenanceBypassKey,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $user['name'] ?? 'Admin',
+            ];
+            file_put_contents($maintenanceFile, json_encode($maintenanceData, JSON_PRETTY_PRINT));
+            setSetting('maintenance_mode', '1', 'system');
+        } else {
+            if (file_exists($maintenanceFile)) {
+                @unlink($maintenanceFile);
+            }
+            setSetting('maintenance_mode', '0', 'system');
+        }
+
+        // 2. Branding & App Settings
+        if (isset($_POST['app_name'])) {
+            setSetting('app_name', trim($_POST['app_name']), 'branding');
+        }
+        if (isset($_POST['app_desc'])) {
+            setSetting('app_desc', trim($_POST['app_desc']), 'branding');
+        }
+        if (isset($_POST['support_email'])) {
+            setSetting('support_email', trim($_POST['support_email']), 'general');
+        }
+        if (isset($_POST['default_theme'])) {
+            setSetting('default_theme', trim($_POST['default_theme']), 'ui');
+        }
+
+        // 3. Email Settings
+        if (isset($_POST['mail_host'])) {
+            setSetting('mail_host', trim($_POST['mail_host']), 'email');
+            setSetting('mail_port', trim($_POST['mail_port'] ?? '587'), 'email');
+            setSetting('mail_username', trim($_POST['mail_username'] ?? ''), 'email');
+            if (!empty($_POST['mail_password'])) {
+                setSetting('mail_password', trim($_POST['mail_password']), 'email');
+            }
+            setSetting('mail_from_address', trim($_POST['mail_from_address'] ?? ''), 'email');
+            setSetting('mail_from_name', trim($_POST['mail_from_name'] ?? ''), 'email');
+        }
+
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'settings_updated',
+            'description' => "Updated system configuration (Maintenance: " . ($enableMaintenance ? 'ON' : 'OFF') . ")",
+        ]);
+
+        Session::flash('success', 'System settings saved successfully!');
+        redirect('/admin/settings');
+    }
+
+    public function toggleMaintenance()
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/settings');
+        }
+
+        $user = getUser();
+        $maintenanceFile = ROOT_PATH . '/.maintenance';
+        $currentState = isMaintenanceModeActive();
+        $newState = !$currentState;
+
+        if ($newState) {
+            $currentData = getMaintenanceDetails();
+            $currentData['enabled'] = true;
+            $currentData['updated_at'] = date('Y-m-d H:i:s');
+            $currentData['updated_by'] = $user['name'] ?? 'Admin';
+            file_put_contents($maintenanceFile, json_encode($currentData, JSON_PRETTY_PRINT));
+            setSetting('maintenance_mode', '1', 'system');
+            Session::flash('success', 'Maintenance Mode activated! Only administrators can access the site.');
+        } else {
+            if (file_exists($maintenanceFile)) {
+                @unlink($maintenanceFile);
+            }
+            setSetting('maintenance_mode', '0', 'system');
+            Session::flash('success', 'Maintenance Mode disabled. Site is now live for all residents and visitors.');
+        }
+
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'maintenance_toggled',
+            'description' => "Maintenance mode toggled to " . ($newState ? 'ENABLED' : 'DISABLED'),
+        ]);
+
+        redirect('/admin/settings');
+    }
 }

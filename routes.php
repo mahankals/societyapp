@@ -74,6 +74,11 @@ $router->post('/auth/login', function() {
     );
 
     if ($user && password_verify($password, $user['password_hash'])) {
+        // While maintenance mode is active, only admin can log in
+        if (isMaintenanceModeActive() && $user['role'] !== 'admin') {
+            Session::flash('error', 'The system is currently undergoing scheduled maintenance. Only system administrators can sign in at this time.');
+            redirect('/maintenance');
+        }
         loginUser($user['id'], $user['role'], $user['email']);
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
         $redirectUrl = $returnUrl ?: getUserRoleDashboardUrl($user);
@@ -573,6 +578,9 @@ $router->get('/admin/users/{id}', [$admin, 'editUser'], ['auth', 'admin']);
 $router->post('/admin/users/{id}', [$admin, 'updateUser'], ['auth', 'admin']);
 $router->get('/admin/invitations', [$admin, 'invitations'], ['auth', 'admin']);
 $router->post('/admin/invitations', [$admin, 'sendInvitation'], ['auth', 'admin']);
+$router->get('/admin/settings', [$admin, 'settings'], ['auth', 'admin']);
+$router->post('/admin/settings', [$admin, 'updateSettings'], ['auth', 'admin']);
+$router->post('/admin/settings/toggle-maintenance', [$admin, 'toggleMaintenance'], ['auth', 'admin']);
 
 // Redirect legacy admin paths to committee
 $router->get('/admin/bills', function() { redirect('/comitee/bills'); }, ['auth']);

@@ -579,4 +579,37 @@ function getEnvironmentDefaults(): array {
     }
 }
 
+/**
+ * Check if maintenance mode is active
+ */
+function isMaintenanceModeActive(): bool {
+    $maintenanceFile = (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__, 2)) . '/.maintenance';
+    if (file_exists($maintenanceFile)) {
+        return true;
+    }
+    $envVal = getenv('MAINTENANCE_MODE');
+    if ($envVal === 'true' || $envVal === '1') {
+        return true;
+    }
+    return false;
+}
 
+/**
+ * Get maintenance mode details
+ */
+function getMaintenanceDetails(): array {
+    $maintenanceFile = (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__, 2)) . '/.maintenance';
+    if (file_exists($maintenanceFile)) {
+        $data = json_decode(@file_get_contents($maintenanceFile), true);
+        if (is_array($data)) {
+            return $data;
+        }
+    }
+    return [
+        'enabled' => isMaintenanceModeActive(),
+        'title' => 'Scheduled System Maintenance',
+        'message' => 'Our engineering team is performing scheduled infrastructure improvements and database optimizations. Normal operations will resume shortly.',
+        'estimated_end' => '',
+        'bypass_key' => '',
+    ];
+}
