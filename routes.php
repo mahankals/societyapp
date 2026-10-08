@@ -39,6 +39,8 @@ $router->get('/', function() {
     echo view('pages/index', [
         'basePath' => '/',
         'user' => getUser(),
+        'isMaintenance' => isMaintenanceModeActive(),
+        'maintenance' => getMaintenanceDetails(),
     ]);
 });
 
@@ -332,6 +334,11 @@ $router->get('/auth/google-callback', function() {
                     ]);
                     loginUser($userId, 'resident', $userInfo['email']);
                     $existingUser = ['role' => 'resident'];
+                }
+
+                if (isMaintenanceModeActive() && ($existingUser['role'] ?? '') !== 'admin') {
+                    Session::flash('error', 'The system is currently undergoing scheduled maintenance. Only system administrators can sign in at this time.');
+                    redirect('/maintenance');
                 }
 
                 redirect(getUserRoleDashboardUrl($existingUser));

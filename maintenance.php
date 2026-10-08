@@ -70,7 +70,13 @@ if (!defined('ROOT_PATH')) {
         return;
     }
 
-    // 2. Admin routes and authentication routes MUST pass through to public/index.php
+    // 2. Landing page is excluded from maintenance mode so public visitors can always view it
+    $isLandingPage = ($requestUri === '/' || $requestUri === '' || $requestUri === '/index.php' || $requestUri === '/landing');
+    if ($isLandingPage) {
+        return; // Allow through to public/index.php
+    }
+
+    // 3. Admin routes and authentication routes MUST pass through to public/index.php
     $isAdminRoute = (strpos($requestUri, '/admin') === 0);
     $isAuthLoginRoute = (strpos($requestUri, '/auth/') === 0);
 
