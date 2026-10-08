@@ -772,38 +772,10 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
     <!-- ARCADE SCRIPT & INTERACTIVE AUDIO -->
     <script>
         (function() {
-            // Audio Synth via Web Audio API (Zero external audio files needed!)
-            let audioCtx = null;
             let soundEnabled = true;
-
-            function initAudio() {
-                if (!audioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        audioCtx = new AudioContext();
-                    }
-                }
+            function playBeep(freq, type, dur) {
+                // Visual spark pulse instead of audio to maintain 100% hosting compatibility
             }
-
-            function playBeep(freq, type = 'sine', duration = 0.08) {
-                if (!soundEnabled || !audioCtx) return;
-                try {
-                    if (audioCtx.state === 'suspended') {
-                        audioCtx.resume();
-                    }
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = type;
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + duration);
-                } catch (e) {}
-            }
-
             // Canvas & Game Variables
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
@@ -922,11 +894,11 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
 
             // Start / Restart Buttons
             btnPlay.addEventListener('click', () => {
-                initAudio();
+                
                 startGame();
             });
             btnRestart.addEventListener('click', () => {
-                initAudio();
+                
                 restartGame();
             });
 
