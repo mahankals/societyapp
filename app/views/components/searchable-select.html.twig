@@ -1,0 +1,45 @@
+{# 
+  SocietyApp Reusable Searchable Select Component Macro
+  
+  Usage in templates:
+  {% import "components/searchable-select.html.twig" as ui %}
+  {{ ui.select('flat_id', flats, selectedFlatId, { 
+      placeholder: '-- Choose Flat --',
+      required: true,
+      class: 'input-glass w-full'
+  }) }}
+#}
+
+{% macro select(name, options, selectedValue, config = {}) %}
+    {% set id = config.id|default(name) %}
+    {% set placeholder = config.placeholder|default('Select an option...') %}
+    {% set required = config.required|default(false) %}
+    {% set disabled = config.disabled|default(false) %}
+    {% set onchange = config.onchange|default('') %}
+    {% set class = config.class|default('input-glass w-full text-sm') %}
+    
+    <select name="{{ name }}" 
+            id="{{ id }}" 
+            class="custom-select {{ class }}" 
+            data-searchable="{{ config.searchable is defined and not config.searchable ? 'false' : 'true' }}"
+            data-placeholder="{{ placeholder }}"
+            {% if required %}required{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% if onchange %}onchange="{{ onchange }}"{% endif %}>
+        {% if placeholder %}
+        <option value="">{{ placeholder }}</option>
+        {% endif %}
+        {% for opt in options %}
+            {% if opt is iterable %}
+                {% set val = opt.value|default(opt.id) %}
+                {% set label = opt.label|default(opt.name|default(opt.text)) %}
+            {% else %}
+                {% set val = opt %}
+                {% set label = opt %}
+            {% endif %}
+            <option value="{{ val }}" {{ val ~ '' == selectedValue ~ '' ? 'selected' : '' }}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+{% endmacro %}

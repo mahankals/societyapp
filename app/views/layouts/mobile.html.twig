@@ -18,6 +18,7 @@
     <link href="/assets/dist/output.css?v={{ cssVersion }}" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/assets/js/offline.js"></script>
+    <script src="/assets/js/dropdown.js?v={{ cssVersion }}"></script>
     <style>
         body {
             touch-action: manipulation;
@@ -314,7 +315,7 @@
             if ('caches' in window) {
                 caches.keys().then((keys) => {
                     keys.forEach((key) => {
-                        if (key !== 'societyapp-v3') {
+                        if (key !== 'societyapp-v4') {
                             caches.delete(key);
                         }
                     });

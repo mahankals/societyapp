@@ -1,4 +1,4 @@
-const CACHE_NAME = 'societyapp-v3';
+const CACHE_NAME = 'societyapp-v4';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -6,6 +6,8 @@ const STATIC_ASSETS = [
     '/manifest.json',
     '/favicon.ico',
     '/assets/dist/output.css',
+    '/assets/js/dropdown.js',
+    '/assets/js/offline.js',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap',
     'https://unpkg.com/lucide@latest'
 ];
