@@ -613,3 +613,30 @@ function getMaintenanceDetails(): array {
         'bypass_key' => '',
     ];
 }
+
+/**
+ * Get configuration value using dot notation (e.g. 'session.lifetime')
+ */
+function config(string $key, mixed $default = null): mixed {
+    static $configs = [];
+    $parts = explode('.', $key);
+    $file = $parts[0];
+    
+    if (!isset($configs[$file])) {
+        $configPath = (defined('CONFIG_PATH') ? CONFIG_PATH : (defined('ROOT_PATH') ? ROOT_PATH . '/config' : dirname(__DIR__, 2) . '/config')) . '/' . $file . '.php';
+        if (file_exists($configPath)) {
+            $configs[$file] = require $configPath;
+        } else {
+            $configs[$file] = [];
+        }
+    }
+    
+    $value = $configs[$file];
+    for ($i = 1; $i < count($parts); $i++) {
+        if (!is_array($value) || !array_key_exists($parts[$i], $value)) {
+            return $default;
+        }
+        $value = $value[$parts[$i]];
+    }
+    return $value;
+}
