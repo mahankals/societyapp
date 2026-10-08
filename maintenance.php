@@ -114,6 +114,8 @@ if (!defined('ROOT_PATH')) {
  */
 function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data = []): void
 {
+    global $siteConfig;
+
     // Set headers
     if ($mode === 'maintenance') {
         http_response_code(503);
@@ -125,12 +127,18 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
     $isComingSoon = ($mode === 'coming_soon');
-    $title = $data['title'] ?? ($isComingSoon ? 'Coming Soon | SocietyApp' : 'Under Scheduled Maintenance | SocietyApp');
+    $title = $data['title'] ?? ($siteConfig['title'] ?? ($isComingSoon ? 'SocietyApp — Smart Residential Living Platform' : 'Under Scheduled Maintenance | SocietyApp'));
     $headline = $data['headline'] ?? ($isComingSoon ? 'Something Extraordinary is in the Works' : 'We Are Upgrading Your Community Hub');
-    $message = $data['message'] ?? ($isComingSoon 
+    $message = $data['message'] ?? ($siteConfig['description'] ?? ($isComingSoon 
         ? 'SocietyApp is a modern, transparent, and intelligent digital living platform for residential housing communities. Our team is finalizing deployment setup.'
-        : 'Our engineering team is performing scheduled infrastructure improvements and database optimizations. Normal operations will resume shortly.');
+        : 'Our engineering team is performing scheduled infrastructure improvements and database optimizations. Normal operations will resume shortly.'));
     $estimatedEnd = $data['estimated_end'] ?? '';
+
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443 ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'societymanager.eu3.biz';
+    $baseUrl = $protocol . '://' . $host;
+    $ogImage = $baseUrl . ($siteConfig['icon'] ?? '/icon.php');
+    $canonicalUrl = $baseUrl . (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/');
     ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -138,7 +146,33 @@ function renderComingSoonOrMaintenance(string $mode = 'coming_soon', array $data
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title><?= htmlspecialchars($title) ?></title>
-    <link rel="icon" href="/favicon.ico">
+    <meta name="description" content="<?= htmlspecialchars($message) ?>">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / WhatsApp / Facebook Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SocietyApp">
+    <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl) ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($title) ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($message) ?>">
+    <meta property="og:image" content="<?= htmlspecialchars($ogImage) ?>">
+    <meta property="og:image:secure_url" content="<?= htmlspecialchars($ogImage) ?>">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="SocietyApp Logo">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<?= htmlspecialchars($title) ?>">
+    <meta name="twitter:description" content="<?= htmlspecialchars($message) ?>">
+    <meta name="twitter:image" content="<?= htmlspecialchars($ogImage) ?>">
+
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="image_src" href="<?= htmlspecialchars($ogImage) ?>">
     <style>
         :root {
             --bg-base: #06090e;
