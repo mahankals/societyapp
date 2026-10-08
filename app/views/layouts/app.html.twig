@@ -21,18 +21,18 @@
     <style>
         .glass-panel { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .noise-overlay { position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); opacity: 0.015; pointer-events: none; z-index: 9999; }
-        #profile-dropdown {
+        #profile-dropdown, #notifications-dropdown {
             background-color: #0f172a !important;
             background: #0f172a !important;
             opacity: 1 !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
-        #profile-dropdown-header {
+        #profile-dropdown-header, #notifications-dropdown-header, #notifications-dropdown-footer {
             background-color: #090d16 !important;
             background: #090d16 !important;
         }
-        #profile-dropdown-body {
+        #profile-dropdown-body, #notifications-dropdown-body {
             background-color: #0f172a !important;
             background: #0f172a !important;
         }
@@ -50,12 +50,80 @@
                 </a>
             </div>
             <div class="flex items-center gap-2">
-                <a href="/resident/notifications" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                    <i data-lucide="bell" class="w-5 h-5"></i>
-                    {% if unreadNotifications is defined and unreadNotifications > 0 %}
-                    <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">{{ unreadNotifications }}</span>
-                    {% endif %}
-                </a>
+                <!-- Notifications Dropdown Trigger & Panel -->
+                <div class="relative" id="notifications-menu-wrapper">
+                    <button type="button" id="notifications-menu-btn" class="relative p-2.5 text-surface-200/60 hover:text-white hover:bg-white/5 rounded-xl transition-all" title="Notifications" aria-label="Notifications">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        {% if unreadNotifications is defined and unreadNotifications > 0 %}
+                        <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">{{ unreadNotifications }}</span>
+                        {% endif %}
+                    </button>
+
+                    <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 border border-white/20 rounded-xl overflow-hidden shadow-2xl shadow-black/90 z-50 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important; opacity: 1 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;">
+                        <div id="notifications-dropdown-header" class="p-3.5 border-b border-white/10 bg-[#090d16] flex items-center justify-between" style="background-color: #090d16 !important; background: #090d16 !important;">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-white">Notifications</span>
+                                {% if unreadNotifications is defined and unreadNotifications > 0 %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">{{ unreadNotifications }} new</span>
+                                {% endif %}
+                            </div>
+                            {% if unreadNotifications is defined and unreadNotifications > 0 %}
+                            <form action="/resident/notifications/mark-read" method="POST" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrfToken|default('') }}">
+                                <button type="submit" class="text-[11px] text-brand-400 hover:text-brand-300 font-medium">Mark all read</button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                        <div id="notifications-dropdown-body" class="max-h-80 overflow-y-auto divide-y divide-white/5 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important;">
+                            {% if latestNotifications is defined and latestNotifications|length > 0 %}
+                                {% for n in latestNotifications %}
+                                <a href="/resident/notifications" class="block p-3.5 hover:bg-white/[0.04] transition-colors {% if not n.is_read %}bg-brand-500/[0.07]{% endif %}">
+                                    <div class="flex items-start gap-3">
+                                        <div class="mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 
+                                            {% if n.type == 'warning' %}bg-amber-500/20 text-amber-400
+                                            {% elseif n.type == 'error' %}bg-red-500/20 text-red-400
+                                            {% elseif n.type == 'success' %}bg-emerald-500/20 text-emerald-400
+                                            {% elseif n.type == 'announcement' %}bg-purple-500/20 text-purple-400
+                                            {% else %}bg-brand-500/20 text-brand-400{% endif %}">
+                                            {% if n.type == 'warning' %}<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                                            {% elseif n.type == 'error' %}<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                            {% elseif n.type == 'success' %}<i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                            {% elseif n.type == 'announcement' %}<i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+                                            {% else %}<i data-lucide="bell" class="w-3.5 h-3.5"></i>{% endif %}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-2 mb-0.5">
+                                                <p class="text-xs font-semibold text-white truncate">{{ n.title }}</p>
+                                                {% if not n.is_read %}
+                                                <span class="w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0"></span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="text-[11px] text-surface-200/60 line-clamp-2 leading-relaxed">{{ n.message }}</p>
+                                            <span class="block text-[10px] text-surface-200/40 mt-1">{{ n.created_at|date('d M, h:i A') }}</span>
+                                        </div>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-6 text-center">
+                                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-2 text-surface-200/40">
+                                        <i data-lucide="bell-off" class="w-5 h-5"></i>
+                                    </div>
+                                    <p class="text-xs font-medium text-surface-200/70">No notifications yet</p>
+                                    <p class="text-[11px] text-surface-200/40 mt-0.5">You're all caught up!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Dropdown Footer with "more >>" button -->
+                        <div id="notifications-dropdown-footer" class="p-2 border-t border-white/10 bg-[#090d16] text-center" style="background-color: #090d16 !important; background: #090d16 !important;">
+                            <a href="/resident/notifications" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-semibold text-brand-400 hover:text-brand-300 hover:bg-white/5 rounded-lg transition-all">
+                                <span>more &gt;&gt;</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 <div class="relative" id="profile-menu-wrapper">
                     <button type="button" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all" id="profile-menu-btn">
                         {% if profile.profile_photo %}
@@ -128,18 +196,35 @@
         lucide.createIcons();
         const profileBtn = document.getElementById('profile-menu-btn');
         const profileDropdown = document.getElementById('profile-dropdown');
+        const notifBtn = document.getElementById('notifications-menu-btn');
+        const notifDropdown = document.getElementById('notifications-dropdown');
+
         if (profileBtn && profileDropdown) {
             profileBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (notifDropdown) notifDropdown.classList.add('hidden');
                 profileDropdown.classList.toggle('hidden');
-            });
-            document.addEventListener('click', () => {
-                profileDropdown.classList.add('hidden');
             });
             profileDropdown.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
         }
+
+        if (notifBtn && notifDropdown) {
+            notifBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (profileDropdown) profileDropdown.classList.add('hidden');
+                notifDropdown.classList.toggle('hidden');
+            });
+            notifDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if (profileDropdown) profileDropdown.classList.add('hidden');
+            if (notifDropdown) notifDropdown.classList.add('hidden');
+        });
 
         if ('serviceWorker' in navigator) {
             if ('caches' in window) {
