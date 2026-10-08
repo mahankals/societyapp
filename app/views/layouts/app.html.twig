@@ -68,7 +68,7 @@
                         <span class="text-sm font-medium text-white hidden sm:block">{{ user.name }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-surface-200/40"></i>
                     </button>
-                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 border border-white/20 rounded-xl overflow-hidden shadow-2xl shadow-black/90 z-50 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important; opacity: 1 !important;">
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 border border-white/20 rounded-xl overflow-hidden shadow-2xl shadow-black/90 z-50 bg-[#0f172a]" style="background-color: #0f172a !important; background: #0f172a !important; opacity: 1 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;">
                         <div id="profile-dropdown-header" class="p-3 border-b border-white/10 bg-[#090d16]" style="background-color: #090d16 !important; background: #090d16 !important;">
                             <p class="text-sm font-semibold text-white truncate">{{ user.name }}</p>
                             <p class="text-xs text-surface-200/50 truncate">{{ user.email }}</p>
@@ -142,10 +142,29 @@
         }
 
         if ('serviceWorker' in navigator) {
+            if ('caches' in window) {
+                caches.keys().then((keys) => {
+                    keys.forEach((key) => {
+                        if (key !== 'societyapp-v3') {
+                            caches.delete(key);
+                        }
+                    });
+                });
+            }
+
+            let hadController = !!navigator.serviceWorker.controller;
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (hadController && !refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
-                        console.log('SW registered:', registration.scope);
+                        registration.update();
                     })
                     .catch((error) => {
                         console.log('SW registration failed:', error);

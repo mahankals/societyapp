@@ -33,10 +33,29 @@
         lucide.createIcons();
         
         if ('serviceWorker' in navigator) {
+            if ('caches' in window) {
+                caches.keys().then((keys) => {
+                    keys.forEach((key) => {
+                        if (key !== 'societyapp-v3') {
+                            caches.delete(key);
+                        }
+                    });
+                });
+            }
+
+            let hadController = !!navigator.serviceWorker.controller;
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (hadController && !refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
-                        console.log('SW registered:', registration.scope);
+                        registration.update();
                     })
                     .catch((error) => {
                         console.log('SW registration failed:', error);
