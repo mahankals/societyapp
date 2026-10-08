@@ -1,0 +1,673 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Accounting & Balance Sheet | {{ society.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    <!-- Header & Action Buttons -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/comitee" class="text-xs text-amber-400 hover:underline">← Committee Dashboard</a>
+                <span class="text-xs text-surface-200/40">&middot;</span>
+                <a href="/comitee/expenses" class="text-xs text-rose-400 hover:underline">Expenses & Outflows →</a>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Society Accounting & Balance Sheet</h1>
+            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Financial statements, Profit & Loss, Balance Sheet, and Chart of Accounts.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="document.getElementById('openingBalanceModal').classList.remove('hidden')" class="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-surface-200 flex items-center gap-1.5 text-xs font-semibold transition-all">
+                <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i>
+                <span>Opening Balances</span>
+            </button>
+            <button type="button" onclick="document.getElementById('donationModal').classList.remove('hidden')" class="px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 flex items-center gap-1.5 text-xs font-semibold transition-all">
+                <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+                <span>+ Record Donation</span>
+            </button>
+            <a href="/comitee/expenses" class="btn-primary !px-4 !py-2 flex items-center gap-1.5 text-xs font-semibold">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Record Expense</span>
+            </a>
+        </div>
+    </div>
+
+    {% if flash.success or (flash.type == 'success') %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success ?: flash.message }}</span>
+    </div>
+    {% endif %}
+    {% if flash.error or (flash.type == 'error') %}
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <span>{{ flash.error ?: flash.message }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Top Real-Time Balance Cards (In Hand & Deposits) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="glass-panel rounded-xl p-4 border border-emerald-500/20 bg-emerald-500/[0.04]">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-surface-200/70 font-medium">Total Society Balance</span>
+                <i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-white tracking-tight">₹{{ balanceSummary.totalBalance|number_format(2) }}</p>
+            <p class="text-[11px] text-emerald-400 mt-1">Net liquid funds (Cash + Bank)</p>
+        </div>
+
+        <div class="glass-panel rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-surface-200/70 font-medium">In Hand (Cash)</span>
+                <i data-lucide="banknote" class="w-4 h-4 text-amber-400"></i>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-white tracking-tight">₹{{ balanceSummary.inHand|number_format(2) }}</p>
+            <p class="text-[11px] text-amber-400/90 mt-1">Opening ₹{{ balanceSummary.openingCash|number_format(0) }} &middot; Petty cash</p>
+        </div>
+
+        <div class="glass-panel rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-surface-200/70 font-medium">Deposits (Bank & FDs)</span>
+                <i data-lucide="landmark" class="w-4 h-4 text-cyan-400"></i>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-white tracking-tight">₹{{ balanceSummary.deposits|number_format(2) }}</p>
+            <p class="text-[11px] text-cyan-400/90 mt-1">Opening ₹{{ balanceSummary.openingDeposits|number_format(0) }} &middot; Bank balance</p>
+        </div>
+
+        <div class="glass-panel rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-surface-200/70 font-medium">Pending Member Dues</span>
+                <i data-lucide="clock" class="w-4 h-4 text-rose-400"></i>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-white tracking-tight">₹{{ balanceSummary.pendingMemberDues|number_format(2) }}</p>
+            <p class="text-[11px] text-rose-400 mt-1">Receivables from members</p>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-white/10 mb-6 overflow-x-auto pb-px">
+        <button type="button" onclick="switchAccountingTab('balancesheet')" id="tab-btn-balancesheet" class="tab-link px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-brand-400 text-white bg-white/5 transition-all flex items-center gap-2 shrink-0">
+            <i data-lucide="scale" class="w-4 h-4 text-brand-400"></i>
+            <span>Balance Sheet</span>
+        </button>
+        <button type="button" onclick="switchAccountingTab('pnl')" id="tab-btn-pnl" class="tab-link px-4 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-surface-200/60 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 shrink-0">
+            <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+            <span>Profit & Loss (P&L)</span>
+        </button>
+        <button type="button" onclick="switchAccountingTab('chartofaccounts')" id="tab-btn-chartofaccounts" class="tab-link px-4 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-surface-200/60 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 shrink-0">
+            <i data-lucide="folders" class="w-4 h-4 text-purple-400"></i>
+            <span>Chart of Accounts (A/C Heads)</span>
+        </button>
+        <button type="button" onclick="switchAccountingTab('donations')" id="tab-btn-donations" class="tab-link px-4 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-surface-200/60 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 shrink-0">
+            <i data-lucide="heart" class="w-4 h-4 text-rose-400"></i>
+            <span>Donations & Donors ({{ donations|length }})</span>
+        </button>
+    </div>
+
+    <!-- TAB 1: Balance Sheet -->
+    <div id="tab-content-balancesheet" class="accounting-tab-pane space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white">Society Balance Sheet</h2>
+                <p class="text-xs text-surface-200/50">Statement of Assets, Liabilities, and Accumulated Capital Funds as of {{ 'now'|date('d F Y') }}</p>
+            </div>
+            <div class="text-right">
+                <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                    Status: Balanced
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Side: Assets -->
+            <div class="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-4 h-4 text-cyan-400"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Assets</h3>
+                    </div>
+                    <span class="text-xs text-surface-200/50">Properties & Receivables</span>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">Current Assets & Cash</p>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">Cash in Hand (In Hand)</span>
+                            <span class="block text-[10px] text-surface-200/40">Opening ₹{{ balanceSummary.openingCash|number_format(0) }} + Inflows - Outflows</span>
+                        </div>
+                        <span class="font-mono font-semibold text-white">₹{{ balanceSummary.inHand|number_format(2) }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">Bank Deposits & Accounts (Deposits)</span>
+                            <span class="block text-[10px] text-surface-200/40">Opening ₹{{ balanceSummary.openingDeposits|number_format(0) }} + Online collections & donations</span>
+                        </div>
+                        <span class="font-mono font-semibold text-white">₹{{ balanceSummary.deposits|number_format(2) }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">Member Dues Receivable</span>
+                            <span class="block text-[10px] text-surface-200/40">Outstanding maintenance bills from residents</span>
+                        </div>
+                        <span class="font-mono font-semibold text-amber-300">₹{{ balanceSummary.pendingMemberDues|number_format(2) }}</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex items-center justify-between text-sm font-bold">
+                    <span class="text-cyan-400">Total Assets</span>
+                    <span class="font-mono text-white text-base">₹{{ balanceSummary.totalAssets|number_format(2) }}</span>
+                </div>
+            </div>
+
+            <!-- Right Side: Liabilities & Society Fund -->
+            <div class="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Liabilities & Society Fund</h3>
+                    </div>
+                    <span class="text-xs text-surface-200/50">Capital & Reserves</span>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Accumulated Funds & Capital</p>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">General Reserve Fund (Opening Capital)</span>
+                            <span class="block text-[10px] text-surface-200/40">Initial society opening corpus/balance</span>
+                        </div>
+                        <span class="font-mono font-semibold text-white">₹{{ balanceSummary.openingFund|number_format(2) }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">Current Period Net Surplus / (Deficit)</span>
+                            <span class="block text-[10px] text-surface-200/40">Net operating result from P&L statement</span>
+                        </div>
+                        <span class="font-mono font-semibold {{ balanceSummary.netSurplus >= 0 ? 'text-emerald-400' : 'text-rose-400' }}">
+                            {{ balanceSummary.netSurplus >= 0 ? '+' : '' }}₹{{ balanceSummary.netSurplus|number_format(2) }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between py-2 border-b border-white/5 text-xs">
+                        <div>
+                            <span class="text-white font-medium">Accrued Receivables Reserve</span>
+                            <span class="block text-[10px] text-surface-200/40">Contingent member billing reserve</span>
+                        </div>
+                        <span class="font-mono font-semibold text-white">₹{{ balanceSummary.pendingMemberDues|number_format(2) }}</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex items-center justify-between text-sm font-bold">
+                    <span class="text-purple-400">Total Liabilities & Fund</span>
+                    <span class="font-mono text-white text-base">₹{{ balanceSummary.totalLiabilitiesAndFund|number_format(2) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Profit & Loss (P&L) Statement -->
+    <div id="tab-content-pnl" class="accounting-tab-pane hidden space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white">Profit & Loss / Income & Expenditure Statement</h2>
+                <p class="text-xs text-surface-200/50">Summary of all community revenues and operational outflows</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-surface-200/50">Operating Result:</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold {{ balanceSummary.netSurplus >= 0 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30' }}">
+                    {{ balanceSummary.netSurplus >= 0 ? 'Net Surplus: +₹' ~ balanceSummary.netSurplus|number_format(2) : 'Net Deficit: -₹' ~ (0 - balanceSummary.netSurplus)|number_format(2) }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Income Section -->
+            <div class="glass-panel rounded-2xl p-5 border border-emerald-500/20 bg-emerald-500/[0.02] space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-400"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Income & Inflows</h3>
+                    </div>
+                    <span class="font-mono font-bold text-emerald-400 text-sm">₹{{ balanceSummary.totalIncome|number_format(2) }}</span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Member Maintenance Collections -->
+                    <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span class="font-semibold text-white">Maintenance Collections (Members)</span>
+                            </div>
+                            <span class="font-mono font-bold text-emerald-300">₹{{ balanceSummary.totalCollectedBills|number_format(2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-surface-200/50 pl-4">
+                            <span>Via In Hand Cash: ₹{{ balanceSummary.cashBills|number_format(2) }}</span>
+                            <span>Via Bank / UPI: ₹{{ balanceSummary.bankBills|number_format(2) }}</span>
+                        </div>
+                        <p class="text-[10px] text-surface-200/40 pl-4">Collected from {{ membersCount }} society members across flats</p>
+                    </div>
+
+                    <!-- Donor Contributions -->
+                    <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                <span class="font-semibold text-white">Donations & Contributions (Donors)</span>
+                            </div>
+                            <span class="font-mono font-bold text-cyan-300">₹{{ balanceSummary.totalDonations|number_format(2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-surface-200/50 pl-4">
+                            <span>Via In Hand Cash: ₹{{ balanceSummary.cashDonations|number_format(2) }}</span>
+                            <span>Via Bank / UPI: ₹{{ balanceSummary.bankDonations|number_format(2) }}</span>
+                        </div>
+                        <p class="text-[10px] text-surface-200/40 pl-4">{{ donations|length }} donations recorded</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex items-center justify-between text-sm font-bold">
+                    <span class="text-white">Total Operating Income</span>
+                    <span class="font-mono text-emerald-400 text-base">₹{{ balanceSummary.totalIncome|number_format(2) }}</span>
+                </div>
+            </div>
+
+            <!-- Expenses Section Grouped by Account Head -->
+            <div class="glass-panel rounded-2xl p-5 border border-rose-500/20 bg-rose-500/[0.02] space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-rose-400"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Expenditure & Outflows</h3>
+                    </div>
+                    <span class="font-mono font-bold text-rose-400 text-sm">₹{{ balanceSummary.totalExpenses|number_format(2) }}</span>
+                </div>
+
+                <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {% for ah in expenseAcHeads %}
+                    <div class="p-3 rounded-xl bg-white/[0.03] border border-white/5 space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div>
+                                <span class="font-semibold text-white">{{ ah.name }}</span>
+                                <span class="text-[10px] text-surface-200/40 font-mono ml-1.5">[{{ ah.code }}]</span>
+                            </div>
+                            <span class="font-mono font-bold text-rose-300">₹{{ ah.total_spent|number_format(2) }}</span>
+                        </div>
+                        
+                        {% if expenseHeadsByAc[ah.id] is defined %}
+                        <div class="pl-3 space-y-1 pt-1 border-t border-white/5">
+                            {% for eh in expenseHeadsByAc[ah.id] %}
+                            <div class="flex items-center justify-between text-[11px] text-surface-200/60">
+                                <span>&bull; {{ eh.name }} ({{ eh.voucher_count }} vouchers)</span>
+                                <span class="font-mono text-surface-200/80">₹{{ eh.total_spent|number_format(2) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="py-8 text-center text-xs text-surface-200/40">
+                        No expenses recorded yet.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex items-center justify-between text-sm font-bold">
+                    <span class="text-white">Total Operating Expenses</span>
+                    <span class="font-mono text-rose-400 text-base">₹{{ balanceSummary.totalExpenses|number_format(2) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- P&L Summary Result Card -->
+        <div class="glass-panel rounded-2xl p-5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h3 class="text-sm font-bold text-white mb-0.5">Net Operational Standing</h3>
+                <p class="text-xs text-surface-200/60">Total Revenues (₹{{ balanceSummary.totalIncome|number_format(0) }}) - Total Expenses (₹{{ balanceSummary.totalExpenses|number_format(0) }})</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-surface-200/60 font-medium">Net {{ balanceSummary.netSurplus >= 0 ? 'Surplus' : 'Deficit' }}:</span>
+                <span class="text-2xl font-bold font-mono {{ balanceSummary.netSurplus >= 0 ? 'text-emerald-400' : 'text-rose-400' }}">
+                    {{ balanceSummary.netSurplus >= 0 ? '+' : '' }}₹{{ balanceSummary.netSurplus|number_format(2) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Chart of Accounts (A/C Heads) -->
+    <div id="tab-content-chartofaccounts" class="accounting-tab-pane hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-bold text-white">Chart of Accounts (A/C Heads)</h2>
+                <p class="text-xs text-surface-200/50">Standard ledger heads linking members, donors, and operational expenses</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="document.getElementById('accountHeadModal').classList.remove('hidden')" class="btn-primary !px-3.5 !py-2 text-xs font-semibold">
+                    <span>+ Add A/C Head</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-surface-200/80">
+                    <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold">A/C Code</th>
+                            <th class="py-3 px-4 font-semibold">Account Head Name</th>
+                            <th class="py-3 px-4 font-semibold">Type</th>
+                            <th class="py-3 px-4 font-semibold">Linked Entity</th>
+                            <th class="py-3 px-4 text-right font-semibold">Opening Balance</th>
+                            <th class="py-3 px-4 text-right font-semibold">Current Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for ah in allAccountHeads %}
+                        <tr class="hover:bg-white/[0.02] transition-colors">
+                            <td class="py-3.5 px-4 font-mono text-xs font-semibold text-brand-300">
+                                {{ ah.code }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="font-medium text-white block text-xs">{{ ah.name }}</span>
+                                <span class="text-[10px] text-surface-200/40">{{ ah.description ?: '-' }}</span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider
+                                    {% if ah.type == 'asset' %}bg-cyan-500/15 text-cyan-300 border border-cyan-500/30
+                                    {% elseif ah.type == 'income' %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/30
+                                    {% elseif ah.type == 'expense' %}bg-rose-500/15 text-rose-300 border border-rose-500/30
+                                    {% elseif ah.type == 'equity' %}bg-purple-500/15 text-purple-300 border border-purple-500/30
+                                    {% else %}bg-amber-500/15 text-amber-300 border border-amber-500/30{% endif %}">
+                                    {{ ah.type }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs">
+                                {% if ah.code == 'INC-MAINT' %}
+                                <span class="inline-flex items-center gap-1 text-emerald-300 font-medium">
+                                    <i data-lucide="users" class="w-3 h-3"></i> Society Members
+                                </span>
+                                {% elseif ah.code == 'INC-DON' %}
+                                <span class="inline-flex items-center gap-1 text-cyan-300 font-medium">
+                                    <i data-lucide="heart" class="w-3 h-3"></i> External Donors
+                                </span>
+                                {% elseif ah.type == 'expense' %}
+                                <span class="inline-flex items-center gap-1 text-rose-300 font-medium">
+                                    <i data-lucide="receipt" class="w-3 h-3"></i> Expense Heads & Vouchers
+                                </span>
+                                {% elseif ah.code == 'AST-CASH' %}
+                                <span class="inline-flex items-center gap-1 text-amber-300 font-medium">
+                                    <i data-lucide="banknote" class="w-3 h-3"></i> In Hand (Cash)
+                                </span>
+                                {% elseif ah.code == 'AST-BANK' %}
+                                <span class="inline-flex items-center gap-1 text-cyan-300 font-medium">
+                                    <i data-lucide="landmark" class="w-3 h-3"></i> Bank Deposits
+                                </span>
+                                {% else %}
+                                <span class="text-surface-200/40">General</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-right font-mono text-xs">
+                                ₹{{ ah.opening_balance|number_format(2) }}
+                            </td>
+                            <td class="py-3.5 px-4 text-right font-mono text-xs font-semibold text-white">
+                                ₹{{ ah.total_activity|number_format(2) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: Donations & Donors -->
+    <div id="tab-content-donations" class="accounting-tab-pane hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-bold text-white">Donations & External Contributions</h2>
+                <p class="text-xs text-surface-200/50">Contributions received from donors, sponsors, and community well-wishers</p>
+            </div>
+            <button type="button" onclick="document.getElementById('donationModal').classList.remove('hidden')" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Record Donation</span>
+            </button>
+        </div>
+
+        <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-surface-200/80">
+                    <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold">Receipt / Date</th>
+                            <th class="py-3 px-4 font-semibold">Donor Name & Contact</th>
+                            <th class="py-3 px-4 font-semibold">Purpose</th>
+                            <th class="py-3 px-4 font-semibold">Mode</th>
+                            <th class="py-3 px-4 text-right font-semibold">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for don in donations %}
+                        <tr class="hover:bg-white/[0.02] transition-colors">
+                            <td class="py-3.5 px-4">
+                                <span class="font-mono text-xs font-semibold text-white block">{{ don.receipt_no }}</span>
+                                <span class="text-[11px] text-surface-200/50">{{ don.payment_date|date('d M Y') }}</span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="font-medium text-white block text-xs">{{ don.donor_name }}</span>
+                                <span class="text-[11px] text-surface-200/40">{{ don.donor_phone ?: don.donor_email ?: 'No contact' }}</span>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs text-surface-200/80">
+                                {{ don.purpose }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="text-[11px] px-2 py-0.5 rounded-full {{ don.payment_mode == 'cash' ? 'bg-amber-500/15 text-amber-300' : 'bg-cyan-500/15 text-cyan-300' }}">
+                                    {{ don.payment_mode|upper }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-400 text-sm">
+                                +₹{{ don.amount|number_format(2) }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="py-10 text-center text-surface-200/40 text-xs">
+                                No external donations recorded yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Record Donation -->
+<div id="donationModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="heart-handshake" class="w-5 h-5 text-emerald-400"></i>
+                <h3 class="text-base font-bold text-white">Record Donation / Contribution</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('donationModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form action="/comitee/donations/create" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div class="space-y-3.5 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Donor Full Name *</label>
+                    <input type="text" name="donor_name" required placeholder="e.g. Shri Rajesh Mehta, Local Rotary Club" class="input-glass w-full text-xs">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Amount (₹) *</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-surface-200/40 text-xs">₹</span>
+                            <input type="number" step="0.01" min="1" name="amount" required placeholder="0.00" class="input-glass w-full !pl-7 text-xs font-semibold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Receipt Date *</label>
+                        <input type="date" name="payment_date" required value="{{ 'now'|date('Y-m-d') }}" class="input-glass w-full text-xs">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Payment Mode *</label>
+                        <select name="payment_mode" required class="input-glass w-full text-xs">
+                            <option value="upi" selected>UPI / Online (To Bank)</option>
+                            <option value="bank_transfer">Bank Transfer (To Bank)</option>
+                            <option value="cash">Cash (To In Hand)</option>
+                            <option value="cheque">Cheque (To Bank)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Donor Phone</label>
+                        <input type="text" name="donor_phone" placeholder="Mobile number" class="input-glass w-full text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Purpose / Contribution Head *</label>
+                    <input type="text" name="purpose" required placeholder="e.g. Ganesh Festival Fund, Solar Project, Garden bench" class="input-glass w-full text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Donor Email / PAN (Optional)</label>
+                    <input type="text" name="donor_pan" placeholder="PAN for society 80G / Audit" class="input-glass w-full text-xs">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('donationModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Save & Issue Receipt</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Opening Balances -->
+<div id="openingBalanceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sliders" class="w-5 h-5 text-purple-400"></i>
+                <h3 class="text-base font-bold text-white">Opening Balances</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('openingBalanceModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form action="/comitee/accounting/opening-balances" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div class="space-y-4 mb-6">
+                <p class="text-xs text-surface-200/60 leading-relaxed">
+                    Set the starting funds when SocietyApp was adopted. Future member collections, donations, and expenses will adjust these balances automatically.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Opening Cash in Hand (₹)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-surface-200/40 text-xs">₹</span>
+                        <input type="number" step="0.01" name="cash_opening" value="{{ balanceSummary.openingCash }}" class="input-glass w-full !pl-7 text-xs font-semibold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Opening Bank Accounts & Deposits (₹)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-surface-200/40 text-xs">₹</span>
+                        <input type="number" step="0.01" name="bank_opening" value="{{ balanceSummary.openingDeposits }}" class="input-glass w-full !pl-7 text-xs font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('openingBalanceModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Update Balances</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add Account Head -->
+<div id="accountHeadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="folders" class="w-5 h-5 text-purple-400"></i>
+                <h3 class="text-base font-bold text-white">Add Account Head (A/C Head)</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('accountHeadModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form action="/comitee/accounting/heads/create" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div class="space-y-3.5 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Account Head Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. Solar Power Maintenance, Legal & Audit" class="input-glass w-full text-xs">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">A/C Type *</label>
+                        <select name="type" required class="input-glass w-full text-xs">
+                            <option value="expense" selected>Expense (Outflow)</option>
+                            <option value="income">Income (Inflow)</option>
+                            <option value="asset">Asset (Resource)</option>
+                            <option value="liability">Liability</option>
+                            <option value="equity">Equity / Reserve</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Custom Code (Optional)</label>
+                        <input type="text" name="code" placeholder="e.g. EXP-SOLAR" class="input-glass w-full text-xs font-mono uppercase">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Description / Notes</label>
+                    <textarea name="description" rows="2" placeholder="Details regarding this account head" class="input-glass w-full text-xs"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('accountHeadModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Save A/C Head</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchAccountingTab(tabId) {
+        document.querySelectorAll('.accounting-tab-pane').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-link').forEach(el => {
+            el.classList.remove('border-brand-400', 'text-white', 'bg-white/5', 'font-semibold');
+            el.classList.add('border-transparent', 'text-surface-200/60', 'font-medium');
+        });
+
+        const activePane = document.getElementById('tab-content-' + tabId);
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+
+        if (activePane) activePane.classList.remove('hidden');
+        if (activeBtn) {
+            activeBtn.classList.remove('border-transparent', 'text-surface-200/60', 'font-medium');
+            activeBtn.classList.add('border-brand-400', 'text-white', 'bg-white/5', 'font-semibold');
+        }
+    }
+</script>
+{% endblock %}

@@ -17,48 +17,234 @@ class AdminController
         $flash = Session::getFlash();
         
         $stats = [
+            'totalSocieties' => Database::fetchOne("SELECT COUNT(*) as count FROM societies")['count'] ?? 0,
             'totalUsers' => Database::fetchOne("SELECT COUNT(*) as count FROM users")['count'] ?? 0,
             'activeUsers' => Database::fetchOne("SELECT COUNT(*) as count FROM users WHERE is_active = 1")['count'] ?? 0,
-            'pendingRequests' => Database::fetchOne("SELECT COUNT(*) as count FROM service_requests WHERE status = 'pending'")['count'] ?? 0,
-            'unpaidBills' => Database::fetchOne("SELECT COUNT(*) as count FROM maintenance_bills WHERE status = 'pending' OR status = 'overdue'")['count'] ?? 0,
+            'totalFlats' => Database::fetchOne("SELECT COUNT(*) as count FROM flats")['count'] ?? 0,
         ];
         
-        $revenueStats = Database::fetchOne("
-            SELECT 
-                COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as totalCollected,
-                COALESCE(SUM(CASE WHEN status IN ('pending', 'overdue') THEN amount ELSE 0 END), 0) as totalPending,
-                COALESCE(SUM(amount), 0) as totalBilled
-            FROM maintenance_bills
+        $recentSocieties = Database::fetchAll("
+            SELECT s.*, 
+                   (SELECT COUNT(*) FROM flats f WHERE f.society_id = s.id) as total_flats,
+                   (SELECT COUNT(*) FROM society_members sm WHERE sm.society_id = s.id AND sm.status = 'active') as total_members
+            FROM societies s 
+            ORDER BY s.created_at DESC 
+            LIMIT 5
         ");
         
-        $monthlyRevenue = Database::fetchOne("
-            SELECT COALESCE(SUM(amount), 0) as total 
-            FROM maintenance_bills 
-            WHERE status = 'paid' AND DATE_FORMAT(paid_at, '%Y-%m') = DATE_FORMAT(CURRENT_DATE(), '%Y-%m')
+        $recentUsers = Database::fetchAll("
+            SELECT id, name, email, role, is_active, created_at 
+            FROM users 
+            ORDER BY created_at DESC 
+            LIMIT 5
         ");
         
-        $membersByRole = Database::fetchAll("
-            SELECT role, COUNT(*) as count FROM users GROUP BY role
-        ");
-        
-        $recentActivity = Database::fetchAll("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 10");
-        $recentRequests = Database::fetchAll("SELECT r.*, u.name as user_name FROM service_requests r LEFT JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC LIMIT 5");
-        $recentUsers = Database::fetchAll("SELECT id, name, email, created_at FROM users ORDER BY created_at DESC LIMIT 5");
+        $recentActivity = Database::fetchAll("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 8");
         
         echo view('admin/index', [
             'basePath' => '/',
             'user' => $user,
             'flash' => $flash,
             'stats' => $stats,
-            'revenueStats' => $revenueStats,
-            'monthlyRevenue' => $monthlyRevenue['total'] ?? 0,
-            'membersByRole' => $membersByRole,
-            'recentActivity' => $recentActivity,
-            'recentRequests' => $recentRequests,
+            'recentSocieties' => $recentSocieties,
             'recentUsers' => $recentUsers,
+            'recentActivity' => $recentActivity,
             'profile' => getUserProfile(),
             'currentRoute' => '/admin',
         ]);
+    }
+
+    /**
+     * Societies Management (Super Admin Platform Level)
+     */
+    public function societies()
+    {
+        requireAdmin();
+        $user = getUser();
+        $search = trim($_GET['search'] ?? '');
+        
+        $where = [];
+        $params = [];
+        if ($search !== '') {
+            $where[] = "(s.name LIKE ? OR s.society_code LIKE ? OR s.city LIKE ?)";
+            $pattern = "%{$search}%";
+            $params = [$pattern, $pattern, $pattern];
+        }
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        $societies = Database::fetchAll("
+            SELECT s.*,
+                   (SELECT COUNT(*) FROM flats f WHERE f.society_id = s.id) as total_flats,
+                   (SELECT COUNT(*) FROM society_members sm WHERE sm.society_id = s.id AND sm.status = 'active') as total_members
+            FROM societies s
+            {$whereClause}
+            ORDER BY s.created_at DESC
+        ", $params);
+        
+        echo view('admin/societies', [
+            'basePath' => '/',
+            'user' => $user,
+            'societies' => $societies,
+            'search' => $search,
+            'csrfToken' => generateCSRFToken(),
+            'profile' => getUserProfile(),
+            'flash' => Session::getFlash(),
+            'currentRoute' => '/admin/societies',
+        ]);
+    }
+
+    /**
+     * Create New Society
+     */
+    public function createSociety()
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+        
+        $name = trim($_POST['name'] ?? '');
+        $code = strtoupper(trim($_POST['society_code'] ?? ''));
+        $regNo = trim($_POST['registration_no'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $state = trim($_POST['state'] ?? '');
+        $pincode = trim($_POST['pincode'] ?? '');
+        $upiId = trim($_POST['upi_id'] ?? '');
+        $payeeName = trim($_POST['payee_name'] ?? '');
+        
+        if (empty($name)) {
+            Session::flash('error', 'Society name is required.');
+            redirect('/admin/societies');
+        }
+        
+        // Auto-generate code if empty
+        if (empty($code)) {
+            $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $name));
+            $prefix = '';
+            foreach ($words as $w) {
+                if (!empty($w)) $prefix .= strtoupper(substr($w, 0, 1));
+            }
+            if (strlen($prefix) < 3) $prefix = strtoupper(substr($name, 0, 3));
+            $code = 'SOC-' . substr($prefix, 0, 4) . '-' . rand(100, 999);
+        }
+        
+        $existing = Database::fetchOne("SELECT id FROM societies WHERE society_code = ?", [$code]);
+        if ($existing) {
+            Session::flash('error', "Society code '{$code}' already exists. Please choose a unique code.");
+            redirect('/admin/societies');
+        }
+        
+        $societyId = Database::insert('societies', [
+            'name' => $name,
+            'society_code' => $code,
+            'registration_no' => $regNo ?: null,
+            'address' => $address ?: null,
+            'city' => $city ?: null,
+            'state' => $state ?: null,
+            'pincode' => $pincode ?: null,
+            'upi_id' => $upiId ?: null,
+            'payee_name' => $payeeName ?: null,
+        ]);
+        
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_created',
+            'description' => "Created society: {$name} ({$code})",
+        ]);
+        
+        Session::flash('success', "Society '{$name}' created successfully with code: {$code}");
+        redirect('/admin/societies');
+    }
+
+    /**
+     * Update Society
+     */
+    public function updateSociety(int $id)
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+        
+        $society = Database::fetchOne("SELECT id FROM societies WHERE id = ?", [$id]);
+        if (!$society) {
+            Session::flash('error', 'Society not found.');
+            redirect('/admin/societies');
+        }
+        
+        $name = trim($_POST['name'] ?? '');
+        $code = strtoupper(trim($_POST['society_code'] ?? ''));
+        $regNo = trim($_POST['registration_no'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $state = trim($_POST['state'] ?? '');
+        $pincode = trim($_POST['pincode'] ?? '');
+        $upiId = trim($_POST['upi_id'] ?? '');
+        $payeeName = trim($_POST['payee_name'] ?? '');
+        
+        if (empty($name) || empty($code)) {
+            Session::flash('error', 'Society name and code are required.');
+            redirect('/admin/societies');
+        }
+        
+        $existing = Database::fetchOne("SELECT id FROM societies WHERE society_code = ? AND id != ?", [$code, $id]);
+        if ($existing) {
+            Session::flash('error', "Society code '{$code}' already exists on another society.");
+            redirect('/admin/societies');
+        }
+        
+        Database::update('societies', [
+            'name' => $name,
+            'society_code' => $code,
+            'registration_no' => $regNo ?: null,
+            'address' => $address ?: null,
+            'city' => $city ?: null,
+            'state' => $state ?: null,
+            'pincode' => $pincode ?: null,
+            'upi_id' => $upiId ?: null,
+            'payee_name' => $payeeName ?: null,
+        ], 'id = ?', [$id]);
+        
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_updated',
+            'description' => "Updated society ID: {$id} ({$name})",
+        ]);
+        
+        Session::flash('success', "Society '{$name}' updated successfully.");
+        redirect('/admin/societies');
+    }
+
+    /**
+     * Delete Society
+     */
+    public function deleteSociety(int $id)
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+        
+        $society = Database::fetchOne("SELECT id, name FROM societies WHERE id = ?", [$id]);
+        if (!$society) {
+            Session::flash('error', 'Society not found.');
+            redirect('/admin/societies');
+        }
+        
+        Database::delete('societies', 'id = ?', [$id]);
+        
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_deleted',
+            'description' => "Deleted society ID: {$id} ({$society['name']})",
+        ]);
+        
+        Session::flash('success', "Society '{$society['name']}' deleted successfully.");
+        redirect('/admin/societies');
     }
 
     public function users()

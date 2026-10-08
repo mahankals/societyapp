@@ -20,16 +20,16 @@
         </button>
     </div>
 
-    {% if flash.success %}
+    {% if flash.success or (flash.type == 'success') %}
     <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
         <i data-lucide="check-circle" class="w-4 h-4"></i>
-        <span>{{ flash.success }}</span>
+        <span>{{ flash.success ?: flash.message }}</span>
     </div>
     {% endif %}
-    {% if flash.error %}
+    {% if flash.error or (flash.type == 'error') %}
     <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4"></i>
-        <span>{{ flash.error }}</span>
+        <span>{{ flash.error ?: flash.message }}</span>
     </div>
     {% endif %}
 
@@ -123,9 +123,36 @@
 
             <div class="space-y-4 mb-6">
                 <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">User Email or Mobile Number</label>
-                    <input type="text" name="user_identifier" placeholder="e.g. resident@societyapp.com or +91 98765 43210" required class="input-glass w-full text-sm">
-                    <p class="text-[11px] text-surface-200/40 mt-1">User must already have an account on SocietyApp.</p>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Select Member / User</label>
+                    <select name="user_id" id="assign_user_id" class="input-glass w-full text-sm" data-placeholder="-- Choose Registered User --">
+                        <option value="">-- Choose Registered User --</option>
+                        {% for u in availableUsers %}
+                        <option value="{{ u.id }}">
+                            {{ u.name }} ({{ u.email }}{% if u.phone %} &middot; {{ u.phone }}{% endif %})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-1.5 flex items-center justify-between text-[11px]">
+                        <span class="text-surface-200/40">Select registered user</span>
+                        <button type="button" onclick="document.getElementById('manualUserWrap').classList.toggle('hidden'); document.getElementById('assign_member_name')?.focus();" class="text-brand-400 hover:text-brand-300 font-medium">
+                            + Add Non-Registered Member
+                        </button>
+                    </div>
+                    <div id="manualUserWrap" class="hidden mt-3 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-brand-400">Non-Registered Member Details</span>
+                            <span class="text-[10px] text-surface-200/50">Auto-creates profile</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-surface-200/70 mb-1">Member Full Name</label>
+                            <input type="text" name="member_name" id="assign_member_name" placeholder="e.g. Ramesh Kumar" class="input-glass w-full !text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-surface-200/70 mb-1">Email or Mobile Number</label>
+                            <input type="text" name="user_identifier" id="assign_user_identifier" placeholder="e.g. ramesh@example.com or 9876543210" class="input-glass w-full !text-xs">
+                        </div>
+                        <p class="text-[10px] text-surface-200/40">Profile will be automatically registered and linked to the chosen flat.</p>
+                    </div>
                 </div>
 
                 <div>

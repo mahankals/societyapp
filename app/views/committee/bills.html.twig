@@ -1,0 +1,542 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Maintenance Bills | {{ society.name }}{% endblock %}
+
+{% block content %}
+{% set totalOccupiedArea = 0 %}
+{% for of in occupiedFlats %}
+    {% set totalOccupiedArea = totalOccupiedArea + (of.area_sqft|default(0)) %}
+{% endfor %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/comitee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Maintenance Bills & Dues</h1>
+            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Billing, Collections & Invoicing</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="openBulkBillModal()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-brand-300 hover:text-white border border-brand-500/30 transition-all flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="layers" class="w-4 h-4 text-brand-400"></i>
+                <span>Bulk Generate Bills</span>
+            </button>
+            <button type="button" onclick="openCreateBillModal()" class="btn-primary !px-4 !py-2.5 flex items-center gap-1.5 text-xs font-semibold">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Create Bill</span>
+            </button>
+        </div>
+    </div>
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
+    </div>
+    {% endif %}
+    {% if flash.error %}
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <span>{{ flash.error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Financial Stats for this Society -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="glass-panel rounded-2xl p-5 border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase">Collected (Paid)</span>
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-white">₹{{ (stats.paidAmount|default(0))|number_format(2) }}</p>
+            <p class="text-[11px] text-emerald-400 mt-1">{{ stats.paidCount|default(0) }} bills settled</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-5 border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase">Pending / Overdue</span>
+                <div class="w-8 h-8 rounded-lg bg-rose-500/15 flex items-center justify-center text-rose-400">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-rose-400">₹{{ (stats.pendingAmount|default(0))|number_format(2) }}</p>
+            <p class="text-[11px] text-surface-200/50 mt-1">{{ stats.pendingCount|default(0) }} unpaid bills</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-5 border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase">Total Billed</span>
+                <div class="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center text-brand-400">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-white">₹{{ (stats.totalAmount|default(0))|number_format(2) }}</p>
+            <p class="text-[11px] text-surface-200/50 mt-1">{{ stats.total|default(0) }} total generated</p>
+        </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="flex items-center gap-2 mb-4">
+        <a href="/comitee/bills" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ statusFilter == '' ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30' : 'bg-white/5 text-surface-200/70 hover:bg-white/10' }}">
+            All Bills ({{ stats.total|default(0) }})
+        </a>
+        <a href="/comitee/bills?status=pending" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ statusFilter == 'pending' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/5 text-surface-200/70 hover:bg-white/10' }}">
+            Pending ({{ stats.pendingCount|default(0) }})
+        </a>
+        <a href="/comitee/bills?status=paid" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ statusFilter == 'paid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-surface-200/70 hover:bg-white/10' }}">
+            Paid ({{ stats.paidCount|default(0) }})
+        </a>
+    </div>
+
+    <!-- Bills Table -->
+    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-xl mb-8">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-surface-200/80">
+                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                    <tr>
+                        <th class="py-3.5 px-4 font-semibold">Bill # / Title</th>
+                        <th class="py-3.5 px-4 font-semibold">Flat & Resident</th>
+                        <th class="py-3.5 px-4 font-semibold">Month</th>
+                        <th class="py-3.5 px-4 font-semibold">Amount</th>
+                        <th class="py-3.5 px-4 font-semibold">Due Date</th>
+                        <th class="py-3.5 px-4 font-semibold">Status</th>
+                        <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for b in bills %}
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="py-3.5 px-4">
+                            <p class="font-mono text-xs font-bold text-white">{{ b.bill_number }}</p>
+                            <p class="text-[11px] text-surface-200/50">{{ b.title ?: 'Monthly Maintenance' }}</p>
+                            {% if b.particulars %}
+                            <p class="text-[10px] text-brand-300/80 mt-0.5 line-clamp-1" title="{{ b.particulars }}">{{ b.particulars }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <p class="font-semibold text-white">Flat {{ b.wing ? b.wing ~ '-' : '' }}{{ b.flat_no ?: '-' }}</p>
+                            <p class="text-xs text-surface-200/50">
+                                {% if b.user_name %}
+                                    {{ b.user_name }}
+                                {% else %}
+                                    <span class="text-amber-400/80 italic font-medium">Vacant Unit</span>
+                                {% endif %}
+                                {% if b.area_sqft and b.area_sqft > 0 %}
+                                &middot; <span class="text-surface-200/40">{{ b.area_sqft|number_format(0) }} sqft</span>
+                                {% endif %}
+                            </p>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-white">
+                            {{ b.month }}
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-white">
+                            ₹{{ b.amount|number_format(2) }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <span class="{{ b.status == 'pending' and b.due_date < date()|date('Y-m-d') ? 'text-rose-400 font-semibold' : 'text-surface-200/70' }}">
+                                {{ b.due_date|date('d M Y') }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if b.status == 'paid' %}
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                                Paid
+                            </span>
+                            {% elseif b.status == 'overdue' or (b.status == 'pending' and b.due_date < date()|date('Y-m-d')) %}
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 font-semibold">
+                                Overdue
+                            </span>
+                            {% else %}
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+                                Pending
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            {% if b.status != 'paid' %}
+                            <form action="/comitee/bills/{{ b.id }}/mark-paid" method="POST" class="inline" onsubmit="return confirm('Mark bill {{ b.bill_number }} as PAID (Offline/Cheque/Transfer)?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-colors">
+                                    Mark Paid
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-[11px] text-surface-200/40">Settled {{ b.paid_at ? b.paid_at|date('d M') : '' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-surface-200/50">No maintenance bills found. Click "Create Bill" or "Bulk Generate Bills" above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Create Single Bill Modal -->
+<div id="createBillModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="file-plus" class="w-4 h-4 text-brand-400"></i>
+                <span>Create Maintenance Bill</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('createBillModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form action="/comitee/bills" method="POST" id="createBillForm">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div class="space-y-4 mb-6">
+                <!-- Flat Selection -->
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Select Flat &amp; Occupant <span class="text-red-400">*</span></label>
+                    <select name="flat_id" id="singleBillFlat" required class="input-glass w-full text-sm" onchange="onSingleFlatChanged()">
+                        <option value="" data-area="0">-- Choose Flat --</option>
+                        {% for f in occupiedFlats %}
+                        <option value="{{ f.id }}" data-area="{{ f.area_sqft|default(0) }}" data-wing="{{ f.wing }}" data-flat="{{ f.flat_no }}">
+                            Flat {{ f.wing }}-{{ f.flat_no }} &middot; {{ f.member_name }} ({{ f.area_sqft|default(0) }} sqft &middot; {{ f.flat_type }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Billing Calculation Mode Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Calculation Method</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
+                        <label id="singleModeFixedBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            <input type="radio" name="billing_type" value="fixed" checked class="hidden" onchange="setSingleBillMode('fixed')">
+                            <i data-lucide="equal" class="w-3.5 h-3.5"></i>
+                            <span>Fixed Amount</span>
+                        </label>
+                        <label id="singleModeSqftBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5">
+                            <input type="radio" name="billing_type" value="per_sqft" class="hidden" onchange="setSingleBillMode('per_sqft')">
+                            <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                            <span>Multiply with Sq. Ft</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Fixed Amount Input Container -->
+                <div id="singleFixedContainer">
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Bill Amount (₹) <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-3 text-surface-200/40 text-sm">₹</span>
+                        <input type="number" step="0.01" min="1" id="singleFixedAmountInput" name="amount" placeholder="2500.00" class="input-glass w-full !pl-8 text-sm font-mono">
+                    </div>
+                    <p class="text-[11px] text-surface-200/50 mt-1">Direct fixed maintenance charge for this unit.</p>
+                </div>
+
+                <!-- Sq. Ft Rate Input Container -->
+                <div id="singleSqftContainer" class="hidden space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-surface-200/70 mb-1">Rate per Sq. Ft (₹) <span class="text-red-400">*</span></label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-surface-200/40 text-sm">₹</span>
+                                <input type="number" step="0.01" min="0.01" id="singleRateSqftInput" name="rate_per_sqft" placeholder="2.50" class="input-glass w-full !pl-7 text-sm font-mono" oninput="calculateSingleSqftTotal()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-surface-200/70 mb-1">Flat Area (Sq. Ft)</label>
+                            <input type="text" id="singleAreaReadonly" readonly value="0 sqft" class="input-glass w-full text-sm font-mono bg-white/[0.02] text-surface-200/60 cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Live Calculation Banner -->
+                    <div class="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs flex items-center justify-between">
+                        <span class="text-surface-200/70">Calculated Bill:</span>
+                        <div class="text-right">
+                            <span class="text-brand-300 font-mono text-sm font-bold" id="singleLiveTotalText">₹0.00</span>
+                            <p class="text-[10px] text-surface-200/50" id="singleFormulaText">(0 sq.ft &times; ₹0.00/sq.ft)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Month & Due Date -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Billing Month <span class="text-red-400">*</span></label>
+                        <input type="month" name="month" value="{{ date()|date('Y-m') }}" required class="input-glass w-full text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Due Date <span class="text-red-400">*</span></label>
+                        <input type="date" name="due_date" value="{{ date('+15 days')|date('Y-m-d') }}" required class="input-glass w-full text-sm font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Bill Title</label>
+                    <input type="text" name="title" value="Monthly Maintenance" class="input-glass w-full text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Particulars / Notes (Optional)</label>
+                    <input type="text" id="singleParticularsInput" name="particulars" placeholder="Auto-generated if left empty" class="input-glass w-full text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('createBillModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Generate Bill</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Generate Bills Modal -->
+<div id="bulkBillModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="layers" class="w-4 h-4 text-brand-400"></i>
+                <span>Bulk Generate Monthly Bills</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('bulkBillModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form action="/comitee/bills/bulk-generate" method="POST" id="bulkBillForm">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div class="space-y-4 mb-6">
+                <!-- Applicable For: All vs Occupied -->
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Applicable For</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
+                        <label id="bulkTargetOccupiedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            <input type="radio" name="target_flats" value="occupied" checked class="hidden" onchange="setBulkTargetMode('occupied')">
+                            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                            <span>Occupied ({{ occupiedFlats|length }})</span>
+                        </label>
+                        <label id="bulkTargetAllBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent">
+                            <input type="radio" name="target_flats" value="all" class="hidden" onchange="setBulkTargetMode('all')">
+                            <i data-lucide="building" class="w-3.5 h-3.5"></i>
+                            <span>All Flats ({{ totalFlatsCount }})</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bulk Calculation Mode Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Calculation Method</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
+                        <label id="bulkModeFixedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            <input type="radio" name="billing_type" value="fixed" checked class="hidden" onchange="setBulkBillMode('fixed')">
+                            <i data-lucide="equal" class="w-3.5 h-3.5"></i>
+                            <span>Fixed Amount per Flat</span>
+                        </label>
+                        <label id="bulkModeSqftBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent">
+                            <input type="radio" name="billing_type" value="per_sqft" class="hidden" onchange="setBulkBillMode('per_sqft')">
+                            <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                            <span>Multiply with Sq. Ft</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bulk Fixed Mode Fields -->
+                <div id="bulkFixedContainer">
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Standard Amount per Flat (₹) <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-3 text-surface-200/40 text-sm">₹</span>
+                        <input type="number" step="0.01" min="1" id="bulkFixedAmountInput" name="amount" placeholder="2500.00" class="input-glass w-full !pl-8 text-sm font-mono" oninput="calculateBulkTotals()">
+                    </div>
+                    <p class="text-[11px] text-surface-200/50 mt-1">Every selected flat receives this exact fixed charge.</p>
+                </div>
+
+                <!-- Bulk Sq. Ft Mode Fields -->
+                <div id="bulkSqftContainer" class="hidden space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-surface-200/70 mb-1">Rate per Sq. Ft (₹) <span class="text-red-400">*</span></label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-surface-200/40 text-sm">₹</span>
+                                <input type="number" step="0.01" min="0.01" id="bulkRateSqftInput" name="rate_per_sqft" placeholder="3.50" class="input-glass w-full !pl-7 text-sm font-mono" oninput="calculateBulkTotals()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-surface-200/70 mb-1">Fallback Minimum (₹)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-surface-200/40 text-sm">₹</span>
+                                <input type="number" step="0.01" min="0" id="bulkMinAmountInput" name="min_amount" placeholder="1000.00" class="input-glass w-full !pl-7 text-sm font-mono" oninput="calculateBulkTotals()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Live Calculation Banner -->
+                    <div class="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-surface-200/70">Estimated Collection:</span>
+                            <span class="text-brand-300 font-mono text-sm font-bold" id="bulkLiveTotalText">₹0.00</span>
+                        </div>
+                        <p class="text-[10px] text-surface-200/50 leading-relaxed">
+                            Formula: <code>Flat Area &times; Rate/sq.ft</code>. If a flat has 0 sq.ft, it uses the fallback minimum.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Month & Due Date -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Month <span class="text-red-400">*</span></label>
+                        <input type="month" name="month" value="{{ date()|date('Y-m') }}" required class="input-glass w-full text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Payment Due Date <span class="text-red-400">*</span></label>
+                        <input type="date" name="due_date" value="{{ date('+15 days')|date('Y-m-d') }}" required class="input-glass w-full text-sm font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Title</label>
+                    <input type="text" name="title" value="Monthly Maintenance" class="input-glass w-full text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('bulkBillModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-6 !py-2.5 text-xs font-semibold">Generate</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+
+    const totalOccupiedArea = {{ totalOccupiedArea|default(0) }};
+    const occupiedCount = {{ occupiedFlats|length|default(0) }};
+    const totalAllArea = {{ totalAllArea|default(0) }};
+    const totalAllCount = {{ totalFlatsCount|default(0) }};
+
+    function openCreateBillModal() {
+        document.getElementById('createBillModal').classList.remove('hidden');
+        setSingleBillMode('fixed');
+    }
+
+    function openBulkBillModal() {
+        document.getElementById('bulkBillModal').classList.remove('hidden');
+        setBulkTargetMode('occupied');
+        setBulkBillMode('fixed');
+    }
+
+    /* --- Single Bill Calculation Mode Toggle --- */
+    let currentSingleMode = 'fixed';
+    function setSingleBillMode(mode) {
+        currentSingleMode = mode;
+        const fixedBtn = document.getElementById('singleModeFixedBtn');
+        const sqftBtn = document.getElementById('singleModeSqftBtn');
+        const fixedContainer = document.getElementById('singleFixedContainer');
+        const sqftContainer = document.getElementById('singleSqftContainer');
+        const fixedInput = document.getElementById('singleFixedAmountInput');
+        const rateInput = document.getElementById('singleRateSqftInput');
+
+        if (mode === 'fixed') {
+            fixedBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            sqftBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            fixedContainer.classList.remove('hidden');
+            sqftContainer.classList.add('hidden');
+            fixedInput.setAttribute('required', 'required');
+            rateInput.removeAttribute('required');
+        } else {
+            sqftBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            fixedBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            sqftContainer.classList.remove('hidden');
+            fixedContainer.classList.add('hidden');
+            rateInput.setAttribute('required', 'required');
+            fixedInput.removeAttribute('required');
+            onSingleFlatChanged();
+        }
+    }
+
+    function onSingleFlatChanged() {
+        const select = document.getElementById('singleBillFlat');
+        const opt = select.options[select.selectedIndex];
+        const area = opt ? parseFloat(opt.getAttribute('data-area') || '0') : 0;
+        document.getElementById('singleAreaReadonly').value = area > 0 ? (area + ' sqft') : '0 sqft (not set)';
+        calculateSingleSqftTotal();
+    }
+
+    function calculateSingleSqftTotal() {
+        const select = document.getElementById('singleBillFlat');
+        const opt = select.options[select.selectedIndex];
+        const area = opt ? parseFloat(opt.getAttribute('data-area') || '0') : 0;
+        const rate = parseFloat(document.getElementById('singleRateSqftInput').value || '0');
+        const total = (area * rate).toFixed(2);
+
+        document.getElementById('singleLiveTotalText').textContent = '₹' + Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('singleFormulaText').textContent = '(' + area + ' sq.ft × ₹' + (rate || 0).toFixed(2) + '/sq.ft)';
+
+        // Also update the hidden fixed amount input so that if backend reads amount, it is already populated
+        document.getElementById('singleFixedAmountInput').value = total > 0 ? total : '';
+    }
+
+    /* --- Bulk Bill Target (All vs Occupied) --- */
+    let currentBulkTarget = 'occupied';
+    function setBulkTargetMode(target) {
+        currentBulkTarget = target;
+        const occBtn = document.getElementById('bulkTargetOccupiedBtn');
+        const allBtn = document.getElementById('bulkTargetAllBtn');
+
+        if (target === 'occupied') {
+            occBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            allBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+        } else {
+            allBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            occBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+        }
+        calculateBulkTotals();
+    }
+
+    /* --- Bulk Bill Calculation Mode Toggle --- */
+    let currentBulkMode = 'fixed';
+    function setBulkBillMode(mode) {
+        currentBulkMode = mode;
+        const fixedBtn = document.getElementById('bulkModeFixedBtn');
+        const sqftBtn = document.getElementById('bulkModeSqftBtn');
+        const fixedContainer = document.getElementById('bulkFixedContainer');
+        const sqftContainer = document.getElementById('bulkSqftContainer');
+        const fixedInput = document.getElementById('bulkFixedAmountInput');
+        const rateInput = document.getElementById('bulkRateSqftInput');
+
+        if (mode === 'fixed') {
+            fixedBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            sqftBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            fixedContainer.classList.remove('hidden');
+            sqftContainer.classList.add('hidden');
+            fixedInput.setAttribute('required', 'required');
+            rateInput.removeAttribute('required');
+        } else {
+            sqftBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
+            fixedBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            sqftContainer.classList.remove('hidden');
+            fixedContainer.classList.add('hidden');
+            rateInput.setAttribute('required', 'required');
+            fixedInput.removeAttribute('required');
+            calculateBulkTotals();
+        }
+    }
+
+    function calculateBulkTotals() {
+        if (currentBulkMode === 'per_sqft') {
+            const activeArea = currentBulkTarget === 'all' ? totalAllArea : totalOccupiedArea;
+            const rate = parseFloat(document.getElementById('bulkRateSqftInput').value || '0');
+            const total = (activeArea * rate).toFixed(2);
+            document.getElementById('bulkLiveTotalText').textContent = '₹' + Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    }
+</script>
+{% endblock %}

@@ -129,10 +129,23 @@ $router->post('/auth/register', function() {
         redirect('/auth/register');
     }
 
-    $existing = Database::fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
+    $existing = Database::fetchOne("SELECT id, password_hash FROM users WHERE email = ?", [$email]);
     if ($existing) {
-        Session::flash('error', 'An account with this email already exists.');
-        redirect('/auth/register');
+        if (!empty($existing['password_hash'])) {
+            Session::flash('error', 'An account with this email already exists.');
+            redirect('/auth/register');
+        } else {
+            // Pre-created member claiming their account
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT, ['cost' => 12]);
+            Database::update('users', [
+                'password_hash' => $passwordHash,
+                'name' => $name,
+            ], 'id = ?', [$existing['id']]);
+
+            loginUser($existing['id'], 'resident', $email);
+            Session::flash('success', 'Account activated successfully! Welcome to your society portal.');
+            redirect('/resident');
+        }
     }
 
     $passwordHash = password_hash($password, PASSWORD_DEFAULT, ['cost' => 12]);
@@ -478,10 +491,34 @@ foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
     $router->get($cPrefix . '/flats', [$society, 'flats'], ['auth']);
     $router->post($cPrefix . '/flats', [$society, 'addFlat'], ['auth']);
     $router->post($cPrefix . '/flats/add', [$society, 'addFlat'], ['auth']);
+    $router->post($cPrefix . '/flats/{id}/update', [$society, 'updateFlat'], ['auth']);
+    $router->post($cPrefix . '/flats/{id}/edit', [$society, 'updateFlat'], ['auth']);
     $router->post($cPrefix . '/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
     $router->get($cPrefix . '/members', [$society, 'members'], ['auth']);
     $router->post($cPrefix . '/members/assign', [$society, 'assignMember'], ['auth']);
     $router->post($cPrefix . '/members/{id}/unlink', [$society, 'unlinkMember'], ['auth']);
+    $router->get($cPrefix . '/bills', [$society, 'bills'], ['auth']);
+    $router->post($cPrefix . '/bills', [$society, 'createBill'], ['auth']);
+    $router->post($cPrefix . '/bills/bulk-generate', [$society, 'bulkGenerateBills'], ['auth']);
+    $router->post($cPrefix . '/bills/{id}/mark-paid', [$society, 'markBillPaid'], ['auth']);
+    $router->get($cPrefix . '/broadcast', [$society, 'broadcast'], ['auth']);
+    $router->post($cPrefix . '/broadcast', [$society, 'sendBroadcast'], ['auth']);
+    $router->get($cPrefix . '/notifications', [$society, 'broadcast'], ['auth']);
+    $router->post($cPrefix . '/notifications', [$society, 'sendBroadcast'], ['auth']);
+
+    // Expenses & Outflows
+    $router->get($cPrefix . '/expenses', [$society, 'expenses'], ['auth']);
+    $router->post($cPrefix . '/expenses', [$society, 'createExpense'], ['auth']);
+    $router->post($cPrefix . '/expenses/create', [$society, 'createExpense'], ['auth']);
+    $router->post($cPrefix . '/expenses/{id}/delete', [$society, 'deleteExpense'], ['auth']);
+    $router->post($cPrefix . '/expenses/heads/create', [$society, 'createExpenseHead'], ['auth']);
+
+    // Accounting, Balance Sheet & Financial Statements
+    $router->get($cPrefix . '/accounting', [$society, 'accounting'], ['auth']);
+    $router->post($cPrefix . '/accounting/heads/create', [$society, 'createAccountHead'], ['auth']);
+    $router->post($cPrefix . '/accounting/opening-balances', [$society, 'updateOpeningBalances'], ['auth']);
+    $router->post($cPrefix . '/donations/create', [$society, 'createDonation'], ['auth']);
+
     $router->get($cPrefix . '/requests', [$society, 'requests'], ['auth']);
     $router->post($cPrefix . '/requests/{id}/approve', [$society, 'approveRequest'], ['auth']);
     $router->post($cPrefix . '/requests/{id}/reject', [$society, 'rejectRequest'], ['auth']);
@@ -527,17 +564,20 @@ $router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['
 // ==================== Admin Routes ====================
 
 $router->get('/admin', [$admin, 'index'], ['auth', 'admin']);
+$router->get('/admin/societies', [$admin, 'societies'], ['auth', 'admin']);
+$router->post('/admin/societies', [$admin, 'createSociety'], ['auth', 'admin']);
+$router->post('/admin/societies/{id}/update', [$admin, 'updateSociety'], ['auth', 'admin']);
+$router->post('/admin/societies/{id}/delete', [$admin, 'deleteSociety'], ['auth', 'admin']);
 $router->get('/admin/users', [$admin, 'users'], ['auth', 'admin']);
 $router->get('/admin/users/{id}', [$admin, 'editUser'], ['auth', 'admin']);
 $router->post('/admin/users/{id}', [$admin, 'updateUser'], ['auth', 'admin']);
 $router->get('/admin/invitations', [$admin, 'invitations'], ['auth', 'admin']);
 $router->post('/admin/invitations', [$admin, 'sendInvitation'], ['auth', 'admin']);
-$router->get('/admin/requests', [$admin, 'requests'], ['auth', 'admin']);
-$router->post('/admin/requests/{id}', [$admin, 'updateRequest'], ['auth', 'admin']);
-$router->get('/admin/bills', [$admin, 'bills'], ['auth', 'admin']);
-$router->post('/admin/bills', [$admin, 'createBill'], ['auth', 'admin']);
-$router->get('/admin/notifications', [$admin, 'notifications'], ['auth', 'admin']);
-$router->post('/admin/notifications', [$admin, 'sendNotification'], ['auth', 'admin']);
+
+// Redirect legacy admin paths to committee
+$router->get('/admin/bills', function() { redirect('/comitee/bills'); }, ['auth']);
+$router->get('/admin/notifications', function() { redirect('/comitee/broadcast'); }, ['auth']);
+$router->get('/admin/requests', function() { redirect('/comitee/requests'); }, ['auth']);
 
 // ==================== API Routes ====================
 

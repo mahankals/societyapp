@@ -75,12 +75,27 @@
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-right">
-                            <form action="/comitee/flats/{{ flat.id }}/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete flat {{ flat.wing }}-{{ flat.flat_no }}?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                                <button type="submit" class="p-1.5 rounded-lg hover:bg-rose-500/10 text-surface-200/40 hover:text-rose-400 transition-colors">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <div class="flex items-center justify-end gap-1.5">
+                                <button type="button" 
+                                    onclick='openEditFlatModal({{ {
+                                        id: flat.id,
+                                        wing: flat.wing,
+                                        flat_no: flat.flat_no,
+                                        floor: flat.floor,
+                                        area_sqft: flat.area_sqft,
+                                        flat_type: flat.flat_type
+                                    }|json_encode|raw }})' 
+                                    class="p-1.5 rounded-lg hover:bg-brand-500/15 text-surface-200/50 hover:text-brand-300 transition-colors" 
+                                    title="Edit Flat">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
                                 </button>
-                            </form>
+                                <form action="/comitee/flats/{{ flat.id }}/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete flat {{ flat.wing }}-{{ flat.flat_no }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="p-1.5 rounded-lg hover:bg-rose-500/10 text-surface-200/50 hover:text-rose-400 transition-colors" title="Delete Flat">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
@@ -99,39 +114,42 @@
 <div id="addFlatModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
         <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
-            <h3 class="text-base font-bold text-white">Add New Flat</h3>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-brand-400"></i>
+                <span>Add New Flat</span>
+            </h3>
             <button type="button" onclick="document.getElementById('addFlatModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
         </div>
 
-        <form action="/comitee/flats" method="POST">
+        <form action="/comitee/flats" method="POST" id="addFlatForm">
             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
 
             <div class="space-y-4 mb-6">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-surface-200/70 mb-1">Wing</label>
-                        <input type="text" name="wing" value="A" required class="input-glass w-full text-sm font-mono uppercase">
+                        <input type="text" id="add_wing" name="wing" value="A" required class="input-glass w-full text-sm font-mono uppercase">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-surface-200/70 mb-1">Flat Number</label>
-                        <input type="text" name="flat_no" placeholder="101" required class="input-glass w-full text-sm font-mono">
+                        <input type="text" id="add_flat_no" name="flat_no" placeholder="101" required class="input-glass w-full text-sm font-mono">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-surface-200/70 mb-1">Floor</label>
-                        <input type="text" name="floor" placeholder="1" class="input-glass w-full text-sm font-mono">
+                        <input type="text" id="add_floor" name="floor" placeholder="1" class="input-glass w-full text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-surface-200/70 mb-1">Area (sq. ft.)</label>
-                        <input type="number" step="0.01" name="area_sqft" value="850.00" class="input-glass w-full text-sm font-mono">
+                        <input type="number" step="0.01" id="add_area_sqft" name="area_sqft" value="850.00" class="input-glass w-full text-sm font-mono">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-surface-200/70 mb-1">Flat Type</label>
-                    <select name="flat_type" class="input-glass w-full text-sm">
+                    <select id="add_flat_type" name="flat_type" class="input-glass w-full text-sm">
                         <option value="1BHK">1 BHK</option>
                         <option value="2BHK" selected>2 BHK</option>
                         <option value="3BHK">3 BHK</option>
@@ -142,11 +160,123 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2">
-                <button type="button" onclick="document.getElementById('addFlatModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
-                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Save Flat</button>
+            <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addFlatModal').classList.add('hidden')" class="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" name="action" value="save_and_add_more" class="px-3.5 py-2 rounded-xl bg-brand-500/20 hover:bg-brand-500/30 text-xs font-semibold text-brand-300 hover:text-white border border-brand-500/40 transition-all flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Save &amp; Add More</span>
+                </button>
+                <button type="submit" name="action" value="save" class="btn-primary !px-4 !py-2 text-xs font-semibold">Save Flat</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Edit Flat Modal -->
+<div id="editFlatModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <h3 id="editFlatModalTitle" class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="edit-2" class="w-4 h-4 text-brand-400"></i>
+                <span>Edit Flat</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('editFlatModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <form id="editFlatForm" action="" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+            <input type="hidden" id="edit_flat_id" name="flat_id" value="">
+
+            <div class="space-y-4 mb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Wing</label>
+                        <input type="text" id="edit_wing" name="wing" required class="input-glass w-full text-sm font-mono uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Flat Number</label>
+                        <input type="text" id="edit_flat_no" name="flat_no" required class="input-glass w-full text-sm font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Floor</label>
+                        <input type="text" id="edit_floor" name="floor" class="input-glass w-full text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-surface-200/70 mb-1">Area (sq. ft.)</label>
+                        <input type="number" step="0.01" id="edit_area_sqft" name="area_sqft" class="input-glass w-full text-sm font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Flat Type</label>
+                    <select id="edit_flat_type" name="flat_type" class="input-glass w-full text-sm">
+                        <option value="1BHK">1 BHK</option>
+                        <option value="2BHK">2 BHK</option>
+                        <option value="3BHK">3 BHK</option>
+                        <option value="4BHK">4 BHK / Penthouse</option>
+                        <option value="Shop">Commercial Shop</option>
+                        <option value="Office">Office Unit</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editFlatModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Update Flat</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openEditFlatModal(flat) {
+        if (!flat) return;
+        document.getElementById('edit_flat_id').value = flat.id;
+        document.getElementById('edit_wing').value = flat.wing;
+        document.getElementById('edit_flat_no').value = flat.flat_no;
+        document.getElementById('edit_floor').value = flat.floor || '';
+        document.getElementById('edit_area_sqft').value = flat.area_sqft || '';
+        document.getElementById('edit_flat_type').value = flat.flat_type || '2BHK';
+        document.getElementById('editFlatForm').action = '/comitee/flats/' + flat.id + '/update';
+        document.getElementById('editFlatModalTitle').innerHTML = '<i data-lucide="edit-2" class="w-4 h-4 text-brand-400"></i><span>Edit Flat ' + flat.wing + '-' + flat.flat_no + '</span>';
+        document.getElementById('editFlatModal').classList.remove('hidden');
+        if (window.lucide) { lucide.createIcons(); }
+    }
+
+    // Auto-open Add Flat modal if redirected with add_more query parameter
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('add_more') === '1') {
+            const addModal = document.getElementById('addFlatModal');
+            if (addModal) {
+                addModal.classList.remove('hidden');
+                if (urlParams.get('wing')) {
+                    document.getElementById('add_wing').value = urlParams.get('wing');
+                }
+                if (urlParams.get('floor')) {
+                    document.getElementById('add_floor').value = urlParams.get('floor');
+                }
+                if (urlParams.get('area_sqft')) {
+                    document.getElementById('add_area_sqft').value = urlParams.get('area_sqft');
+                }
+                if (urlParams.get('flat_type')) {
+                    document.getElementById('add_flat_type').value = urlParams.get('flat_type');
+                }
+                const flatInput = document.getElementById('add_flat_no');
+                if (flatInput) {
+                    flatInput.value = '';
+                    flatInput.focus();
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

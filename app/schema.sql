@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS documents (
 -- Maintenance Bills
 CREATE TABLE IF NOT EXISTS maintenance_bills (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NULL,
     society_id INT UNSIGNED NULL,
     flat_id INT UNSIGNED NULL,
     bill_number VARCHAR(50) NOT NULL UNIQUE,
@@ -300,3 +300,78 @@ CREATE TABLE IF NOT EXISTS events (
     INDEX idx_event_date (event_date),
     INDEX idx_organizer_id (organizer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Account Heads (Chart of Accounts for Society)
+CREATE TABLE IF NOT EXISTS account_heads (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    code VARCHAR(50) NULL,
+    name VARCHAR(150) NOT NULL,
+    type ENUM('asset', 'liability', 'income', 'expense', 'equity') NOT NULL,
+    opening_balance DECIMAL(12,2) DEFAULT 0.00,
+    description TEXT NULL,
+    is_system TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    INDEX idx_soc_type (society_id, type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Expense Categories / Heads
+CREATE TABLE IF NOT EXISTS expense_heads (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    account_head_id INT UNSIGNED NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    budget_monthly DECIMAL(12,2) DEFAULT 0.00,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    FOREIGN KEY (account_head_id) REFERENCES account_heads(id) ON DELETE CASCADE,
+    INDEX idx_soc_exp_head (society_id, account_head_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Society Expenses / Outflows
+CREATE TABLE IF NOT EXISTS expenses (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    expense_head_id INT UNSIGNED NOT NULL,
+    voucher_no VARCHAR(50) NOT NULL,
+    expense_date DATE NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    paid_to VARCHAR(150) NOT NULL,
+    payment_mode ENUM('cash', 'bank_transfer', 'upi', 'cheque') DEFAULT 'upi',
+    paid_from_account_head_id INT UNSIGNED NULL,
+    reference_no VARCHAR(100) NULL,
+    notes TEXT NULL,
+    created_by INT UNSIGNED NOT NULL,
+    status ENUM('paid', 'pending', 'cancelled') DEFAULT 'paid',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    FOREIGN KEY (expense_head_id) REFERENCES expense_heads(id) ON DELETE RESTRICT,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_soc_exp (society_id, expense_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Donations & External Contributions
+CREATE TABLE IF NOT EXISTS donations (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    society_id INT UNSIGNED NOT NULL,
+    receipt_no VARCHAR(50) NOT NULL,
+    donor_name VARCHAR(150) NOT NULL,
+    donor_phone VARCHAR(50) NULL,
+    donor_email VARCHAR(150) NULL,
+    donor_pan VARCHAR(20) NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    account_head_id INT UNSIGNED NULL,
+    received_in_account_head_id INT UNSIGNED NULL,
+    payment_mode ENUM('cash', 'bank_transfer', 'upi', 'cheque') DEFAULT 'upi',
+    payment_date DATE NOT NULL,
+    purpose VARCHAR(255) NOT NULL,
+    notes TEXT NULL,
+    created_by INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (society_id) REFERENCES societies(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_soc_don (society_id, payment_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

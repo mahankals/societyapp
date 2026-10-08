@@ -12,6 +12,10 @@ class Session {
         }
 
         $config = require __DIR__ . '/../../config/session.php';
+        $lifetime = (int)($config['lifetime'] ?? 3600);
+
+        // Synchronize PHP session garbage collection with configured lifetime
+        ini_set('session.gc_maxlifetime', (string)$lifetime);
 
         $isSecure = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
             || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
@@ -19,7 +23,7 @@ class Session {
 
         session_name($config['name']);
         session_set_cookie_params([
-            'lifetime' => $config['lifetime'],
+            'lifetime' => $lifetime,
             'path' => '/',
             'domain' => '',
             'secure' => $isSecure,
@@ -34,6 +38,14 @@ class Session {
 
         self::$started = true;
 
+        // Check if session has timed out based on previous activity
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $lifetime) {
+            self::destroy();
+            session_name($config['name']);
+            session_start();
+            self::$started = true;
+        }
+
         if (!isset($_SESSION['initiated'])) {
             $_SESSION['initiated'] = true;
             $_SESSION['created_at'] = time();
@@ -42,7 +54,9 @@ class Session {
         $_SESSION['last_activity'] = time();
     }
 
-    public static function isExpired(int $timeout = 3600): bool {
+    public static function isExpired(?int $timeout = null): bool {
+        $config = require __DIR__ . '/../../config/session.php';
+        $timeout = $timeout ?? (int)($config['lifetime'] ?? 3600);
         return isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout;
     }
 

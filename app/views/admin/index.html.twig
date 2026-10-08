@@ -1,157 +1,197 @@
 {% extends "layouts/mobile.html.twig" %}
 
-{% block title %}Admin Dashboard | SocietyApp{% endblock %}
+{% block title %}Application Admin Dashboard | SocietyApp{% endblock %}
 
 {% block content %}
-{% if flash %}
-<div class="mx-4 mt-4 p-4 rounded-xl {% if flash.type == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400{% else %}bg-green-500/10 border border-green-500/20 text-green-400{% endif %} text-sm flex items-center gap-3">
-    <i data-lucide="{% if flash.type == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-5 h-5 flex-shrink-0"></i>
-    {{ flash.message }}
-</div>
-{% endif %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
 
-<div class="p-4">
-    <h2 class="text-xl font-bold text-white mb-4">Revenue Overview</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="glass-panel rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                    <i data-lucide="trending-up" class="w-5 h-5 text-green-400"></i>
-                </div>
-            </div>
-            <p class="text-2xl font-bold text-white">₹{{ revenueStats.totalCollected|number_format }}</p>
-            <p class="text-xs text-surface-200/60">Total Collected</p>
+    {% if flash %}
+    <div class="mb-6 p-4 rounded-xl {% if flash.type == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400{% else %}bg-green-500/10 border border-green-500/20 text-green-400{% endif %} text-sm flex items-center gap-3">
+        <i data-lucide="{% if flash.type == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-5 h-5 flex-shrink-0"></i>
+        <span>{{ flash.message }}</span>
+    </div>
+    {% endif %}
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Application Administration</h1>
+            <p class="text-xs text-surface-200/60">Platform-wide overview, multi-society management, and user controls</p>
         </div>
-        <div class="glass-panel rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                    <i data-lucide="trending-down" class="w-5 h-5 text-red-400"></i>
-                </div>
-            </div>
-            <p class="text-2xl font-bold text-white">₹{{ revenueStats.totalPending|number_format }}</p>
-            <p class="text-xs text-surface-200/60">Pending Payment</p>
-        </div>
-        <div class="glass-panel rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <i data-lucide="wallet" class="w-5 h-5 text-blue-400"></i>
-                </div>
-            </div>
-            <p class="text-2xl font-bold text-white">₹{{ monthlyRevenue|number_format }}</p>
-            <p class="text-xs text-surface-200/60">This Month</p>
+        <div class="flex items-center gap-2">
+            <a href="/admin/societies" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="building-2" class="w-4 h-4"></i>
+                <span>Manage Societies</span>
+            </a>
+            <a href="/admin/users" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white border border-white/10 transition-colors flex items-center gap-1.5">
+                <i data-lucide="users" class="w-4 h-4 text-brand-400"></i>
+                <span>Manage Users</span>
+            </a>
         </div>
     </div>
 
-    <h2 class="text-xl font-bold text-white mb-4">Quick Stats</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <a href="/admin/users" class="glass-panel rounded-2xl p-4 text-center hover:bg-white/5 transition-all">
+    <!-- Platform Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <a href="/admin/societies" class="glass-panel rounded-2xl p-5 hover:bg-white/5 transition-all group border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase tracking-wider">Housing Societies</span>
+                <div class="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center text-brand-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ stats.totalSocieties }}</p>
+            <p class="text-[11px] text-brand-400 mt-1">Manage all societies →</p>
+        </a>
+
+        <a href="/admin/users" class="glass-panel rounded-2xl p-5 hover:bg-white/5 transition-all group border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase tracking-wider">Platform Users</span>
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                </div>
+            </div>
             <p class="text-2xl font-bold text-white">{{ stats.totalUsers }}</p>
-            <p class="text-xs text-surface-200/60">Total Residents</p>
+            <p class="text-[11px] text-surface-200/50 mt-1">{{ stats.activeUsers }} active accounts</p>
         </a>
-        <a href="/admin/bills" class="glass-panel rounded-2xl p-4 text-center hover:bg-white/5 transition-all">
-            <p class="text-2xl font-bold text-red-400">{{ stats.unpaidBills }}</p>
-            <p class="text-xs text-surface-200/60">Pending Bills</p>
-        </a>
-        <a href="/admin/requests" class="glass-panel rounded-2xl p-4 text-center hover:bg-white/5 transition-all">
-            <p class="text-2xl font-bold text-orange-400">{{ stats.pendingRequests }}</p>
-            <p class="text-xs text-surface-200/60">Open Requests</p>
-        </a>
-        <div class="glass-panel rounded-2xl p-4 text-center">
-            <p class="text-2xl font-bold text-brand-400">{{ stats.activeUsers }}</p>
-            <p class="text-xs text-surface-200/60">Active Users</p>
-        </div>
-    </div>
-</div>
 
-<div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="glass-panel rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">Quick Actions</h3>
+        <div class="glass-panel rounded-2xl p-5 border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase tracking-wider">Total Units / Flats</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-400">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ stats.totalFlats }}</p>
+            <p class="text-[11px] text-surface-200/50 mt-1">Across all registered societies</p>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <a href="/admin/users" class="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
-                <i data-lucide="user-plus" class="w-5 h-5 text-brand-400"></i>
-                <span class="text-sm text-surface-200">Manage Users</span>
-            </a>
-            <a href="/admin/invitations" class="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
-                <i data-lucide="mail" class="w-5 h-5 text-brand-400"></i>
-                <span class="text-sm text-surface-200">Send Invites</span>
-            </a>
-            <a href="/admin/bills" class="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
-                <i data-lucide="file-text" class="w-5 h-5 text-brand-400"></i>
-                <span class="text-sm text-surface-200">Generate Bills</span>
-            </a>
-            <a href="/admin/notifications" class="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
-                <i data-lucide="megaphone" class="w-5 h-5 text-brand-400"></i>
-                <span class="text-sm text-surface-200">Broadcast Notice</span>
-            </a>
-        </div>
+
+        <a href="/admin/invitations" class="glass-panel rounded-2xl p-5 hover:bg-white/5 transition-all group border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-surface-200/60 uppercase tracking-wider">Platform Invites</span>
+                <div class="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="mail-plus" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-white">Invite</p>
+            <p class="text-[11px] text-purple-400 mt-1">Send registration links →</p>
+        </a>
     </div>
 
-    <div class="glass-panel rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">Recent Requests</h3>
-            <a href="/admin/requests" class="text-sm text-brand-400 hover:text-brand-300">View All</a>
-        </div>
-        <div class="space-y-3">
-            {% for request in recentRequests %}
-            <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center
-                        {% if request.priority == 'urgent' %}bg-red-500/20 text-red-400
-                        {% elseif request.priority == 'high' %}bg-orange-500/20 text-orange-400
-                        {% else %}bg-blue-500/20 text-blue-400{% endif %}">
-                        <i data-lucide="wrench" class="w-4 h-4"></i>
+    <!-- Quick Actions & Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        
+        <!-- Left: Recent Societies -->
+        <div class="lg:col-span-7 glass-panel rounded-2xl p-6 border border-white/10 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400">
+                        <i data-lucide="building-2" class="w-4 h-4"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-white">{{ request.category }}</p>
-                        <p class="text-xs text-surface-200/40">{{ request.user_name }}</p>
+                        <h3 class="text-sm font-semibold text-white">Registered Societies</h3>
+                        <p class="text-[11px] text-surface-200/50">Housing societies deployed on SocietyApp</p>
                     </div>
                 </div>
-                <span class="px-2 py-1 rounded-lg text-xs font-medium
-                    {% if request.status == 'completed' %}bg-green-500/20 text-green-400
-                    {% elseif request.status == 'in_progress' %}bg-blue-500/20 text-blue-400
-                    {% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
-                    {{ request.status|replace({'_': ' '})|title }}
-                </span>
+                <a href="/admin/societies" class="text-xs text-brand-400 hover:text-brand-300 font-medium">View All ({{ stats.totalSocieties }}) →</a>
             </div>
-            {% else %}
-            <p class="text-sm text-surface-200/40 text-center py-4">No requests yet</p>
+
+            <div class="space-y-3">
+                {% for s in recentSocieties %}
+                <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-700/10 text-brand-300 flex items-center justify-center font-bold text-xs border border-brand-500/20">
+                            {{ s.name|first|upper }}
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">{{ s.name }}</p>
+                            <p class="text-xs text-surface-200/50">
+                                <span class="font-mono text-brand-300">{{ s.society_code }}</span> &middot; {{ s.city ?: 'City N/A' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold text-white">{{ s.total_flats }} Flats</span>
+                        <p class="text-[11px] text-surface-200/50">{{ s.total_members }} Members</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="p-6 text-center text-surface-200/50">
+                    <p class="text-xs">No societies registered yet.</p>
+                    <a href="/admin/societies" class="text-xs text-brand-400 underline mt-1 inline-block">Add First Society</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right: Recent Platform Users -->
+        <div class="lg:col-span-5 glass-panel rounded-2xl p-6 border border-white/10 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white">Recent Users</h3>
+                        <p class="text-[11px] text-surface-200/50">Newest platform registrations</p>
+                    </div>
+                </div>
+                <a href="/admin/users" class="text-xs text-brand-400 hover:text-brand-300 font-medium">View All →</a>
+            </div>
+
+            <div class="space-y-3">
+                {% for u in recentUsers %}
+                <div class="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-surface-800 text-surface-200 flex items-center justify-center text-xs font-bold">
+                            {{ u.name|first|upper }}
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-white truncate max-w-[140px]">{{ u.name }}</p>
+                            <p class="text-[11px] text-surface-200/50 truncate max-w-[140px]">{{ u.email }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-medium {{ u.role == 'admin' ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30' : 'bg-surface-700/50 text-surface-300' }}">
+                            {{ u.role|capitalize }}
+                        </span>
+                        <p class="text-[10px] text-surface-200/40 mt-0.5">{{ u.created_at|date('d M') }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-xs text-surface-200/50 text-center py-4">No users found.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Platform Activity Logs -->
+    {% if recentActivity is defined and recentActivity|length > 0 %}
+    <div class="glass-panel rounded-2xl p-6 border border-white/10 mb-8 shadow-xl">
+        <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-brand-400"></i>
+            <span>System Activity Log</span>
+        </h3>
+        <div class="divide-y divide-white/5">
+            {% for act in recentActivity %}
+            <div class="py-2.5 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+                    <span class="text-surface-200/90">{{ act.description }}</span>
+                </div>
+                <span class="text-[11px] text-surface-200/40">{{ act.created_at|date('d M h:i A') }}</span>
+            </div>
             {% endfor %}
         </div>
     </div>
-</div>
+    {% endif %}
 
-<div class="p-4">
-    <div class="glass-panel rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">Recent Members</h3>
-            <a href="/admin/users" class="text-sm text-brand-400 hover:text-brand-300">View All</a>
-        </div>
-        <div class="space-y-3">
-            {% for user in recentUsers %}
-            <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center">
-                        <i data-lucide="user" class="w-5 h-5 text-brand-400"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-white">{{ user.name }}</p>
-                        <p class="text-xs text-surface-200/40">{{ user.email }}</p>
-                    </div>
-                </div>
-                <span class="text-xs text-surface-200/40">{{ user.created_at|date('M d') }}</span>
-            </div>
-            {% else %}
-            <p class="text-sm text-surface-200/40 text-center py-4">No users yet</p>
-            {% endfor %}
-        </div>
-    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    lucide.createIcons();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 </script>
 {% endblock %}

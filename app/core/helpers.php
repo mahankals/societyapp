@@ -205,6 +205,9 @@ function view(string $name, array $data = []): string {
     if (!isset($data['flash']) && Session::has('flash')) {
         $data['flash'] = Session::getFlash();
     }
+    if (isset($data['flash']) && is_array($data['flash']) && isset($data['flash']['type'], $data['flash']['message'])) {
+        $data['flash'][$data['flash']['type']] = $data['flash']['message'];
+    }
     if (!isset($data['error']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'error') {
         $data['error'] = $data['flash']['message'];
     }

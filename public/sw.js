@@ -1,4 +1,4 @@
-const CACHE_NAME = 'societyapp-v4';
+const CACHE_NAME = 'societyapp-v5';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [

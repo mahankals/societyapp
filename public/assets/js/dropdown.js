@@ -99,8 +99,8 @@
 
         createMenu() {
             this.menu = document.createElement('div');
-            this.menu.className = 'custom-select-menu fixed z-[999999] hidden rounded-xl border border-white/15 bg-[#0f172a] text-white shadow-2xl shadow-black/90 overflow-hidden text-sm flex flex-col';
-            this.menu.style.cssText = 'background-color: #0f172a !important; opacity: 1 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-sizing: border-box;';
+            this.menu.className = 'custom-select-menu fixed z-[999999] hidden rounded-xl border border-white/15 shadow-2xl overflow-hidden text-sm flex flex-col';
+            this.menu.style.cssText = 'opacity: 1 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-sizing: border-box;';
 
             // Search input container
             this.searchWrapper = document.createElement('div');
@@ -122,7 +122,7 @@
 
             // Options list container
             this.optionsContainer = document.createElement('div');
-            this.optionsContainer.className = 'custom-select-options overflow-y-auto p-1.5 space-y-0.5 overscroll-contain';
+            this.optionsContainer.className = 'custom-select-options overflow-y-auto p-1.5 space-y-0.5 overscroll-contain flex-1';
             this.optionsContainer.style.maxHeight = this.config.maxHeight + 'px';
             this.menu.appendChild(this.optionsContainer);
 
@@ -320,42 +320,43 @@
             const viewportHeight = window.innerHeight;
             const viewportWidth = window.innerWidth;
 
-            const spaceBelow = viewportHeight - rect.bottom - 12;
-            const spaceAbove = rect.top - 12;
+            const spaceBelow = viewportHeight - rect.bottom - 16;
+            const spaceAbove = rect.top - 16;
 
-            // Measure temporary menu height
-            this.menu.style.visibility = 'hidden';
-            this.menu.classList.remove('hidden');
-            const menuHeight = this.menu.offsetHeight || 260;
-            this.menu.style.visibility = 'visible';
+            // Ideal height for comfortable dropdown
+            const idealHeight = 320;
 
-            // Dynamic search check: if options container is scrollable, ensure search is shown
-            if (this.optionsContainer.scrollHeight > this.optionsContainer.clientHeight && this.activeOptionElements.length > 4) {
-                this.searchWrapper.style.display = 'flex';
-            }
+            // Auto-placement: open below only if ample room (>= idealHeight) OR if spaceBelow > spaceAbove
+            const preferBelow = (spaceBelow >= idealHeight) || (spaceBelow >= spaceAbove);
 
-            // AUTO POSITIONING REQUIREMENT:
-            // "if dropdown at top item show bellow it, if it button item show at top"
-            const preferBelow = spaceBelow >= Math.min(menuHeight, 200) || spaceBelow >= spaceAbove;
+            const availableSpace = Math.max(120, (preferBelow ? spaceBelow : spaceAbove) - 8);
+            const menuMaxHeight = Math.min(availableSpace, 360);
+
+            // Dynamic search check: show search input if threshold met
+            const shouldShowSearch = this.activeOptionElements.length > this.config.searchThreshold || this.select.getAttribute('data-searchable') === 'true';
+            this.searchWrapper.style.display = shouldShowSearch ? 'flex' : 'none';
+
+            // Explicitly bound menu max-height to available space so it NEVER overflows offscreen
+            this.menu.style.maxHeight = menuMaxHeight + 'px';
+
+            const searchHeight = shouldShowSearch ? 48 : 0;
+            const optionsMaxHeight = Math.max(80, menuMaxHeight - searchHeight - 8);
+            this.optionsContainer.style.maxHeight = optionsMaxHeight + 'px';
 
             if (preferBelow) {
                 // Open downwards below trigger
                 this.menu.style.top = (rect.bottom + 6) + 'px';
                 this.menu.style.bottom = 'auto';
-                const calculatedMax = Math.max(120, Math.min(spaceBelow - 16, this.config.maxHeight));
-                this.optionsContainer.style.maxHeight = calculatedMax + 'px';
                 this.menu.setAttribute('data-placement', 'bottom');
             } else {
                 // Open upwards above trigger
                 this.menu.style.top = 'auto';
                 this.menu.style.bottom = (viewportHeight - rect.top + 6) + 'px';
-                const calculatedMax = Math.max(120, Math.min(spaceAbove - 16, this.config.maxHeight));
-                this.optionsContainer.style.maxHeight = calculatedMax + 'px';
                 this.menu.setAttribute('data-placement', 'top');
             }
 
             // Horizontal alignment and width
-            const targetWidth = Math.max(rect.width, 220);
+            const targetWidth = Math.max(rect.width, 240);
             this.menu.style.width = targetWidth + 'px';
 
             let left = rect.left;
