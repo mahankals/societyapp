@@ -602,6 +602,7 @@ $router->post('/admin/invitations', [$admin, 'sendInvitation'], ['auth', 'admin'
 $router->get('/admin/settings', [$admin, 'settings'], ['auth', 'admin']);
 $router->post('/admin/settings', [$admin, 'updateSettings'], ['auth', 'admin']);
 $router->post('/admin/settings/toggle-maintenance', [$admin, 'toggleMaintenance'], ['auth', 'admin']);
+$router->post('/admin/settings/test-email', [$admin, 'testEmail'], ['auth', 'admin']);
 
 // Redirect legacy admin paths to committee
 $router->get('/admin/bills', function() { redirect('/comitee/bills'); }, ['auth']);

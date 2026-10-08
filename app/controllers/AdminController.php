@@ -761,4 +761,65 @@ class AdminController
 
         redirect('/admin/settings?tab=maintenance');
     }
+
+    /**
+     * Send live test email to verify SMTP configuration
+     */
+    public function testEmail()
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            echo json_encode(['success' => false, 'message' => 'Invalid security token.']);
+            exit;
+        }
+
+        $recipient = trim($_POST['test_recipient_email'] ?? '');
+        if (empty($recipient)) {
+            $user = getUser();
+            $recipient = $user['email'] ?? '';
+        }
+
+        $customConfig = [
+            'mail_host' => trim($_POST['mail_host'] ?? ''),
+            'mail_port' => trim($_POST['mail_port'] ?? '1025'),
+            'mail_username' => trim($_POST['mail_username'] ?? ''),
+            'mail_password' => trim($_POST['mail_password'] ?? ''),
+            'mail_from_address' => trim($_POST['mail_from_address'] ?? ''),
+            'mail_from_name' => trim($_POST['mail_from_name'] ?? ''),
+        ];
+
+        // If password field in form is blank, fallback to saved encrypted password in database
+        if (empty($customConfig['mail_password'])) {
+            $customConfig['mail_password'] = getSetting('mail_password', '');
+        }
+
+        $appName = getSetting('app_name', 'SocietyApp');
+        $time = date('Y-m-d H:i:s T');
+        $subject = "{$appName} — SMTP Configuration Test";
+
+        $body = "
+        <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;\">
+            <div style=\"border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 20px;\">
+                <h2 style=\"color: #0f172a; margin: 0;\">✓ SMTP Test Message</h2>
+                <p style=\"color: #64748b; font-size: 13px; margin: 4px 0 0;\">SocietyApp Email Subsystem Verification</p>
+            </div>
+            <p style=\"color: #334155; font-size: 14px; line-height: 1.6;\">
+                Congratulations! If you are reading this email, your <strong>{$appName}</strong> outgoing mail configuration is operating correctly.
+            </p>
+            <div style=\"background: #f8fafc; border-radius: 12px; padding: 14px 18px; margin: 20px 0; border: 1px solid #e2e8f0; font-size: 13px;\">
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>SMTP Server:</strong> " . htmlspecialchars($customConfig['mail_host']) . ":" . htmlspecialchars((string)$customConfig['mail_port']) . "</p>
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>From Address:</strong> " . htmlspecialchars($customConfig['mail_from_address']) . "</p>
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>Sent At:</strong> {$time}</p>
+            </div>
+            <p style=\"color: #94a3b8; font-size: 12px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;\">
+                This is an automated test message initiated from the System Settings panel.
+            </p>
+        </div>";
+
+        $result = sendEmail($recipient, $subject, $body, $customConfig);
+
+        header('Content-Type: application/json');
+        echo json_encode($result);
+        exit;
+    }
 }

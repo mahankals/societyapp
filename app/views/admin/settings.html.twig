@@ -19,10 +19,6 @@
             <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Control platform-wide maintenance mode, branding, email delivery, and server diagnostics</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="/maintenance" target="_blank" class="px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-white flex items-center gap-2 transition-all shadow-sm">
-                <i data-lucide="external-link" class="w-4 h-4 text-brand-500"></i>
-                <span>Preview Maintenance Page</span>
-            </a>
             <a href="/admin" class="px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-surface-200 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
                 Back to Dashboard
             </a>
@@ -187,6 +183,42 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Send Test Email Card -->
+            <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl">
+                <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200 dark:border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25 flex items-center justify-center shrink-0 shadow-sm">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Send Test Email</h3>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Verify your SMTP connection and test live email deliverability</p>
+                    </div>
+                </div>
+
+                <div id="test-email-alert" class="hidden mb-4 p-4 rounded-xl text-xs flex items-start gap-3">
+                    <i id="test-email-alert-icon" data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <div id="test-email-alert-text" class="flex-1 font-medium leading-relaxed"></div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Recipient Email Address</label>
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <div class="flex-1">
+                                <input type="email" id="test_recipient_email" name="test_recipient_email" value="{{ user.email|default('admin@societyapp.ddev.site') }}" placeholder="recipient@example.com" class="input-glass">
+                            </div>
+                            <button type="button" id="btn-send-test-email" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap shadow-md shadow-blue-600/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" style="color: #ffffff !important;">
+                                <i data-lucide="send" class="w-4 h-4 shrink-0"></i>
+                                <span id="btn-send-test-email-label">Send Test Email</span>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-surface-200/50">
+                        This sends a verification message using the SMTP credentials provided above. Any unsaved edits in the form fields above will also be tested.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- ==================== TAB PANEL 3: MAINTENANCE ==================== -->
@@ -216,9 +248,13 @@
                         </div>
                     </div>
 
-                    <!-- Instant Toggle Button -->
-                    <div class="shrink-0 sm:self-center">
-                        <button type="submit" form="toggle-maintenance-form" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap {% if isMaintenanceOn %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30{% else %}bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold shadow-md shadow-amber-500/30{% endif %}">
+                    <!-- Instant Toggle & Preview Buttons -->
+                    <div class="shrink-0 sm:self-center flex flex-wrap items-center gap-2.5">
+                        <a href="/maintenance" target="_blank" class="px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-white inline-flex items-center gap-2 transition-all shadow-sm">
+                            <i data-lucide="external-link" class="w-4 h-4 text-brand-500"></i>
+                            <span>Preview Maintenance Page</span>
+                        </a>
+                        <button type="submit" form="toggle-maintenance-form" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap {% if isMaintenanceOn %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30{% else %}bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold shadow-md shadow-amber-500/30{% endif %}" {% if isMaintenanceOn %}style="color: #ffffff !important;"{% endif %}>
                             <i data-lucide="power" class="w-4 h-4 shrink-0"></i>
                             <span>{{ isMaintenanceOn ? 'Switch OFF Maintenance Mode' : 'Switch ON Maintenance Mode' }}</span>
                         </button>
@@ -349,6 +385,73 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialTab = urlParams.get('tab') || (hash && tabPanels[hash] ? hash : null);
     if (initialTab && tabPanels[initialTab]) {
         switchTab(initialTab);
+    }
+
+    // Test Email Sending Handler
+    const testEmailBtn = document.getElementById('btn-send-test-email');
+    const testEmailLabel = document.getElementById('btn-send-test-email-label');
+    const testRecipientInput = document.getElementById('test_recipient_email');
+    const testAlert = document.getElementById('test-email-alert');
+    const testAlertText = document.getElementById('test-email-alert-text');
+    const testAlertIcon = document.getElementById('test-email-alert-icon');
+
+    function showEmailAlert(isSuccess, message) {
+        if (!testAlert || !testAlertText) return;
+        testAlert.classList.remove('hidden');
+        if (isSuccess) {
+            testAlert.className = 'mb-4 p-4 rounded-xl text-xs flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300';
+            if (testAlertIcon) testAlertIcon.setAttribute('data-lucide', 'check-circle');
+        } else {
+            testAlert.className = 'mb-4 p-4 rounded-xl text-xs flex items-start gap-3 bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400';
+            if (testAlertIcon) testAlertIcon.setAttribute('data-lucide', 'alert-triangle');
+        }
+        testAlertText.textContent = message;
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    if (testEmailBtn) {
+        testEmailBtn.addEventListener('click', async function() {
+            const recipient = (testRecipientInput ? testRecipientInput.value : '').trim();
+            if (!recipient) {
+                showEmailAlert(false, 'Please enter a valid recipient email address.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('csrf_token', '{{ csrfToken }}');
+            formData.append('test_recipient_email', recipient);
+
+            const form = document.getElementById('settings-form');
+            if (form) {
+                ['mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_from_address', 'mail_from_name'].forEach(name => {
+                    const el = form.querySelector(`[name="${name}"]`);
+                    if (el) formData.append(name, el.value);
+                });
+            }
+
+            testEmailBtn.disabled = true;
+            if (testEmailLabel) testEmailLabel.textContent = 'Sending...';
+            if (testAlert) testAlert.classList.add('hidden');
+
+            try {
+                const res = await fetch('/admin/settings/test-email', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showEmailAlert(true, data.message || 'Test email dispatched successfully! Check recipient inbox or Mailpit.');
+                } else {
+                    showEmailAlert(false, data.message || 'Failed to dispatch test email.');
+                }
+            } catch (err) {
+                showEmailAlert(false, 'Network or server error while sending test email: ' + err.message);
+            } finally {
+                testEmailBtn.disabled = false;
+                if (testEmailLabel) testEmailLabel.textContent = 'Send Test Email';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
     }
 });
 </script>

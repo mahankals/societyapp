@@ -612,3 +612,178 @@ function config(string $key, mixed $default = null): mixed {
     }
     return $value;
 }
+
+/**
+ * Send an email via SMTP socket connection with TLS/AUTH support
+ *
+ * @param string $to Recipient email
+ * @param string $subject Email subject
+ * @param string $htmlBody HTML content
+ * @param array $customConfig Optional custom SMTP settings
+ * @return array ['success' => bool, 'message' => string, 'details' => string]
+ */
+function sendEmail(string $to, string $subject, string $htmlBody, array $customConfig = []): array {
+    $mailHost = $customConfig['mail_host'] ?? getSetting('mail_host', '127.0.0.1');
+    $mailPort = (int)($customConfig['mail_port'] ?? getSetting('mail_port', '1025'));
+    $mailUsername = $customConfig['mail_username'] ?? getSetting('mail_username', '');
+    $mailPassword = $customConfig['mail_password'] ?? getSetting('mail_password', '');
+    $mailFromAddress = $customConfig['mail_from_address'] ?? getSetting('mail_from_address', 'no-reply@societyapp.ddev.site');
+    $mailFromName = $customConfig['mail_from_name'] ?? getSetting('mail_from_name', 'SocietyApp Notifications');
+
+    if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return ['success' => false, 'message' => 'Please provide a valid recipient email address.'];
+    }
+
+    if (empty($mailHost)) {
+        return ['success' => false, 'message' => 'SMTP Host is not configured.'];
+    }
+
+    $timeout = 8;
+    $errno = 0;
+    $errstr = '';
+
+    // Handle SSL/TLS connection prefix
+    $connectionHost = $mailHost;
+    if ($mailPort === 465) {
+        $connectionHost = 'ssl://' . $mailHost;
+    }
+
+    $socket = @fsockopen($connectionHost, $mailPort, $errno, $errstr, $timeout);
+    if (!$socket) {
+        return [
+            'success' => false,
+            'message' => "Cannot connect to SMTP server at {$mailHost}:{$mailPort}. {$errstr} ({$errno})",
+        ];
+    }
+
+    stream_set_timeout($socket, $timeout);
+
+    $readResponse = function($sock) {
+        $data = '';
+        while ($str = @fgets($sock, 515)) {
+            $data .= $str;
+            if (strlen($str) >= 4 && substr($str, 3, 1) === ' ') {
+                break;
+            }
+        }
+        return $data;
+    };
+
+    $sendCommand = function($sock, $cmd, $expectedCode = 250) use ($readResponse) {
+        @fputs($sock, $cmd . "\r\n");
+        $res = $readResponse($sock);
+        $code = (int)substr($res, 0, 3);
+        if ($expectedCode && $code !== $expectedCode) {
+            return [false, $res];
+        }
+        return [true, $res];
+    };
+
+    // 1. Initial Greeting
+    $banner = $readResponse($socket);
+    if ((int)substr($banner, 0, 3) !== 220) {
+        @fclose($socket);
+        return ['success' => false, 'message' => "Invalid greeting from SMTP server: {$banner}"];
+    }
+
+    // 2. EHLO
+    $heloDomain = $_SERVER['SERVER_NAME'] ?? 'localhost';
+    [$ok, $ehloRes] = $sendCommand($socket, "EHLO {$heloDomain}", 250);
+    if (!$ok) {
+        [$ok, $ehloRes] = $sendCommand($socket, "HELO {$heloDomain}", 250);
+        if (!$ok) {
+            @fclose($socket);
+            return ['success' => false, 'message' => "EHLO/HELO rejected by server: {$ehloRes}"];
+        }
+    }
+
+    // 3. STARTTLS if port 587 and server supports STARTTLS
+    if ($mailPort === 587 && stripos($ehloRes, 'STARTTLS') !== false) {
+        [$tlsOk, $tlsRes] = $sendCommand($socket, "STARTTLS", 220);
+        if ($tlsOk) {
+            $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT);
+            if ($cryptoOk) {
+                // Re-send EHLO over TLS
+                $sendCommand($socket, "EHLO {$heloDomain}", 250);
+            }
+        }
+    }
+
+    // 4. AUTH LOGIN if credentials provided
+    if (!empty($mailUsername) && !empty($mailPassword)) {
+        [$authOk, $authRes] = $sendCommand($socket, "AUTH LOGIN", 334);
+        if ($authOk) {
+            [$uOk, $uRes] = $sendCommand($socket, base64_encode($mailUsername), 334);
+            if (!$uOk) {
+                @fclose($socket);
+                return ['success' => false, 'message' => "SMTP Username rejected: {$uRes}"];
+            }
+            [$pOk, $pRes] = $sendCommand($socket, base64_encode($mailPassword), 235);
+            if (!$pOk) {
+                @fclose($socket);
+                return ['success' => false, 'message' => "SMTP Authentication failed (invalid credentials): {$pRes}"];
+            }
+        }
+    }
+
+    // 5. MAIL FROM
+    $cleanFrom = trim($mailFromAddress ?: 'no-reply@societyapp.ddev.site');
+    [$fromOk, $fromRes] = $sendCommand($socket, "MAIL FROM: <{$cleanFrom}>", 250);
+    if (!$fromOk) {
+        @fclose($socket);
+        return ['success' => false, 'message' => "MAIL FROM rejected: {$fromRes}"];
+    }
+
+    // 6. RCPT TO
+    [$toOk, $toRes] = $sendCommand($socket, "RCPT TO: <{$to}>", 250);
+    if (!$toOk) {
+        @fclose($socket);
+        return ['success' => false, 'message' => "Recipient <{$to}> rejected by SMTP server: {$toRes}"];
+    }
+
+    // 7. DATA
+    [$dataOk, $dataRes] = $sendCommand($socket, "DATA", 354);
+    if (!$dataOk) {
+        @fclose($socket);
+        return ['success' => false, 'message' => "DATA command rejected: {$dataRes}"];
+    }
+
+    // Build Email Headers & Body
+    $date = date('r');
+    $msgId = '<' . md5(uniqid(microtime(), true)) . '@' . ($heloDomain ?: 'societyapp') . '>';
+    $cleanFromName = preg_replace('/[^\w\s\.-]/', '', $mailFromName ?: 'SocietyApp');
+    
+    $headers = [
+        "Date: {$date}",
+        "Message-ID: {$msgId}",
+        "From: =?UTF-8?B?" . base64_encode($cleanFromName) . "?= <{$cleanFrom}>",
+        "To: <{$to}>",
+        "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=",
+        "MIME-Version: 1.0",
+        "Content-Type: text/html; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit",
+        "X-Mailer: SocietyApp-Mailer/1.0",
+    ];
+
+    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.\r\n";
+    @fputs($socket, $payload);
+    $sendRes = $readResponse($socket);
+    $sendCode = (int)substr($sendRes, 0, 3);
+
+    // QUIT
+    @fputs($socket, "QUIT\r\n");
+    @fclose($socket);
+
+    if ($sendCode === 250) {
+        return [
+            'success' => true,
+            'message' => "Test email successfully delivered to {$to}!",
+            'details' => trim($sendRes),
+        ];
+    }
+
+    return [
+        'success' => false,
+        'message' => "Failed to deliver email body: {$sendRes}",
+    ];
+}
