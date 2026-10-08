@@ -317,7 +317,6 @@ class SetupController
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
 
             $data = json_decode($response, true);
             $error = $data['error'] ?? '';

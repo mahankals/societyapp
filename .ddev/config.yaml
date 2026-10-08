@@ -9,6 +9,8 @@ additional_fqdns: []
 database:
     type: mariadb
     version: "10.11"
+mailpit_http_port: "33025"
+mailpit_https_port: "33026"
 use_dns_when_possible: true
 composer_version: "2"
 web_environment: []

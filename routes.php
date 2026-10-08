@@ -75,11 +75,8 @@ $router->post('/auth/login', function() {
 
     if ($user && password_verify($password, $user['password_hash'])) {
         loginUser($user['id'], $user['role'], $user['email']);
-        if ($user['pin_hash'] === null) {
-            redirect('/auth/pin-setup');
-        }
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-        $redirectUrl = $returnUrl ?: ($user['role'] === 'admin' ? '/admin' : '/resident');
+        $redirectUrl = $returnUrl ?: getUserRoleDashboardUrl($user);
         redirect($redirectUrl);
     } else {
         Session::flash('error', 'Invalid email or password.');
@@ -196,13 +193,15 @@ $router->post('/auth/reset-password', function() {
 $router->get('/auth/pin-setup', function() {
     requireLogin();
     $user = getUser();
+    $skipUrl = getUserRoleDashboardUrl($user);
     if ($user && $user['pin_hash'] !== null) {
-        redirect('/resident');
+        redirect($skipUrl);
     }
     echo view('auth/pin-setup', [
-        'basePath' => '/',
+        'basePath'  => '/',
         'csrfToken' => generateCSRFToken(),
-        'userName' => $user['name'] ?? 'User',
+        'userName'  => $user['name'] ?? 'User',
+        'skipUrl'   => $skipUrl,
     ]);
 });
 
@@ -230,7 +229,8 @@ $router->post('/auth/pin-setup', function() {
     Database::update('users', ['pin_hash' => $pinHash], 'id = ?', [Session::get('user_id')]);
 
     Session::flash('success', 'PIN set up successfully! You can now use offline access.');
-    redirect('/resident');
+    $user = getUser();
+    redirect(getUserRoleDashboardUrl($user));
 });
 
 $router->get('/auth/google-callback', function() {
@@ -267,7 +267,6 @@ $router->get('/auth/google-callback', function() {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $tokenResponse = curl_exec($ch);
-        curl_close($ch);
 
         $tokenInfo = json_decode($tokenResponse, true);
 
@@ -278,7 +277,6 @@ $router->get('/auth/google-callback', function() {
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenInfo['access_token']]);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             $userResponse = curl_exec($ch);
-            curl_close($ch);
 
             $userInfo = json_decode($userResponse, true);
 
@@ -305,23 +303,20 @@ $router->get('/auth/google-callback', function() {
                         Database::update('users', ['google_id' => $userInfo['id']], 'id = ?', [$existingUser['id']]);
                     }
                     loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
-                    if ($existingUser['pin_hash'] === null) {
-                        redirect('/auth/pin-setup');
-                    }
                     Session::flash('success', 'Welcome back, ' . htmlspecialchars($existingUser['name']) . '!');
                 } else {
                     $userId = Database::insert('users', [
-                        'email' => $userInfo['email'],
-                        'name' => $userInfo['name'] ?? explode('@', $userInfo['email'])[0],
-                        'google_id' => $userInfo['id'],
-                        'role' => 'resident',
+                        'email'             => $userInfo['email'],
+                        'name'              => $userInfo['name'] ?? explode('@', $userInfo['email'])[0],
+                        'google_id'         => $userInfo['id'],
+                        'role'              => 'resident',
                         'email_verified_at' => date('Y-m-d H:i:s'),
                     ]);
                     loginUser($userId, 'resident', $userInfo['email']);
-                    redirect('/auth/pin-setup');
+                    $existingUser = ['role' => 'resident'];
                 }
 
-                redirect($existingUser['role'] === 'admin' ? '/admin' : '/resident');
+                redirect(getUserRoleDashboardUrl($existingUser));
             }
         }
 
@@ -358,7 +353,6 @@ $router->post('/auth/google-one-tap', function() {
     curl_setopt($ch, CURLOPT_TIMEOUT, 8);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($httpCode !== 200) {
         $verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?access_token=' . urlencode($idToken);
@@ -368,7 +362,6 @@ $router->post('/auth/google-one-tap', function() {
         curl_setopt($ch, CURLOPT_TIMEOUT, 8);
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
     }
 
     $payload = json_decode($response, true);
@@ -421,10 +414,7 @@ $router->post('/auth/google-one-tap', function() {
             Database::update('users', $updates, 'id = ?', [$existingUser['id']]);
         }
         loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
-        $redirectUrl = ($existingUser['role'] === 'admin') ? '/admin' : '/resident';
-        if ($existingUser['pin_hash'] === null) {
-            $redirectUrl = '/auth/pin-setup';
-        }
+        $redirectUrl = getUserRoleDashboardUrl($existingUser);
         Session::flash('success', 'Welcome back, ' . htmlspecialchars($existingUser['name']) . '!');
         echo json_encode([
             'success' => true,
@@ -452,13 +442,13 @@ $router->post('/auth/google-one-tap', function() {
     loginUser($userId, 'resident', $email);
     Session::flash('success', 'Welcome to Society App!');
     echo json_encode([
-        'success' => true,
-        'redirect' => '/auth/pin-setup',
-        'user' => [
-            'id' => $userId,
-            'name' => $name,
+        'success'  => true,
+        'redirect' => '/resident',
+        'user'     => [
+            'id'    => $userId,
+            'name'  => $name,
             'email' => $email,
-            'role' => 'resident',
+            'role'  => 'resident',
         ]
     ]);
     exit;
@@ -519,11 +509,18 @@ $router->post('/resident/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
 $router->get('/resident/requests', [$resident, 'requests'], ['auth']);
 $router->post('/resident/requests', [$resident, 'createRequest'], ['auth']);
 
-// Legacy redirects: /tenant and /residential -> /resident (full deep-path support via {path+})
+// Legacy & alias redirects: /tenant, /tenent, /residential, and /client (full deep-path support via {path+})
 $router->any('/tenant', function() { redirect('/resident'); }, ['auth']);
 $router->any('/tenant/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
+$router->any('/tenent', function() { redirect('/resident'); }, ['auth']);
+$router->any('/tenent/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
 $router->any('/residential', function() { redirect('/resident'); }, ['auth']);
 $router->any('/residential/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
+$router->any('/client', function() {
+    $user = getUser();
+    redirect(getUserRoleDashboardUrl($user));
+}, ['auth']);
+$router->any('/client/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
 $router->get('/profile', function() { redirect('/resident/profile'); }, ['auth']);
 $router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['auth']);
 

@@ -158,6 +158,39 @@ function isCommitteeMember(?int $userId = null): bool {
     return $caps['isCommittee'];
 }
 
+function getUserRoleDashboardUrl(?array $user = null): string {
+    if (!$user && isLoggedIn()) {
+        $user = getUser();
+    }
+    if (!$user) {
+        return '/resident';
+    }
+
+    if (($user['role'] ?? '') === 'admin') {
+        return '/admin';
+    }
+
+    // Check if user is a tenant
+    try {
+        if (($user['role'] ?? '') === 'tenant') {
+            return '/tenant';
+        }
+        $userId = (int)($user['id'] ?? 0);
+        if ($userId > 0) {
+            $member = Database::fetchOne("
+                SELECT role, ownership_type FROM society_members 
+                WHERE user_id = ? AND status = 'active'
+                LIMIT 1
+            ", [$userId]);
+            if ($member && (($member['role'] ?? '') === 'tenant' || ($member['ownership_type'] ?? '') === 'tenant')) {
+                return '/tenant';
+            }
+        }
+    } catch (\Throwable $e) {}
+
+    return '/resident';
+}
+
 function view(string $name, array $data = []): string {
     $config = require __DIR__ . '/../../config/app.php';
     $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../views');
@@ -167,6 +200,14 @@ function view(string $name, array $data = []): string {
     ]);
 
     $data['appConfig'] = $config;
+
+    // Flash messages support
+    if (!isset($data['flash']) && Session::has('flash')) {
+        $data['flash'] = Session::getFlash();
+    }
+    if (!isset($data['error']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'error') {
+        $data['error'] = $data['flash']['message'];
+    }
 
     // Dynamic Application Branding (Logo, Favicon, Name, Description)
     $brandingVersion = getSetting('branding_updated_at', '1');

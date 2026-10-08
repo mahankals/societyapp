@@ -110,6 +110,21 @@ require_once ROOT_PATH . '/routes.php';
 
 set_exception_handler(function($e) {
     $config = require CONFIG_PATH . '/app.php';
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $isJson = (strpos($requestUri, '/api/') === 0)
+        || (strpos($requestUri, '/auth/google-one-tap') === 0)
+        || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+    if ($isJson) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error'   => ($config['app']['debug'] ?? false) ? $e->getMessage() : 'Internal Server Error',
+        ]);
+        exit;
+    }
+
     if ($config['app']['debug']) {
         echo "<pre>{$e}</pre>";
     } else {
@@ -123,6 +138,11 @@ set_exception_handler(function($e) {
 set_error_handler(function($severity, $message, $file, $line) {
     if (!(error_reporting() & $severity)) {
         return false;
+    }
+    // Deprecation warnings in PHP 8.4/8.5 should not convert to fatal ErrorException
+    if ($severity === E_DEPRECATED || $severity === E_USER_DEPRECATED) {
+        error_log("Deprecated: {$message} in {$file} on line {$line}");
+        return true;
     }
     throw new \ErrorException($message, 0, $severity, $file, $line);
 });

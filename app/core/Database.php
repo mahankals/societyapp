@@ -11,11 +11,13 @@ class Database {
             $config = require __DIR__ . '/../../config/database.php';
             try {
                 $dsn = "{$config['driver']}:host={$config['host']};dbname={$config['database']};port={$config['port']};charset={$config['charset']}";
+                // Use Pdo\Mysql on PHP 8.4+ to avoid PDO::MYSQL_ATTR_INIT_COMMAND deprecation warning
+                $initCmd = class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : PDO::MYSQL_ATTR_INIT_COMMAND;
                 self::$instance = new PDO($dsn, $config['username'], $config['password'], [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                    (defined('\Pdo\Mysql::ATTR_INIT_COMMAND') ? \Pdo\Mysql::ATTR_INIT_COMMAND : PDO::MYSQL_ATTR_INIT_COMMAND) => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                    $initCmd                     => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
                 ]);
             } catch (PDOException $e) {
                 error_log("Database connection failed: " . $e->getMessage());
