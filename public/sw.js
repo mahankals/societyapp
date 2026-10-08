@@ -1,19 +1,13 @@
-const CACHE_NAME = 'societyapp-v1';
+const CACHE_NAME = 'societyapp-v2';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
-    '/',
-    '/auth/login',
     '/offline.html',
     '/manifest.json',
     '/favicon.ico',
-    '/assets/dist/output.css?v=5',
+    '/assets/dist/output.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap',
     'https://unpkg.com/lucide@latest'
-];
-
-const API_ROUTES = [
-    '/api/status'
 ];
 
 self.addEventListener('install', (event) => {
@@ -44,47 +38,54 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
+    // Only handle GET requests
     if (request.method !== 'GET') {
         return;
     }
 
-    if (url.pathname.startsWith('/api/')) {
-        event.respondWith(networkFirst(request));
+    // 1. Navigation requests (HTML pages): ALWAYS network-first, NEVER cache HTML to prevent stale CSRF tokens
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request).catch(() => {
+                return caches.match(OFFLINE_URL);
+            })
+        );
         return;
     }
 
-    if (url.origin !== location.origin) {
+    // 2. API & Auth routes: ALWAYS network, never cached
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
         return;
     }
 
+    // 3. External assets or non-origin: let browser handle directly unless in cache
+    if (url.origin !== location.origin && !url.hostname.includes('googleapis') && !url.hostname.includes('gstatic') && !url.hostname.includes('unpkg')) {
+        return;
+    }
+
+    // 4. Static assets (CSS, JS, images, fonts): Cache-first with network fallback
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-            return networkFirst(request);
+            return fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                }
+                return networkResponse;
+            });
         }).catch(() => {
+            if (request.destination === 'image') {
+                return new Response('', { status: 404, statusText: 'Not Found' });
+            }
             return caches.match(OFFLINE_URL);
         })
     );
 });
-
-async function networkFirst(request) {
-    try {
-        const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-    } catch (error) {
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-        return caches.match(OFFLINE_URL);
-    }
-}
 
 self.addEventListener('push', (event) => {
     const data = event.data?.json() ?? {};
