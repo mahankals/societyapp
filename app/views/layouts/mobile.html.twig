@@ -61,7 +61,7 @@
                 <!-- Desktop Navigation Links -->
                 {% if user %}
                 <div class="hidden md:flex items-center gap-1 text-sm font-medium">
-                    {% if userCaps.isResident %}
+                    {% if userCaps.isResident or userCaps.isAdmin or user.role == 'admin' %}
                     <a href="/resident" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute == '/resident' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                         Dashboard
                     </a>
