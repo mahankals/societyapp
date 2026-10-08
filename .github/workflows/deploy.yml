@@ -23,6 +23,27 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Validate FTP Configuration
+        run: |
+          HAS_ERRORS=0
+          if [ -z "${{ vars.FTP_SERVER || secrets.FTP_SERVER }}" ]; then
+            echo "::error::Missing FTP_SERVER! Please add 'FTP_SERVER' in GitHub Repo Settings -> Secrets and variables -> Actions -> Variables."
+            HAS_ERRORS=1
+          fi
+          if [ -z "${{ vars.FTP_USERNAME || secrets.FTP_USERNAME }}" ]; then
+            echo "::error::Missing FTP_USERNAME! Please add 'FTP_USERNAME' in GitHub Repo Settings -> Secrets and variables -> Actions -> Variables."
+            HAS_ERRORS=1
+          fi
+          if [ -z "${{ secrets.FTP_PASSWORD }}" ]; then
+            echo "::error::Missing FTP_PASSWORD! Please add 'FTP_PASSWORD' in GitHub Repo Settings -> Secrets and variables -> Actions -> Secrets."
+            HAS_ERRORS=1
+          fi
+          if [ "$HAS_ERRORS" -eq 1 ]; then
+            echo "Deployment aborted due to missing configuration."
+            exit 1
+          fi
+          echo "FTP configuration validated successfully."
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -37,7 +58,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Node Dependencies & Build CSS
