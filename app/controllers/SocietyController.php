@@ -799,6 +799,17 @@ class SocietyController
         $totalFlatsCount = (int)(Database::fetchOne("SELECT COUNT(*) as c FROM flats WHERE society_id = ?", [$societyId])['c'] ?? 0);
         $totalAllArea = (float)(Database::fetchOne("SELECT COALESCE(SUM(area_sqft), 0) as s FROM flats WHERE society_id = ?", [$societyId])['s'] ?? 0);
 
+        $pendingConfirmations = Database::fetchAll("
+            SELECT t.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
+                   f.wing, f.flat_no, b.bill_number, b.title as bill_title
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            LEFT JOIN flats f ON t.flat_id = f.id
+            LEFT JOIN maintenance_bills b ON t.bill_id = b.id
+            WHERE t.society_id = ? AND t.status = 'pending'
+            ORDER BY t.created_at DESC
+        ", [$societyId]);
+
         echo view('committee/bills', [
             'basePath' => '/',
             'user' => $auth['user'],
@@ -809,6 +820,8 @@ class SocietyController
             'totalFlatsCount' => $totalFlatsCount,
             'totalAllArea' => $totalAllArea,
             'statusFilter' => $statusFilter,
+            'pendingConfirmations' => $pendingConfirmations,
+            'pendingConfirmationsCount' => count($pendingConfirmations),
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
             'currentRoute' => '/comitee/bills',
@@ -1043,6 +1056,88 @@ class SocietyController
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
         Session::flash('success', "Bill {$bill['bill_number']} marked as paid.");
+        redirect('/comitee/bills');
+    }
+
+    /**
+     * Approve Resident Payment Receipt
+     */
+    public function approveReceipt(int $id)
+    {
+        $auth = $this->requireCommittee();
+        $societyId = (int)$auth['society']['id'];
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/bills');
+        }
+
+        $txn = Database::fetchOne("SELECT * FROM transactions WHERE id = ? AND society_id = ?", [$id, $societyId]);
+        if (!$txn) {
+            Session::flash('error', 'Transaction not found.');
+            redirect('/comitee/bills');
+        }
+
+        Database::update('transactions', [
+            'status' => 'completed',
+            'reviewed_by' => (int)$auth['user']['id'],
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        if ($txn['bill_id']) {
+            Database::update('maintenance_bills', [
+                'status' => 'paid',
+                'paid_at' => date('Y-m-d H:i:s'),
+                'payment_method' => $txn['payment_method'],
+                'transaction_id' => $txn['transaction_ref'],
+            ], 'id = ?', [$txn['bill_id']]);
+        }
+
+        Database::insert('notifications', [
+            'user_id' => $txn['user_id'],
+            'title' => 'Payment Confirmed',
+            'message' => "Your payment of ₹{$txn['amount']} (Receipt {$txn['receipt_no']}) has been approved and confirmed by the committee.",
+            'type' => 'success',
+        ]);
+
+        Session::flash('success', "Payment receipt {$txn['receipt_no']} confirmed and approved.");
+        redirect('/comitee/bills');
+    }
+
+    /**
+     * Reject Resident Payment Receipt
+     */
+    public function rejectReceipt(int $id)
+    {
+        $auth = $this->requireCommittee();
+        $societyId = (int)$auth['society']['id'];
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/bills');
+        }
+
+        $txn = Database::fetchOne("SELECT * FROM transactions WHERE id = ? AND society_id = ?", [$id, $societyId]);
+        if (!$txn) {
+            Session::flash('error', 'Transaction not found.');
+            redirect('/comitee/bills');
+        }
+
+        $remark = trim($_POST['remark'] ?? 'Payment reference could not be verified in society bank account.');
+
+        Database::update('transactions', [
+            'status' => 'rejected',
+            'remark' => $remark,
+            'reviewed_by' => (int)$auth['user']['id'],
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Database::insert('notifications', [
+            'user_id' => $txn['user_id'],
+            'title' => 'Payment Confirmation Rejected',
+            'message' => "Your payment confirmation request for Receipt {$txn['receipt_no']} was rejected by the committee. Remark: {$remark}",
+            'type' => 'error',
+        ]);
+
+        Session::flash('success', "Payment receipt {$txn['receipt_no']} rejected with remark.");
         redirect('/comitee/bills');
     }
 

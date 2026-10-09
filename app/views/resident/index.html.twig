@@ -100,20 +100,45 @@
                 </div>
 
                 {% if flat.role == 'owner' and flat.flat_id and flat.status == 'active' %}
-                <div class="pt-2 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[11px] text-surface-200/60 flex items-center gap-1">
-                        <i data-lucide="key" class="w-3 h-3 text-amber-400"></i>
-                        <span>For Rent:</span>
-                    </span>
-                    <form action="/resident/flats/{{ flat.flat_id }}/toggle-rent" method="POST" class="inline-block">
-                        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                        <button type="submit" 
-                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all {{ flat.is_for_rent ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30' : 'bg-slate-200/60 dark:bg-white/5 text-slate-500 dark:text-surface-200/50 border border-slate-300/60 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10' }}"
-                            title="Toggle whether prospective tenants can select this unit when linking">
-                            <i data-lucide="{{ flat.is_for_rent ? 'check' : 'x' }}" class="w-3 h-3"></i>
-                            <span>{{ flat.is_for_rent ? 'Available for Rent' : 'Not for Rent' }}</span>
-                        </button>
-                    </form>
+                <div class="pt-2.5 border-t border-slate-200/80 dark:border-white/5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] text-slate-500 dark:text-surface-200/60 font-medium">Status:</span>
+                        {% if flat.occupancy_status == 'available_for_rent' %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            <i data-lucide="key" class="w-3 h-3 text-amber-600 dark:text-amber-400"></i>
+                            <span>Available for Rent</span>
+                        </span>
+                        {% elseif flat.occupancy_status == 'rented' %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                            <i data-lucide="user-check" class="w-3 h-3 text-purple-600 dark:text-purple-400"></i>
+                            <span>Rented</span>
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                            <i data-lucide="home" class="w-3 h-3 text-blue-600 dark:text-blue-400"></i>
+                            <span>Self occupied</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <button type="button" 
+                        onclick='openOccupancyModal({{ {
+                            id: flat.flat_id,
+                            flat_no: flat.flat_no,
+                            wing: flat.wing,
+                            occupancy_status: flat.occupancy_status|default("self_occupied"),
+                            expected_rent: flat.expected_rent,
+                            security_deposit: flat.security_deposit,
+                            available_from: flat.available_from,
+                            rental_notes: flat.rental_notes,
+                            tenant_name: flat.tenant_name,
+                            tenant_phone: flat.tenant_phone,
+                            lease_end_date: flat.lease_end_date
+                        }|json_encode|raw }})'
+                        class="px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 hover:bg-brand-500/10 border border-brand-500/30 transition-all inline-flex items-center gap-1"
+                        title="Change occupancy or rental status">
+                        <i data-lucide="sliders" class="w-3 h-3"></i>
+                        <span>Change</span>
+                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -242,4 +267,191 @@
     </div>
 
 </div>
+
+<!-- Manage Occupancy Status Modal -->
+<div id="occupancyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl max-w-lg w-full border border-slate-200/80 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- Fixed Modal Header -->
+        <div class="flex items-center justify-between p-5 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+            <h3 id="occupancyModalTitle" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="home" class="w-4 h-4 text-brand-600 dark:text-brand-400"></i>
+                <span>Manage Flat Occupancy &amp; Rent</span>
+            </h3>
+            <button type="button" onclick="closeOccupancyModal()" class="text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white p-1">✕</button>
+        </div>
+
+        <!-- Form with scrollable body and fixed footer -->
+        <form id="occupancyForm" action="" method="POST" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <!-- Scrollable Modal Body -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-5">
+                <!-- Status Options Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-2">Select Occupancy Status</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label id="opt_self_occupied" onclick="setOccupancyType('self_occupied')" class="p-3 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center gap-1.5 border-brand-500/50 bg-brand-500/10 dark:bg-brand-500/15">
+                            <input type="radio" name="occupancy_status" value="self_occupied" checked class="hidden">
+                            <i data-lucide="home" class="w-4 h-4 text-brand-600 dark:text-brand-400"></i>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">Self occupied</span>
+                        </label>
+                        <label id="opt_available_for_rent" onclick="setOccupancyType('available_for_rent')" class="p-3 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center gap-1.5 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
+                            <input type="radio" name="occupancy_status" value="available_for_rent" class="hidden">
+                            <i data-lucide="key" class="w-4 h-4 text-amber-500"></i>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">Available for rent</span>
+                        </label>
+                        <label id="opt_rented" onclick="setOccupancyType('rented')" class="p-3 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center gap-1.5 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
+                            <input type="radio" name="occupancy_status" value="rented" class="hidden">
+                            <i data-lucide="user-check" class="w-4 h-4 text-purple-500"></i>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">Rented</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 1. Self Occupied Details -->
+                <div id="panel_self_occupied" class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2.5">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"></i>
+                    <span class="leading-relaxed">This unit is currently occupied by the owner/family. It will remain private and won't appear as available for tenants to select.</span>
+                </div>
+
+                <!-- 2. Available For Rent Details -->
+                <div id="panel_available_for_rent" class="hidden space-y-4">
+                    <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"></i>
+                        <span>Marking this unit available for rent will allow prospective tenants of your society to select it when submitting their linking requests.</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Expected Rent (₹ / month)</label>
+                            <input type="number" step="100" id="occ_expected_rent" name="expected_rent" placeholder="e.g. 15000" class="input-glass w-full text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Security Deposit (₹)</label>
+                            <input type="number" step="1000" id="occ_security_deposit" name="security_deposit" placeholder="e.g. 50000" class="input-glass w-full text-sm font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Available From Date</label>
+                        <input type="date" id="occ_available_from" name="available_from" class="input-glass w-full text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Rental Notes &amp; Preferences (Optional)</label>
+                        <textarea id="occ_rental_notes" name="rental_notes" rows="2" placeholder="e.g. Family preferred, furnished with AC & geyser" class="input-glass w-full text-sm resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- 3. Rented Details -->
+                <div id="panel_rented" class="hidden space-y-4">
+                    <div class="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-900 dark:text-purple-300 flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5"></i>
+                        <span>Keep track of your current tenant and lease details for society records.</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Tenant Full Name</label>
+                            <input type="text" id="occ_tenant_name" name="tenant_name" placeholder="Tenant Name" class="input-glass w-full text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Tenant Phone Number</label>
+                            <input type="tel" id="occ_tenant_phone" name="tenant_phone" placeholder="+91 9876543210" class="input-glass w-full text-sm font-mono">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Current Monthly Rent (₹)</label>
+                            <input type="number" step="100" id="occ_rented_rent" name="expected_rent_rented" placeholder="e.g. 15000" class="input-glass w-full text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1">Lease / Agreement End Date</label>
+                            <input type="date" id="occ_lease_end_date" name="lease_end_date" class="input-glass w-full text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Modal Footer -->
+            <div class="flex justify-end gap-2 p-4 border-t border-slate-200/80 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900/80">
+                <button type="button" onclick="closeOccupancyModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-600 dark:text-surface-200/80 transition-colors">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Save Occupancy Status</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentOccupancyType = 'self_occupied';
+
+    function setOccupancyType(type) {
+        currentOccupancyType = type;
+        const types = ['self_occupied', 'available_for_rent', 'rented'];
+        
+        types.forEach(t => {
+            const opt = document.getElementById('opt_' + t);
+            const panel = document.getElementById('panel_' + t);
+            const radio = opt.querySelector('input[type="radio"]');
+            
+            if (t === type) {
+                radio.checked = true;
+                opt.className = 'p-3 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center gap-1.5 border-brand-500 bg-brand-500/15 shadow-sm';
+                panel.classList.remove('hidden');
+            } else {
+                radio.checked = false;
+                opt.className = 'p-3 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center gap-1.5 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/5';
+                panel.classList.add('hidden');
+            }
+        });
+
+        // Sync rent input across panels if needed
+        if (type === 'rented') {
+            const rentVal = document.getElementById('occ_expected_rent').value;
+            if (rentVal && !document.getElementById('occ_rented_rent').value) {
+                document.getElementById('occ_rented_rent').value = rentVal;
+            }
+        }
+    }
+
+    function openOccupancyModal(flat) {
+        if (!flat) return;
+        const form = document.getElementById('occupancyForm');
+        form.action = '/resident/flats/' + flat.id + '/occupancy';
+
+        document.getElementById('occupancyModalTitle').innerHTML = '<i data-lucide="home" class="w-4 h-4 text-brand-500"></i><span>Manage Flat ' + (flat.wing ? flat.wing + '-' : '') + flat.flat_no + ' Occupancy</span>';
+
+        // Prepopulate values
+        document.getElementById('occ_expected_rent').value = flat.expected_rent || '';
+        document.getElementById('occ_security_deposit').value = flat.security_deposit || '';
+        document.getElementById('occ_available_from').value = flat.available_from || '';
+        document.getElementById('occ_rental_notes').value = flat.rental_notes || '';
+        document.getElementById('occ_tenant_name').value = flat.tenant_name || '';
+        document.getElementById('occ_tenant_phone').value = flat.tenant_phone || '';
+        document.getElementById('occ_lease_end_date').value = flat.lease_end_date || '';
+        document.getElementById('occ_rented_rent').value = flat.expected_rent || '';
+
+        setOccupancyType(flat.occupancy_status || 'self_occupied');
+        document.getElementById('occupancyModal').classList.remove('hidden');
+        if (window.lucide) { lucide.createIcons(); }
+    }
+
+    function closeOccupancyModal() {
+        document.getElementById('occupancyModal').classList.add('hidden');
+    }
+
+    document.getElementById('occupancyForm').addEventListener('submit', function() {
+        // If rented was selected, map rent value to expected_rent if set
+        if (currentOccupancyType === 'rented') {
+            const rentedRent = document.getElementById('occ_rented_rent').value;
+            if (rentedRent) {
+                document.getElementById('occ_expected_rent').value = rentedRent;
+            }
+        }
+    });
+</script>
 {% endblock %}

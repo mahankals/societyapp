@@ -401,7 +401,7 @@
                         <div id="profile-dropdown-body" class="p-1.5 space-y-0.5">
                             {# View Switchers based on roles and current view #}
                             {% set showAdminView = (user.role == 'admin' or userCaps.isAdmin) and not (currentRoute starts with '/admin') %}
-                            {% set showCommitteeView = (isCommittee or userCaps.isCommittee) and not (currentRoute starts with '/comitee' or currentRoute starts with '/committee' or currentRoute starts with '/committe') %}
+                            {% set showCommitteeView = (isCommittee or userCaps.isCommittee) and (currentRoute == '/resident' or currentRoute == '/resident/') %}
                             {% set showResidentView = not (currentRoute starts with '/resident') %}
 
                             {% if showAdminView %}

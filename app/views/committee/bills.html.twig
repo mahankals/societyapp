@@ -80,6 +80,83 @@
         </div>
     </div>
 
+    {% if pendingConfirmationsCount|default(0) > 0 %}
+    <!-- Pending Payment Confirmations Waiting for Approval -->
+    <div class="mb-8 glass-panel rounded-2xl border border-amber-500/30 bg-amber-500/[0.03] p-5 sm:p-6 shadow-xl">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-white">Pending Payment Confirmations ({{ pendingConfirmationsCount }})</h2>
+                    <p class="text-xs text-amber-200/70">Residents have submitted UPI payment references awaiting your verification.</p>
+                </div>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
+                Action Required
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-surface-200/80">
+                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+                    <tr>
+                        <th class="py-3 px-3 font-semibold">Resident & Unit</th>
+                        <th class="py-3 px-3 font-semibold">Bill Info</th>
+                        <th class="py-3 px-3 font-semibold">UPI Reference / UTR</th>
+                        <th class="py-3 px-3 font-semibold">Amount</th>
+                        <th class="py-3 px-3 font-semibold">Submitted On</th>
+                        <th class="py-3 px-3 text-right font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for pc in pendingConfirmations %}
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-3">
+                            <p class="font-bold text-white text-xs">{{ pc.user_name }}</p>
+                            <p class="text-[11px] text-surface-200/60 font-mono">Unit {{ pc.wing ? pc.wing ~ '-' : '' }}{{ pc.flat_no ?: '-' }}</p>
+                            {% if pc.user_phone %}
+                            <p class="text-[10px] text-surface-200/40 font-mono">{{ pc.user_phone }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3">
+                            <p class="font-mono text-xs text-brand-300 font-bold">#{{ pc.bill_number ?: pc.receipt_no }}</p>
+                            <p class="text-[11px] text-surface-200/60 truncate max-w-[150px]">{{ pc.bill_title ?: pc.particulars }}</p>
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="font-mono text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded">{{ pc.transaction_ref }}</span>
+                            <p class="text-[10px] text-surface-200/40 mt-0.5 uppercase">{{ pc.payment_method }}</p>
+                        </td>
+                        <td class="py-3 px-3 font-mono font-extrabold text-white text-sm">
+                            ₹{{ pc.amount|number_format(2) }}
+                        </td>
+                        <td class="py-3 px-3 text-xs text-surface-200/60 font-mono">
+                            {{ pc.created_at|date('d M, h:i A') }}
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <form action="/comitee/receipts/{{ pc.id }}/approve" method="POST" onsubmit="return confirm('Approve payment of ₹{{ pc.amount|number_format(2) }} for {{ pc.user_name }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 shadow-sm transition">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                        <span>Approve</span>
+                                    </button>
+                                </form>
+                                <button type="button" onclick="openRejectConfirmationModal('{{ pc.id }}', '{{ pc.user_name|e('js') }}', '{{ pc.amount }}')" class="px-2.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    <span>Reject</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Filter Pills -->
     <div class="flex items-center gap-2 mb-4">
         <a href="/comitee/bills" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ statusFilter == '' ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30' : 'bg-white/5 text-surface-200/70 hover:bg-white/10' }}">
@@ -409,12 +486,52 @@
         </form>
     </div>
 </div>
+
+<!-- Reject Payment Confirmation Modal -->
+<div id="rejectConfirmationModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+                <span>Reject Payment Confirmation</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('rejectConfirmationModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <p class="text-xs text-surface-200/70 mb-4" id="rejectModalSummary">
+            Are you sure you want to reject this payment reference?
+        </p>
+
+        <form id="rejectConfirmationForm" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-surface-200/70 mb-1">Rejection Remark / Reason <span class="text-rose-400">*</span></label>
+                <textarea name="remark" required rows="3" placeholder="e.g. UTR not found in bank statement, amount mismatch..." class="input-glass w-full text-xs"></textarea>
+                <p class="text-[10px] text-surface-200/40 mt-1">This remark will be visible to the resident in their receipts list.</p>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('rejectConfirmationModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white flex items-center gap-1.5 shadow-lg shadow-rose-600/25">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    <span>Reject Payment</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     if (window.lucide) {
         lucide.createIcons();
+    }
+
+    function openRejectConfirmationModal(id, residentName, amount) {
+        document.getElementById('rejectConfirmationForm').action = '/comitee/receipts/' + id + '/reject';
+        document.getElementById('rejectModalSummary').textContent = 'Rejecting payment submission of ₹' + parseFloat(amount).toFixed(2) + ' from ' + residentName + '.';
+        document.getElementById('rejectConfirmationModal').classList.remove('hidden');
     }
 
     const totalOccupiedArea = {{ totalOccupiedArea|default(0) }};

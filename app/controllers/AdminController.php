@@ -80,12 +80,22 @@ class AdminController
             {$whereClause}
             ORDER BY s.created_at DESC
         ", $params);
+
+        $pendingRequests = Database::fetchAll("
+            SELECT sr.*, u.name as requester_name, u.email as requester_email, u.phone as requester_phone
+            FROM society_requests sr
+            LEFT JOIN users u ON sr.user_id = u.id
+            WHERE sr.status = 'pending'
+            ORDER BY sr.created_at DESC
+        ");
         
         echo view('admin/societies', [
             'basePath' => '/',
             'user' => $user,
             'societies' => $societies,
             'search' => $search,
+            'pendingRequests' => $pendingRequests,
+            'pendingRequestsCount' => count($pendingRequests),
             'csrfToken' => generateCSRFToken(),
             'profile' => getUserProfile(),
             'flash' => Session::getFlash(),
@@ -247,6 +257,98 @@ class AdminController
         redirect('/admin/societies');
     }
 
+    /**
+     * Approve Society Proposal / Contribution Request
+     */
+    public function approveSocietyRequest(int $requestId)
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+
+        $req = Database::fetchOne("SELECT * FROM society_requests WHERE id = ? AND status = 'pending'", [$requestId]);
+        if (!$req) {
+            Session::flash('error', 'Pending society proposal not found.');
+            redirect('/admin/societies');
+        }
+
+        // Generate unique society code
+        $words = explode(' ', preg_replace('/[^a-zA-Z0-9\s]/', '', $req['society_name']));
+        $prefix = '';
+        foreach ($words as $w) {
+            if (!empty($w)) $prefix .= strtoupper(substr($w, 0, 1));
+        }
+        if (strlen($prefix) < 3) $prefix = strtoupper(substr($req['society_name'], 0, 3));
+        $code = 'SOC-' . substr($prefix, 0, 4) . '-' . rand(100, 999);
+
+        // Ensure unique code
+        while (Database::fetchOne("SELECT id FROM societies WHERE society_code = ?", [$code])) {
+            $code = 'SOC-' . substr($prefix, 0, 4) . '-' . rand(100, 999);
+        }
+
+        $societyId = Database::insert('societies', [
+            'name' => $req['society_name'],
+            'society_code' => $code,
+            'address' => $req['address'] ?: null,
+            'city' => $req['city'] ?: null,
+            'state' => 'Maharashtra',
+        ]);
+
+        // Link requester as initial committee chairman
+        if (!empty($req['user_id']) && $societyId) {
+            Database::insert('society_members', [
+                'society_id' => $societyId,
+                'user_id' => $req['user_id'],
+                'role' => 'chairman',
+                'status' => 'active',
+                'ownership_type' => 'owner',
+            ]);
+        }
+
+        // Mark request as approved
+        Database::update('society_requests', ['status' => 'approved'], 'id = ?', [$requestId]);
+
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_request_approved',
+            'description' => "Approved society proposal: {$req['society_name']} (Code: {$code})",
+        ]);
+
+        Session::flash('success', "Society '{$req['society_name']}' approved & registered with code {$code}!");
+        redirect('/admin/societies');
+    }
+
+    /**
+     * Reject Society Proposal
+     */
+    public function rejectSocietyRequest(int $requestId)
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+
+        $req = Database::fetchOne("SELECT * FROM society_requests WHERE id = ? AND status = 'pending'", [$requestId]);
+        if (!$req) {
+            Session::flash('error', 'Pending society proposal not found.');
+            redirect('/admin/societies');
+        }
+
+        Database::update('society_requests', ['status' => 'rejected'], 'id = ?', [$requestId]);
+
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_request_rejected',
+            'description' => "Rejected society proposal: {$req['society_name']}",
+        ]);
+
+        Session::flash('success', "Society proposal '{$req['society_name']}' rejected.");
+        redirect('/admin/societies');
+    }
+
     public function users()
     {
         requireAdmin();
@@ -256,20 +358,15 @@ class AdminController
         $role = $_GET['role'] ?? '';
         $status = $_GET['status'] ?? '';
         
-        $where = [];
+        $where = ["(u.role = 'admin' OR u.user_type = 'admin')"];
         $params = [];
         
         if ($search) {
-            $where[] = "(u.name LIKE ? OR u.email LIKE ? OR up.apartment LIKE ?)";
+            $where[] = "(u.name LIKE ? OR u.email LIKE ? OR u.apartment LIKE ?)";
             $searchParam = "%{$search}%";
             $params[] = $searchParam;
             $params[] = $searchParam;
             $params[] = $searchParam;
-        }
-        
-        if ($role) {
-            $where[] = "u.role = ?";
-            $params[] = $role;
         }
         
         if ($status) {
@@ -277,8 +374,8 @@ class AdminController
             $params[] = ($status === 'active') ? 1 : 0;
         }
         
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $users = Database::fetchAll("SELECT * FROM users {$whereClause} ORDER BY created_at DESC", $params);
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
+        $users = Database::fetchAll("SELECT u.* FROM users u {$whereClause} ORDER BY u.created_at DESC", $params);
         
         echo view('admin/users', [
             'basePath' => '/',

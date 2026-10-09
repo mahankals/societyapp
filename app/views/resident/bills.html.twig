@@ -5,15 +5,23 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6">
 
-    <div class="flex items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-white tracking-tight">Maintenance Bills & Dues</h1>
             <p class="text-xs text-surface-200/60">View itemized dues and pay instantly using UPI or card</p>
         </div>
-        <a href="/resident/receipts" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
-            <i data-lucide="file-check-2" class="w-4 h-4"></i>
-            <span>Payment Receipts</span>
-        </a>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            {% if totalPendingAmount > 0 and pendingBills|length > 0 %}
+            <button type="button" onclick="openBulkUpiModal('{{ totalPendingAmount }}', '{{ pendingBills|length }}', '{{ pendingBills[0].society_name }}', '{{ pendingBills[0].upi_id ?: 'society@upi' }}', '{{ pendingBills[0].payee_name ?: pendingBills[0].society_name }}')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span>Bulk Pay with UPI (₹{{ totalPendingAmount|number_format(2) }})</span>
+            </button>
+            {% endif %}
+            <a href="/resident/receipts" class="btn-primary !px-4 !py-2 text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                <span>Payment Receipts</span>
+            </a>
+        </div>
     </div>
 
     {% if flash.success %}
@@ -127,8 +135,60 @@
             <div class="flex justify-end gap-2">
                 <button type="button" onclick="document.getElementById('upiModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
                 <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5 shadow-lg shadow-emerald-600/25">
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                    <span>Confirm & Generate Receipt</span>
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Send for confirmation</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk UPI Payment Modal -->
+<div id="bulkUpiModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="layers" class="w-5 h-5 text-emerald-400"></i>
+                <h3 class="text-base font-bold text-white">Bulk UPI Payment</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('bulkUpiModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+        </div>
+
+        <div class="text-center mb-5">
+            <p class="text-xs text-surface-200/60" id="bulkModalSocName">Housing Society</p>
+            <p class="text-3xl font-extrabold font-mono text-emerald-400 my-1" id="bulkModalAmount">₹0.00</p>
+            <p class="text-[11px] text-surface-200/50 font-mono" id="bulkModalCount">0 Pending Bills</p>
+        </div>
+
+        <!-- Dynamic QR Code & 1-Click UPI Button -->
+        <div class="p-4 rounded-xl bg-white/[0.03] border border-white/10 text-center mb-5">
+            <div class="bg-white p-3 rounded-xl inline-block shadow-md mb-3">
+                <img id="bulkUpiQrImage" src="" alt="Bulk UPI QR Code" class="w-40 h-40 object-contain">
+            </div>
+            <p class="text-[11px] text-surface-200/60 mb-3">Scan using GPay, PhonePe, Paytm, or BHIM</p>
+
+            <a id="btnBulkUpiIntent" href="#" class="btn-primary w-full !py-2.5 text-xs font-semibold flex items-center justify-center gap-2">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+                <span>Open Supported UPI App</span>
+            </a>
+        </div>
+
+        <!-- Confirm Payment Reference Form -->
+        <form method="POST" action="/resident/bills/bulk-pay">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+            <input type="hidden" name="payment_method" value="upi">
+
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-surface-200/70 mb-1">UPI Transaction Reference (UTR / Txn ID)</label>
+                <input type="text" name="transaction_ref" placeholder="e.g. 238947238947 or GPay Ref" class="input-glass w-full text-xs font-mono" required>
+                <p class="text-[10px] text-surface-200/40 mt-1">Enter your 12-digit UPI UTR number from your payment app.</p>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('bulkUpiModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white flex items-center gap-1.5 shadow-lg shadow-emerald-600/25">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Send for confirmation</span>
                 </button>
             </div>
         </form>
@@ -156,6 +216,21 @@
         document.getElementById('recordPaymentForm').action = '/resident/bills/' + billId + '/pay';
 
         document.getElementById('upiModal').classList.remove('hidden');
+    }
+
+    function openBulkUpiModal(totalAmount, billCount, socName, upiId, payeeName) {
+        document.getElementById('bulkModalSocName').textContent = socName;
+        document.getElementById('bulkModalAmount').textContent = '₹' + parseFloat(totalAmount).toFixed(2);
+        document.getElementById('bulkModalCount').textContent = billCount + ' Pending Bills Combined';
+        
+        const note = 'Bulk Maintenance ' + billCount + ' bills';
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${totalAmount}&tn=${encodeURIComponent(note)}&cu=INR`;
+        
+        document.getElementById('btnBulkUpiIntent').href = upiUri;
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(upiUri);
+        document.getElementById('bulkUpiQrImage').src = qrUrl;
+
+        document.getElementById('bulkUpiModal').classList.remove('hidden');
     }
 </script>
 {% endblock %}

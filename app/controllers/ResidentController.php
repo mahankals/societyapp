@@ -23,6 +23,9 @@ class ResidentController
         $myFlats = Database::fetchAll("
             SELECT sm.*, 
                    f.flat_no, f.wing, f.floor, f.area_sqft, f.flat_type, f.is_for_rent,
+                   COALESCE(f.occupancy_status, 'self_occupied') as occupancy_status,
+                   f.expected_rent, f.security_deposit, f.available_from, f.rental_notes,
+                   f.tenant_name, f.tenant_phone, f.lease_end_date,
                    s.id as society_id, s.name as society_name, s.society_code, s.upi_id, s.payee_name
             FROM society_members sm
             JOIN societies s ON sm.society_id = s.id
@@ -122,10 +125,18 @@ class ResidentController
 
         $profile = $user;
 
+        $pendingBills = array_values(array_filter($bills, function($b) { return $b['status'] === 'pending'; }));
+        $totalPendingAmount = 0.0;
+        foreach ($pendingBills as $pb) {
+            $totalPendingAmount += (float)$pb['amount'];
+        }
+
         echo view('resident/bills', [
             'basePath' => '/',
             'user' => $user,
             'bills' => $bills,
+            'pendingBills' => $pendingBills,
+            'totalPendingAmount' => $totalPendingAmount,
             'profile' => $profile,
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
@@ -134,7 +145,7 @@ class ResidentController
     }
 
     /**
-     * Record Bill Payment (UPI reference or manual record)
+     * Record Bill Payment (Send reference for committee confirmation)
      */
     public function recordPayment(int $billId)
     {
@@ -153,33 +164,130 @@ class ResidentController
         }
 
         $method = trim($_POST['payment_method'] ?? 'upi');
-        $txnRef = trim($_POST['transaction_ref'] ?? 'UPI-' . strtoupper(bin2hex(random_bytes(4))));
+        $txnRef = trim($_POST['transaction_ref'] ?? '');
 
-        // Update bill status
+        if (empty($txnRef)) {
+            Session::flash('error', 'Please enter your UPI transaction reference / UTR number.');
+            redirect('/resident/bills');
+        }
+
+        // Store transaction reference on bill while pending confirmation
         Database::update('maintenance_bills', [
-            'status' => 'paid',
-            'paid_at' => date('Y-m-d H:i:s'),
             'payment_method' => $method,
             'transaction_id' => $txnRef,
         ], 'id = ?', [$billId]);
 
-        // Generate formal receipt
+        // Generate formal receipt with pending confirmation status
         $receiptNo = 'REC-' . date('Y') . '-' . str_pad($billId, 5, '0', STR_PAD_LEFT);
-        Database::insert('transactions', [
-            'receipt_no' => $receiptNo,
-            'society_id' => $bill['society_id'] ?: 1,
-            'flat_id' => $bill['flat_id'],
-            'user_id' => $userId,
-            'bill_id' => $billId,
-            'amount' => $bill['amount'],
-            'payment_method' => $method,
-            'transaction_ref' => $txnRef,
-            'particulars' => $bill['title'] . ' (' . ($bill['particulars'] ?: $bill['month']) . ')',
-            'payment_date' => date('Y-m-d'),
-            'status' => 'completed',
+        
+        $existingTxn = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ? AND user_id = ?", [$billId, $userId]);
+        if ($existingTxn) {
+            Database::update('transactions', [
+                'payment_method' => $method,
+                'transaction_ref' => $txnRef,
+                'payment_date' => date('Y-m-d'),
+                'status' => 'pending',
+                'remark' => null,
+            ], 'id = ?', [$existingTxn['id']]);
+        } else {
+            Database::insert('transactions', [
+                'receipt_no' => $receiptNo,
+                'society_id' => $bill['society_id'] ?: 1,
+                'flat_id' => $bill['flat_id'],
+                'user_id' => $userId,
+                'bill_id' => $billId,
+                'amount' => $bill['amount'],
+                'payment_method' => $method,
+                'transaction_ref' => $txnRef,
+                'particulars' => $bill['title'] . ' (' . ($bill['particulars'] ?: $bill['month']) . ')',
+                'payment_date' => date('Y-m-d'),
+                'status' => 'pending',
+            ]);
+        }
+
+        // Send notification to committee
+        $flatInfo = Database::fetchOne("SELECT wing, flat_no FROM flats WHERE id = ?", [$bill['flat_id']]);
+        $flatStr = $flatInfo ? "Flat {$flatInfo['wing']}-{$flatInfo['flat_no']}" : "Resident";
+        Database::insert('notifications', [
+            'user_id' => null,
+            'title' => 'Payment Confirmation Required',
+            'message' => "{$flatStr} submitted UPI reference '{$txnRef}' for Bill #{$bill['bill_number']} (₹" . number_format($bill['amount'], 2) . "). Please verify and confirm receipt.",
+            'type' => 'info',
         ]);
 
-        Session::flash('success', "Payment recorded successfully! Receipt #{$receiptNo} generated.");
+        Session::flash('success', "Payment reference {$txnRef} sent for committee confirmation! You can track approval status in Payment Receipts.");
+        redirect('/resident/receipts');
+    }
+
+    /**
+     * Bulk Bill Payment via UPI (Send reference for all pending bills)
+     */
+    public function bulkRecordPayment()
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid token.');
+            redirect('/resident/bills');
+        }
+
+        $txnRef = trim($_POST['transaction_ref'] ?? '');
+        if (empty($txnRef)) {
+            Session::flash('error', 'Please enter your UPI transaction reference / UTR number.');
+            redirect('/resident/bills');
+        }
+
+        $pendingBills = Database::fetchAll("SELECT * FROM maintenance_bills WHERE user_id = ? AND status = 'pending'", [$userId]);
+        if (empty($pendingBills)) {
+            Session::flash('info', 'No pending bills found to pay.');
+            redirect('/resident/bills');
+        }
+
+        $totalPaid = 0.0;
+        foreach ($pendingBills as $bill) {
+            $totalPaid += (float)$bill['amount'];
+            $receiptNo = 'REC-' . date('Y') . '-' . str_pad($bill['id'], 5, '0', STR_PAD_LEFT);
+
+            Database::update('maintenance_bills', [
+                'payment_method' => 'upi',
+                'transaction_id' => $txnRef,
+            ], 'id = ?', [$bill['id']]);
+
+            $existingTxn = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ? AND user_id = ?", [$bill['id'], $userId]);
+            if ($existingTxn) {
+                Database::update('transactions', [
+                    'payment_method' => 'upi',
+                    'transaction_ref' => $txnRef,
+                    'payment_date' => date('Y-m-d'),
+                    'status' => 'pending',
+                    'remark' => null,
+                ], 'id = ?', [$existingTxn['id']]);
+            } else {
+                Database::insert('transactions', [
+                    'receipt_no' => $receiptNo,
+                    'society_id' => $bill['society_id'] ?: 1,
+                    'flat_id' => $bill['flat_id'],
+                    'user_id' => $userId,
+                    'bill_id' => $bill['id'],
+                    'amount' => $bill['amount'],
+                    'payment_method' => 'upi',
+                    'transaction_ref' => $txnRef,
+                    'particulars' => $bill['title'] . ' (' . ($bill['particulars'] ?: $bill['month']) . ')',
+                    'payment_date' => date('Y-m-d'),
+                    'status' => 'pending',
+                ]);
+            }
+        }
+
+        Database::insert('notifications', [
+            'user_id' => null,
+            'title' => 'Bulk Payment Confirmation Required',
+            'message' => "Resident submitted bulk UPI reference '{$txnRef}' for " . count($pendingBills) . " bills (Total: ₹" . number_format($totalPaid, 2) . "). Please review and confirm.",
+            'type' => 'info',
+        ]);
+
+        Session::flash('success', "Bulk payment reference sent for confirmation! " . count($pendingBills) . " bills totaling ₹" . number_format($totalPaid, 2) . " submitted to committee.");
         redirect('/resident/receipts');
     }
 
@@ -264,10 +372,26 @@ class ResidentController
             ORDER BY s.name ASC
         ", [$userId]);
 
-        $selectedSocietyId = (int)($_GET['society_id'] ?? ($linkedSocieties[0]['id'] ?? 0));
-        if ($selectedSocietyId <= 0) {
-            $defaultSoc = Database::fetchOne("SELECT id FROM societies ORDER BY id ASC LIMIT 1");
-            $selectedSocietyId = $defaultSoc ? (int)$defaultSoc['id'] : 1;
+        if (empty($linkedSocieties)) {
+            echo view('resident/members', [
+                'basePath' => '/',
+                'user' => $user,
+                'society' => null,
+                'linkedSocieties' => [],
+                'selectedSocietyId' => 0,
+                'members' => [],
+                'search' => '',
+                'profile' => $user,
+                'currentRoute' => '/resident/members',
+                'unlinked' => true,
+            ]);
+            return;
+        }
+
+        $validSocietyIds = array_column($linkedSocieties, 'id');
+        $selectedSocietyId = (int)($_GET['society_id'] ?? $linkedSocieties[0]['id']);
+        if (!in_array($selectedSocietyId, $validSocietyIds)) {
+            $selectedSocietyId = (int)$linkedSocieties[0]['id'];
         }
 
         $society = Database::fetchOne("SELECT * FROM societies WHERE id = ?", [$selectedSocietyId]);
@@ -313,6 +437,7 @@ class ResidentController
             'search' => $search,
             'profile' => $user,
             'currentRoute' => '/resident/members',
+            'unlinked' => false,
         ]);
     }
 
@@ -432,7 +557,7 @@ class ResidentController
     }
 
     /**
-     * Flat Owner toggle rent availability
+     * Flat Owner toggle rent availability (legacy quick action)
      */
     public function toggleFlatRent(int $flatId)
     {
@@ -446,7 +571,7 @@ class ResidentController
 
         // Verify the user is an active owner of this flat
         $membership = Database::fetchOne("
-            SELECT sm.id, f.wing, f.flat_no, f.is_for_rent 
+            SELECT sm.id, f.wing, f.flat_no, f.is_for_rent, f.occupancy_status 
             FROM society_members sm 
             JOIN flats f ON sm.flat_id = f.id 
             WHERE sm.flat_id = ? AND sm.user_id = ? AND sm.role = 'owner' AND sm.status = 'active'
@@ -457,10 +582,77 @@ class ResidentController
             redirect('/resident');
         }
 
-        $newStatus = $membership['is_for_rent'] ? 0 : 1;
-        Database::update('flats', ['is_for_rent' => $newStatus], 'id = ?', [$flatId]);
+        $newStatus = ($membership['occupancy_status'] === 'available_for_rent' || $membership['is_for_rent']) ? 0 : 1;
+        $newOccupancy = $newStatus ? 'available_for_rent' : 'self_occupied';
 
-        Session::flash('success', "Unit {$membership['wing']}-{$membership['flat_no']} rental status updated to " . ($newStatus ? 'Available for Rent' : 'Not for Rent') . ".");
+        Database::update('flats', [
+            'is_for_rent' => $newStatus,
+            'occupancy_status' => $newOccupancy
+        ], 'id = ?', [$flatId]);
+
+        Session::flash('success', "Unit {$membership['wing']}-{$membership['flat_no']} status updated to " . ($newStatus ? 'Available for Rent' : 'Self occupied') . ".");
+        redirect('/resident');
+    }
+
+    /**
+     * Update Flat Occupancy Status [Self occupied | Available for rent | Rented] with required parameters
+     */
+    public function updateFlatOccupancy(int $flatId)
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/resident');
+        }
+
+        $membership = Database::fetchOne("
+            SELECT sm.id, f.wing, f.flat_no 
+            FROM society_members sm 
+            JOIN flats f ON sm.flat_id = f.id 
+            WHERE sm.flat_id = ? AND sm.user_id = ? AND sm.role = 'owner' AND sm.status = 'active'
+        ", [$flatId, $userId]);
+
+        if (!$membership) {
+            Session::flash('error', 'Only the flat owner can update occupancy and rental status.');
+            redirect('/resident');
+        }
+
+        $occupancy = trim($_POST['occupancy_status'] ?? 'self_occupied');
+        if (!in_array($occupancy, ['self_occupied', 'available_for_rent', 'rented'])) {
+            $occupancy = 'self_occupied';
+        }
+
+        $isForRent = ($occupancy === 'available_for_rent') ? 1 : 0;
+        $expectedRent = !empty($_POST['expected_rent']) ? (float)$_POST['expected_rent'] : null;
+        $securityDeposit = !empty($_POST['security_deposit']) ? (float)$_POST['security_deposit'] : null;
+        $availableFrom = !empty($_POST['available_from']) ? trim($_POST['available_from']) : null;
+        $rentalNotes = !empty($_POST['rental_notes']) ? trim($_POST['rental_notes']) : null;
+
+        $tenantName = !empty($_POST['tenant_name']) ? trim($_POST['tenant_name']) : null;
+        $tenantPhone = !empty($_POST['tenant_phone']) ? trim($_POST['tenant_phone']) : null;
+        $leaseEndDate = !empty($_POST['lease_end_date']) ? trim($_POST['lease_end_date']) : null;
+
+        Database::update('flats', [
+            'occupancy_status' => $occupancy,
+            'is_for_rent' => $isForRent,
+            'expected_rent' => $expectedRent,
+            'security_deposit' => $securityDeposit,
+            'available_from' => $availableFrom,
+            'rental_notes' => $rentalNotes,
+            'tenant_name' => $tenantName,
+            'tenant_phone' => $tenantPhone,
+            'lease_end_date' => $leaseEndDate,
+        ], 'id = ?', [$flatId]);
+
+        $labels = [
+            'self_occupied' => 'Self occupied',
+            'available_for_rent' => 'Available for rent',
+            'rented' => 'Rented'
+        ];
+
+        Session::flash('success', "Flat {$membership['wing']}-{$membership['flat_no']} status updated to {$labels[$occupancy]}.");
         redirect('/resident');
     }
 
