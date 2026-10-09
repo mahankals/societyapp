@@ -14,8 +14,8 @@
     </div>
 
     {% if flash.success %}
-    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
-        <i data-lucide="check-circle" class="w-4 h-4"></i>
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-sm flex items-center gap-2.5 font-medium">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
         <span>{{ flash.success }}</span>
     </div>
     {% endif %}
