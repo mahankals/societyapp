@@ -8,9 +8,9 @@ class SetupController
 {
     public function index()
     {
-        // In production: if already installed and completed, redirect to login unless admin
-        if ($this->isSetupCompleted() && !isAdmin() && detectEnvironment() === 'production') {
-            redirect('/auth/login');
+        // Once app is deployed/installed, /setup must be redirected to landing page
+        if ($this->isSetupCompleted()) {
+            redirect('/');
         }
 
         $requirements = $this->checkRequirements();
@@ -966,15 +966,6 @@ class SetupController
             $saveSetting->execute(['google_client_id', $googleClientId, 'sso']);
             $saveSetting->execute(['google_client_secret', encryptSecret($googleClientSecret), 'sso']);
             $saveSetting->execute(['google_sso_enabled', '1', 'sso']);
-
-            // Ensure default society exists
-            $existingSociety = $pdo->query("SELECT id FROM societies LIMIT 1")->fetch();
-            if (!$existingSociety) {
-                $cleanName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $appName));
-                $socCode = 'SOC-' . (strlen($cleanName) >= 4 ? substr($cleanName, 0, 4) : 'MAIN') . '1';
-                $stmtSoc = $pdo->prepare("INSERT INTO societies (name, society_code, address, city, state) VALUES (?, ?, ?, ?, ?)");
-                $stmtSoc->execute([$appName ?: 'Society App', $socCode, 'Main Campus', 'Metro', 'State']);
-            }
 
             // Seal setup
             $saveSetting->execute(['superadmin_id', (string)$adminId, 'system']);

@@ -78,12 +78,33 @@ class ResidentController
 
         $profileComplete = 0;
         if ($profile) {
-            $fields = ['phone', 'address', 'apartment', 'emergency_contact_name', 'emergency_contact_phone'];
+            $fields = ['phone', 'emergency_contact_name', 'emergency_contact_phone'];
             $filled = 0;
             foreach ($fields as $field) {
                 if (!empty($profile[$field])) $filled++;
             }
             $profileComplete = round(($filled / count($fields)) * 100);
+        }
+
+        $registeredTenants = Database::fetchAll("
+            SELECT id, name, email, phone, user_type 
+            FROM users 
+            WHERE id != ? AND is_active = 1
+            ORDER BY name ASC
+        ", [$userId]);
+
+        $isTenant = ($user['user_type'] === 'tenant');
+        if (!$isTenant && !empty($myFlats)) {
+            $allTenants = true;
+            foreach ($myFlats as $mf) {
+                if ($mf['status'] === 'active' && ($mf['role'] !== 'tenant' && $mf['ownership_type'] !== 'tenant')) {
+                    $allTenants = false;
+                    break;
+                }
+            }
+            if ($allTenants && count($myFlats) > 0) {
+                $isTenant = true;
+            }
         }
 
         echo view('resident/index', [
@@ -92,6 +113,8 @@ class ResidentController
             'flash' => $flash,
             'myFlats' => $myFlats,
             'isCommittee' => $isCommittee,
+            'isTenant' => $isTenant,
+            'registeredTenants' => $registeredTenants,
             'unreadNotifications' => $unreadCount,
             'profile' => $profile,
             'unpaidBillsCount' => $unpaidBills['count'] ?? 0,
@@ -110,6 +133,10 @@ class ResidentController
     {
         requireLogin();
         $user = getUser();
+        if ($user['user_type'] === 'tenant') {
+            Session::flash('error', 'Bills and dues are accessible only to flat owners.');
+            redirect('/resident');
+        }
         $userId = (int)Session::get('user_id');
 
         $bills = Database::fetchAll("
@@ -208,12 +235,26 @@ class ResidentController
         // Send notification to committee
         $flatInfo = Database::fetchOne("SELECT wing, flat_no FROM flats WHERE id = ?", [$bill['flat_id']]);
         $flatStr = $flatInfo ? "Flat {$flatInfo['wing']}-{$flatInfo['flat_no']}" : "Resident";
-        Database::insert('notifications', [
-            'user_id' => null,
-            'title' => 'Payment Confirmation Required',
-            'message' => "{$flatStr} submitted UPI reference '{$txnRef}' for Bill #{$bill['bill_number']} (₹" . number_format($bill['amount'], 2) . "). Please verify and confirm receipt.",
-            'type' => 'info',
-        ]);
+        $socId = (int)($bill['society_id'] ?: 1);
+        $committeeUsers = Database::fetchAll("
+            SELECT DISTINCT sm.user_id 
+            FROM society_members sm 
+            WHERE sm.society_id = ? 
+              AND sm.role IN ('chairman', 'secretary', 'treasurer', 'committee') 
+              AND sm.status = 'active'
+        ", [$socId]);
+        if (empty($committeeUsers)) {
+            $committeeUsers = Database::fetchAll("SELECT id as user_id FROM users WHERE role = 'admin'");
+        }
+        foreach ($committeeUsers as $cu) {
+            Database::insert('notifications', [
+                'user_id' => (int)$cu['user_id'],
+                'title' => 'Payment Confirmation Required',
+                'message' => "{$flatStr} submitted UPI reference '{$txnRef}' for Bill #{$bill['bill_number']} (₹" . number_format($bill['amount'], 2) . "). Please verify and confirm receipt.",
+                'type' => 'info',
+                'action_url' => '/comitee/bills',
+            ]);
+        }
 
         Session::flash('success', "Payment reference {$txnRef} sent for committee confirmation! You can track approval status in Payment Receipts.");
         redirect('/resident/receipts');
@@ -280,12 +321,29 @@ class ResidentController
             }
         }
 
-        Database::insert('notifications', [
-            'user_id' => null,
-            'title' => 'Bulk Payment Confirmation Required',
-            'message' => "Resident submitted bulk UPI reference '{$txnRef}' for " . count($pendingBills) . " bills (Total: ₹" . number_format($totalPaid, 2) . "). Please review and confirm.",
-            'type' => 'info',
-        ]);
+        $socIds = array_unique(array_filter(array_column($pendingBills, 'society_id')));
+        if (empty($socIds)) $socIds = [1];
+        foreach ($socIds as $sid) {
+            $cUsers = Database::fetchAll("
+                SELECT DISTINCT sm.user_id 
+                FROM society_members sm 
+                WHERE sm.society_id = ? 
+                  AND sm.role IN ('chairman', 'secretary', 'treasurer', 'committee') 
+                  AND sm.status = 'active'
+            ", [$sid]);
+            if (empty($cUsers)) {
+                $cUsers = Database::fetchAll("SELECT id as user_id FROM users WHERE role = 'admin'");
+            }
+            foreach ($cUsers as $cu) {
+                Database::insert('notifications', [
+                    'user_id' => (int)$cu['user_id'],
+                    'title' => 'Bulk Payment Confirmation Required',
+                    'message' => "Resident submitted bulk UPI reference '{$txnRef}' for " . count($pendingBills) . " bills (Total: ₹" . number_format($totalPaid, 2) . "). Please review and confirm.",
+                    'type' => 'info',
+                    'action_url' => '/comitee/bills',
+                ]);
+            }
+        }
 
         Session::flash('success', "Bulk payment reference sent for confirmation! " . count($pendingBills) . " bills totaling ₹" . number_format($totalPaid, 2) . " submitted to committee.");
         redirect('/resident/receipts');
@@ -298,6 +356,10 @@ class ResidentController
     {
         requireLogin();
         $user = getUser();
+        if ($user['user_type'] === 'tenant') {
+            Session::flash('error', 'Bills and receipts are accessible only to flat owners.');
+            redirect('/resident');
+        }
         $userId = (int)Session::get('user_id');
 
         $receipts = Database::fetchAll("
@@ -574,7 +636,7 @@ class ResidentController
             SELECT sm.id, f.wing, f.flat_no, f.is_for_rent, f.occupancy_status 
             FROM society_members sm 
             JOIN flats f ON sm.flat_id = f.id 
-            WHERE sm.flat_id = ? AND sm.user_id = ? AND sm.role = 'owner' AND sm.status = 'active'
+            WHERE sm.flat_id = ? AND sm.user_id = ? AND (sm.ownership_type = 'owner' OR sm.role != 'tenant') AND sm.status = 'active'
         ", [$flatId, $userId]);
 
         if (!$membership) {
@@ -608,10 +670,10 @@ class ResidentController
         }
 
         $membership = Database::fetchOne("
-            SELECT sm.id, f.wing, f.flat_no 
+            SELECT sm.id, sm.society_id, f.wing, f.flat_no 
             FROM society_members sm 
             JOIN flats f ON sm.flat_id = f.id 
-            WHERE sm.flat_id = ? AND sm.user_id = ? AND sm.role = 'owner' AND sm.status = 'active'
+            WHERE sm.flat_id = ? AND sm.user_id = ? AND (sm.ownership_type = 'owner' OR sm.role != 'tenant') AND sm.status = 'active'
         ", [$flatId, $userId]);
 
         if (!$membership) {
@@ -626,13 +688,25 @@ class ResidentController
 
         $isForRent = ($occupancy === 'available_for_rent') ? 1 : 0;
         $expectedRent = !empty($_POST['expected_rent']) ? (float)$_POST['expected_rent'] : null;
+        if ($occupancy === 'rented' && !empty($_POST['expected_rent_rented'])) {
+            $expectedRent = (float)$_POST['expected_rent_rented'];
+        }
         $securityDeposit = !empty($_POST['security_deposit']) ? (float)$_POST['security_deposit'] : null;
         $availableFrom = !empty($_POST['available_from']) ? trim($_POST['available_from']) : null;
         $rentalNotes = !empty($_POST['rental_notes']) ? trim($_POST['rental_notes']) : null;
 
+        $tenantUserId = !empty($_POST['tenant_user_id']) ? (int)$_POST['tenant_user_id'] : null;
         $tenantName = !empty($_POST['tenant_name']) ? trim($_POST['tenant_name']) : null;
         $tenantPhone = !empty($_POST['tenant_phone']) ? trim($_POST['tenant_phone']) : null;
         $leaseEndDate = !empty($_POST['lease_end_date']) ? trim($_POST['lease_end_date']) : null;
+
+        if ($tenantUserId) {
+            $tUser = Database::fetchOne("SELECT id, name, phone, email, user_type FROM users WHERE id = ?", [$tenantUserId]);
+            if ($tUser) {
+                if (empty($tenantName)) $tenantName = $tUser['name'];
+                if (empty($tenantPhone)) $tenantPhone = $tUser['phone'];
+            }
+        }
 
         Database::update('flats', [
             'occupancy_status' => $occupancy,
@@ -645,6 +719,43 @@ class ResidentController
             'tenant_phone' => $tenantPhone,
             'lease_end_date' => $leaseEndDate,
         ], 'id = ?', [$flatId]);
+
+        if ($occupancy === 'rented') {
+            if ($tenantUserId) {
+                $existingTenantSm = Database::fetchOne("
+                    SELECT id FROM society_members 
+                    WHERE society_id = ? AND flat_id = ? AND user_id = ?
+                ", [$membership['society_id'], $flatId, $tenantUserId]);
+
+                if ($existingTenantSm) {
+                    Database::update('society_members', [
+                        'role' => 'tenant',
+                        'ownership_type' => 'tenant',
+                        'status' => 'active',
+                        'approved_by' => $userId,
+                        'approved_at' => date('Y-m-d H:i:s'),
+                    ], 'id = ?', [$existingTenantSm['id']]);
+                } else {
+                    Database::insert('society_members', [
+                        'society_id' => $membership['society_id'],
+                        'flat_id' => $flatId,
+                        'user_id' => $tenantUserId,
+                        'role' => 'tenant',
+                        'ownership_type' => 'tenant',
+                        'status' => 'active',
+                        'approved_by' => $userId,
+                        'approved_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+                Database::query("UPDATE users SET user_type = 'tenant' WHERE id = ? AND user_type != 'admin'", [$tenantUserId]);
+            }
+        } else {
+            Database::query("
+                UPDATE society_members 
+                SET status = 'unlinked' 
+                WHERE flat_id = ? AND role = 'tenant' AND status = 'active'
+            ", [$flatId]);
+        }
 
         $labels = [
             'self_occupied' => 'Self occupied',
@@ -666,19 +777,19 @@ class ResidentController
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid token.');
-            redirect('/resident/profile');
+            redirect('/user/profile');
         }
 
         if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
             Session::flash('error', 'Please select a valid image file.');
-            redirect('/resident/profile');
+            redirect('/user/profile');
         }
 
         $file = $_FILES['photo'];
         $allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!in_array($file['type'], $allowed)) {
             Session::flash('error', 'Only JPG, PNG, or WEBP images are allowed.');
-            redirect('/resident/profile');
+            redirect('/user/profile');
         }
 
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
@@ -696,7 +807,7 @@ class ResidentController
             Session::flash('error', 'Failed to save photo.');
         }
 
-        redirect('/resident/profile');
+        redirect('/user/profile');
     }
 
     public function notifications()
@@ -705,8 +816,11 @@ class ResidentController
         $user = getUser();
         $userId = (int)Session::get('user_id');
 
+        // Automatically mark all unread notifications as read when visiting notification screen
+        Database::update('notifications', ['is_read' => 1], 'user_id = ? AND is_read = 0', [$userId]);
+
         $notifications = Database::fetchAll(
-            "SELECT * FROM notifications WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC LIMIT 50",
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
             [$userId]
         );
         $profile = $user;
@@ -726,6 +840,19 @@ class ResidentController
         requireLogin();
         if (verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Database::update('notifications', ['is_read' => 1], 'user_id = ? AND is_read = 0', [Session::get('user_id')]);
+        }
+        redirect('/resident/notifications');
+    }
+
+    public function markSingleNotificationRead(int $id)
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+        Database::update('notifications', ['is_read' => 1], 'id = ? AND user_id = ?', [$id, $userId]);
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+            exit;
         }
         redirect('/resident/notifications');
     }
@@ -750,9 +877,10 @@ class ResidentController
             'user' => $user,
             'profile' => $profile,
             'myFlats' => $myFlats,
+            'activeTab' => $_GET['tab'] ?? 'personal',
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
-            'currentRoute' => '/resident/profile',
+            'currentRoute' => '/user/profile',
         ]);
     }
 
@@ -763,29 +891,116 @@ class ResidentController
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid request.');
-            redirect('/resident/profile');
+            redirect('/user/profile');
         }
 
-        $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $phone = filter_input(INPUT_POST, 'phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $address = filter_input(INPUT_POST, 'address', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $apartment = filter_input(INPUT_POST, 'apartment', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $emergency_name = filter_input(INPUT_POST, 'emergency_contact_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $emergency_phone = filter_input(INPUT_POST, 'emergency_contact_phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $name = trim($_POST['name'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+
+        if (empty($name)) {
+            Session::flash('error', 'Full Name is required.');
+            redirect('/user/profile');
+        }
+
+        $isWhatsapp = !empty($_POST['is_whatsapp']) ? 1 : 0;
+        $rawPhone = preg_replace('/[^0-9]/', '', $phone);
+        $formattedPhone = $rawPhone ? (strlen($rawPhone) === 10 ? '+91 ' . $rawPhone : '+' . $rawPhone) : null;
 
         $userData = [
             'name' => $name,
-            'phone' => $phone,
-            'address' => $address,
-            'apartment' => $apartment,
-            'emergency_contact_name' => $emergency_name,
-            'emergency_contact_phone' => $emergency_phone,
+            'phone' => $formattedPhone,
+            'is_whatsapp' => $isWhatsapp,
         ];
 
         Database::update('users', $userData, 'id = ?', [$userId]);
 
-        Session::flash('success', 'Profile updated successfully!');
-        redirect('/resident/profile');
+        Session::flash('success', 'Personal information updated successfully!');
+        redirect('/user/profile');
+    }
+
+    public function updatePassword()
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/user/profile?tab=password');
+        }
+
+        $user = Database::fetchOne("SELECT password_hash FROM users WHERE id = ?", [$userId]);
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if (!empty($user['password_hash']) && !password_verify($currentPassword, $user['password_hash'])) {
+            Session::flash('error', 'Current password is incorrect.');
+            redirect('/user/profile?tab=password');
+        }
+
+        if (strlen($newPassword) < 6) {
+            Session::flash('error', 'New password must be at least 6 characters.');
+            redirect('/user/profile?tab=password');
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            Session::flash('error', 'New passwords do not match.');
+            redirect('/user/profile?tab=password');
+        }
+
+        Database::update('users', ['password_hash' => password_hash($newPassword, PASSWORD_DEFAULT)], 'id = ?', [$userId]);
+        Session::flash('success', 'Password updated successfully!');
+        redirect('/user/profile?tab=password');
+    }
+
+    public function updateEmergencyContact()
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/user/profile?tab=emergency');
+        }
+
+        $name = trim($_POST['emergency_contact_name'] ?? '');
+        $phone = trim($_POST['emergency_contact_phone'] ?? '');
+
+        Database::update('users', [
+            'emergency_contact_name' => $name ?: null,
+            'emergency_contact_phone' => $phone ?: null,
+        ], 'id = ?', [$userId]);
+
+        Session::flash('success', 'Emergency contact saved successfully!');
+        redirect('/user/profile?tab=emergency');
+    }
+
+    public function updatePin()
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/user/profile?tab=pin');
+        }
+
+        $pin = trim($_POST['pin'] ?? '');
+        $confirmPin = trim($_POST['confirm_pin'] ?? '');
+
+        if (!preg_match('/^[0-9]{4}$/', $pin)) {
+            Session::flash('error', 'PIN must be exactly 4 digits.');
+            redirect('/user/profile?tab=pin');
+        }
+
+        if ($pin !== $confirmPin) {
+            Session::flash('error', 'PIN numbers do not match.');
+            redirect('/user/profile?tab=pin');
+        }
+
+        Database::update('users', ['pin_hash' => password_hash($pin, PASSWORD_DEFAULT)], 'id = ?', [$userId]);
+        Session::flash('success', 'Security PIN saved successfully!');
+        redirect('/user/profile?tab=pin');
     }
 
     public function documents()

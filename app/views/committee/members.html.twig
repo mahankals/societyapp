@@ -3,15 +3,15 @@
 {% block title %}Members Directory | {{ society.name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <a href="/comitee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+                <a href="/comitee" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">← Committee Dashboard</a>
             </div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Society Members & Roles</h1>
-            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; {{ members|length }} Registered Members</p>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Society Members &amp; Roles</h1>
+            <p class="text-xs text-slate-500 dark:text-surface-200/60">{{ society.name }} &middot; {{ members|length }} Registered Members</p>
         </div>
 
         <button type="button" onclick="document.getElementById('assignModal').classList.remove('hidden')" class="btn-primary !px-4 !py-2.5 flex items-center gap-2 text-xs font-semibold">
@@ -21,86 +21,98 @@
     </div>
 
     {% if flash.success or (flash.type == 'success') %}
-    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2">
         <i data-lucide="check-circle" class="w-4 h-4"></i>
         <span>{{ flash.success ?: flash.message }}</span>
     </div>
     {% endif %}
     {% if flash.error or (flash.type == 'error') %}
-    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4"></i>
         <span>{{ flash.error ?: flash.message }}</span>
     </div>
     {% endif %}
 
     <!-- Members Table -->
-    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-surface-200/80">
-                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+            <table class="w-full text-left text-sm text-slate-700 dark:text-surface-200/80">
+                <thead class="text-xs uppercase bg-slate-50 dark:bg-white/[0.03] text-slate-500 dark:text-surface-200/60 border-b border-slate-200 dark:border-white/5">
                     <tr>
                         <th class="py-3.5 px-4 font-semibold">Member Name</th>
                         <th class="py-3.5 px-4 font-semibold">Assigned Flat</th>
                         <th class="py-3.5 px-4 font-semibold">Contact Info</th>
-                        <th class="py-3.5 px-4 font-semibold">Role & Designation</th>
+                        <th class="py-3.5 px-4 font-semibold">Role &amp; Designation</th>
                         <th class="py-3.5 px-4 font-semibold">Status</th>
                         <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5">
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                     {% for m in members %}
-                    <tr class="hover:bg-white/[0.02] transition-colors">
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
                         <td class="py-3.5 px-4">
                             <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500/30 to-brand-700/20 text-brand-300 flex items-center justify-center font-bold text-xs">
+                                <div class="w-8 h-8 rounded-lg bg-brand-500/15 text-brand-600 dark:text-brand-300 flex items-center justify-center font-bold text-xs">
                                     {{ m.member_name|first|upper }}
                                 </div>
-                                <span class="font-medium text-white">{{ m.member_name }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-white">{{ m.member_name }}</span>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 font-mono font-semibold text-white">
+                        <td class="py-3.5 px-4 font-mono font-semibold text-slate-900 dark:text-white">
                             {% if m.flat_no %}
-                            {{ m.wing }}-{{ m.flat_no }}
+                            {{ m.wing ? m.wing ~ '-' : '' }}{{ m.flat_no }}
                             {% else %}
-                            <span class="text-xs text-surface-200/40 italic">Not Assigned</span>
+                            <span class="text-xs text-slate-400 dark:text-surface-200/40 italic">Not Assigned</span>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4 text-xs">
-                            <p class="text-white">{{ m.member_phone ?: '-' }}</p>
-                            <p class="text-surface-200/50">{{ m.member_email }}</p>
+                            <p class="text-slate-900 dark:text-white font-medium">{{ m.member_phone ?: '-' }}</p>
+                            <p class="text-slate-500 dark:text-surface-200/50">{{ m.member_email }}</p>
                         </td>
                         <td class="py-3.5 px-4">
                             {% if m.role in ['chairman', 'secretary', 'treasurer', 'committee'] %}
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 font-medium capitalize">
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-500/30 font-semibold capitalize">
                                 {{ m.role }} (Committee)
                             </span>
-                            {% elseif m.role == 'tenant' %}
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-medium">
+                            {% elseif m.role == 'tenant' or m.ownership_type == 'tenant' %}
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 font-medium">
                                 Tenant
                             </span>
                             {% else %}
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-surface-200 border border-white/10 font-medium">
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-surface-200 border border-slate-200 dark:border-white/10 font-medium">
                                 Flat Owner
                             </span>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4">
-                            <span class="text-[11px] px-2 py-0.5 rounded-full {{ m.status == 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20' }}">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full {{ m.status == 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20' }}">
                                 {{ m.status|capitalize }}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-right">
-                            <form action="/comitee/members/{{ m.id }}/unlink" method="POST" onsubmit="return confirm('Unlink {{ m.member_name }} from flat?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                                <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 text-xs transition-colors">
-                                    Unlink
+                            <div class="flex items-center justify-end gap-2">
+                                <button type="button" 
+                                    onclick='openEditRoleModal({{ {
+                                        id: m.id,
+                                        member_name: m.member_name,
+                                        role: m.role,
+                                        ownership_type: m.ownership_type|default(m.role == "tenant" ? "tenant" : "owner")
+                                    }|json_encode|raw }})'
+                                    class="px-2.5 py-1 rounded-lg border border-brand-500/30 hover:bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-semibold transition-colors">
+                                    Edit Role
                                 </button>
-                            </form>
+                                <form action="/comitee/members/{{ m.id }}/unlink" method="POST" onsubmit="event.preventDefault(); window.appConfirm('Are you sure you want to unlink {{ m.member_name }} from flat?', () => this.submit());">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-500/20 hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs transition-colors">
+                                        Unlink
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-surface-200/50">No members registered in this society yet.</td>
+                        <td colspan="6" class="py-8 text-center text-slate-400 dark:text-surface-200/50">No members registered in this society yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -110,79 +122,154 @@
 
 </div>
 
-<!-- Assign Member Modal -->
-<div id="assignModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-white/10 bg-surface-900 shadow-2xl">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
-            <h3 class="text-base font-bold text-white">Assign Member to Flat</h3>
-            <button type="button" onclick="document.getElementById('assignModal').classList.add('hidden')" class="text-surface-200/50 hover:text-white">✕</button>
+<!-- Edit Role Modal (High z-index z-[200] & viewport constraint) -->
+<div id="editRoleModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-brand-500"></i>
+                <span>Update Member Role</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('editRoleModal').classList.add('hidden')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
         </div>
 
-        <form action="/comitee/members/assign" method="POST">
+        <form id="editRoleForm" action="" method="POST" class="mt-4 space-y-4 flex flex-col flex-1 overflow-hidden">
             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
 
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Select Member / User</label>
-                    <select name="user_id" id="assign_user_id" class="input-glass w-full text-sm" data-placeholder="-- Choose Registered User --">
-                        <option value="">-- Choose Registered User --</option>
-                        {% for u in availableUsers %}
-                        <option value="{{ u.id }}">
-                            {{ u.name }} ({{ u.email }}{% if u.phone %} &middot; {{ u.phone }}{% endif %})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <div class="mt-1.5 flex items-center justify-between text-[11px]">
-                        <span class="text-surface-200/40">Select registered user</span>
-                        <button type="button" onclick="document.getElementById('manualUserWrap').classList.toggle('hidden'); document.getElementById('assign_member_name')?.focus();" class="text-brand-400 hover:text-brand-300 font-medium">
-                            + Add Non-Registered Member
-                        </button>
-                    </div>
-                    <div id="manualUserWrap" class="hidden mt-3 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-brand-400">Non-Registered Member Details</span>
-                            <span class="text-[10px] text-surface-200/50">Auto-creates profile</span>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-surface-200/70 mb-1">Member Full Name</label>
-                            <input type="text" name="member_name" id="assign_member_name" placeholder="e.g. Ramesh Kumar" class="input-glass w-full !text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-surface-200/70 mb-1">Email or Mobile Number</label>
-                            <input type="text" name="user_identifier" id="assign_user_identifier" placeholder="e.g. ramesh@example.com or 9876543210" class="input-glass w-full !text-xs">
-                        </div>
-                        <p class="text-[10px] text-surface-200/40">Profile will be automatically registered and linked to the chosen flat.</p>
-                    </div>
-                </div>
+            <div>
+                <p class="text-xs text-slate-500 dark:text-surface-200/60">Member:</p>
+                <p id="editRoleMemberName" class="text-sm font-bold text-slate-900 dark:text-white"></p>
+            </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Select Flat</label>
-                    <select name="flat_id" required class="input-glass w-full text-sm font-mono">
-                        <option value="">-- Choose Flat --</option>
-                        {% for f in vacantFlats %}
-                        <option value="{{ f.id }}">Flat {{ f.wing }}-{{ f.flat_no }} ({{ f.flat_type }}, {{ f.area_sqft }} sqft)</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div>
+                <label for="edit_role_select" class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Select Designation</label>
+                <select name="role" id="edit_role_select" class="block w-full px-3.5 py-2.5 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    <option value="owner">Flat Owner / Resident</option>
+                    <option value="secretary">Secretary (Committee)</option>
+                    <option value="chairman">Chairman (Committee)</option>
+                    <option value="treasurer">Treasurer (Committee)</option>
+                    <option value="committee">Managing Committee Member</option>
+                    <option value="tenant" id="optRoleTenant">Tenant</option>
+                </select>
+                <p id="tenantRoleNote" class="hidden mt-2 text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
+                    Note: Tenants cannot hold committee roles (Chairman, Secretary, Treasurer). Only flat owners are eligible for committee positions.
+                </p>
+            </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Role / Designation</label>
-                    <select name="role" class="input-glass w-full text-sm">
-                        <option value="owner" selected>Flat Owner / Resident</option>
-                        <option value="tenant">Tenant</option>
-                        <option value="secretary">Secretary (Committee)</option>
-                        <option value="chairman">Chairman (Committee)</option>
-                        <option value="treasurer">Treasurer (Committee)</option>
-                        <option value="committee">Managing Committee Member</option>
-                    </select>
+            <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-white/10 mt-auto shrink-0">
+                <button type="button" onclick="document.getElementById('editRoleModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-surface-200/80">Cancel</button>
+                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Update Role</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assign Member Modal (High z-index z-[200] & viewport constraint) -->
+<div id="assignModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Assign Member to Flat</h3>
+            <button type="button" onclick="document.getElementById('assignModal').classList.add('hidden')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form action="/comitee/members/assign" method="POST" class="overflow-y-auto flex-1 py-4 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Select Member / User</label>
+                <select name="user_id" id="assign_user_id" class="block w-full px-3.5 py-2.5 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    <option value="">-- Choose Registered User --</option>
+                    {% for u in availableUsers %}
+                    <option value="{{ u.id }}">
+                        {{ u.name }} ({{ u.email }}{% if u.phone %} &middot; {{ u.phone }}{% endif %})
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span class="text-slate-400 dark:text-surface-200/40">Select registered user</span>
+                    <button type="button" onclick="document.getElementById('manualUserWrap').classList.toggle('hidden'); document.getElementById('assign_member_name')?.focus();" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">
+                        + Add Non-Registered Member
+                    </button>
+                </div>
+                <div id="manualUserWrap" class="hidden mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-brand-600 dark:text-brand-400">Non-Registered Member Details</span>
+                        <span class="text-[10px] text-slate-400 dark:text-surface-200/50">Auto-creates profile</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-700 dark:text-surface-200/70 mb-1">Member Full Name</label>
+                        <input type="text" name="member_name" id="assign_member_name" placeholder="e.g. Ramesh Kumar" class="w-full px-3 py-2 text-xs bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-700 dark:text-surface-200/70 mb-1">Email or Mobile Number</label>
+                        <input type="text" name="user_identifier" id="assign_user_identifier" placeholder="e.g. ramesh@example.com or 9876543210" class="w-full px-3 py-2 text-xs bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg font-mono">
+                    </div>
+                    <p class="text-[10px] text-slate-400 dark:text-surface-200/40">Profile will be automatically registered and linked to the chosen flat.</p>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2">
-                <button type="button" onclick="document.getElementById('assignModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/80">Cancel</button>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Select Flat</label>
+                <select name="flat_id" required class="block w-full px-3.5 py-2.5 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                    <option value="">-- Choose Flat --</option>
+                    {% for f in vacantFlats %}
+                    <option value="{{ f.id }}">Flat {{ f.wing }}-{{ f.flat_no }} ({{ f.flat_type }}, {{ f.area_sqft }} sqft)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Role / Designation</label>
+                <select name="role" class="block w-full px-3.5 py-2.5 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    <option value="owner" selected>Flat Owner / Resident</option>
+                    <option value="tenant">Tenant</option>
+                    <option value="secretary">Secretary (Committee - Owner only)</option>
+                    <option value="chairman">Chairman (Committee - Owner only)</option>
+                    <option value="treasurer">Treasurer (Committee - Owner only)</option>
+                    <option value="committee">Managing Committee Member (Owner only)</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-white/10 shrink-0">
+                <button type="button" onclick="document.getElementById('assignModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs text-slate-700 dark:text-surface-200/80">Cancel</button>
                 <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Assign Member</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function openEditRoleModal(m) {
+    if (!m) return;
+    const form = document.getElementById('editRoleForm');
+    form.action = '/comitee/members/' + m.id + '/role';
+    document.getElementById('editRoleMemberName').textContent = m.member_name;
+
+    const select = document.getElementById('edit_role_select');
+    select.value = m.role || 'owner';
+
+    const isTenant = (m.ownership_type === 'tenant' || m.role === 'tenant');
+    const note = document.getElementById('tenantRoleNote');
+
+    // If tenant, disable committee options
+    Array.from(select.options).forEach(opt => {
+        if (['chairman', 'secretary', 'treasurer', 'committee'].includes(opt.value)) {
+            opt.disabled = isTenant;
+        }
+    });
+
+    if (isTenant) {
+        note.classList.remove('hidden');
+    } else {
+        note.classList.add('hidden');
+    }
+
+    document.getElementById('editRoleModal').classList.remove('hidden');
+    if (window.lucide) { lucide.createIcons(); }
+}
+</script>
 {% endblock %}

@@ -14,6 +14,14 @@ class Session {
         $config = require __DIR__ . '/../../config/session.php';
         $lifetime = (int)($config['lifetime'] ?? 3600);
 
+        $storagePath = defined('ROOT_PATH') ? ROOT_PATH . '/storage/sessions' : __DIR__ . '/../../storage/sessions';
+        if (!is_dir($storagePath)) {
+            @mkdir($storagePath, 0777, true);
+        }
+        if (is_dir($storagePath) && is_writable($storagePath)) {
+            session_save_path($storagePath);
+        }
+
         // Synchronize PHP session garbage collection with configured lifetime
         ini_set('session.gc_maxlifetime', (string)$lifetime);
 
@@ -52,6 +60,17 @@ class Session {
         }
 
         $_SESSION['last_activity'] = time();
+
+        if (!headers_sent()) {
+            setcookie($config['name'], session_id(), [
+                'expires' => time() + $lifetime,
+                'path' => '/',
+                'domain' => '',
+                'secure' => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        }
     }
 
     public static function isExpired(?int $timeout = null): bool {

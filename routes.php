@@ -523,10 +523,12 @@ foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
     $router->post($cPrefix . '/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
     $router->get($cPrefix . '/members', [$society, 'members'], ['auth']);
     $router->post($cPrefix . '/members/assign', [$society, 'assignMember'], ['auth']);
+    $router->post($cPrefix . '/members/{id}/role', [$society, 'updateMemberRole'], ['auth']);
     $router->post($cPrefix . '/members/{id}/unlink', [$society, 'unlinkMember'], ['auth']);
     $router->get($cPrefix . '/bills', [$society, 'bills'], ['auth']);
     $router->post($cPrefix . '/bills', [$society, 'createBill'], ['auth']);
     $router->post($cPrefix . '/bills/bulk-generate', [$society, 'bulkGenerateBills'], ['auth']);
+    $router->post($cPrefix . '/bills/upi-settings', [$society, 'updateUpiSettings'], ['auth']);
     $router->post($cPrefix . '/bills/{id}/mark-paid', [$society, 'markBillPaid'], ['auth']);
     $router->post($cPrefix . '/receipts/{id}/approve', [$society, 'approveReceipt'], ['auth']);
     $router->post($cPrefix . '/receipts/{id}/reject', [$society, 'rejectReceipt'], ['auth']);
@@ -555,14 +557,24 @@ foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
 $router->get('/admin/committee', function() { redirect('/comitee'); }, ['auth']);
 $router->get('/admin/commitee', function() { redirect('/comitee'); }, ['auth']);
 
-// ==================== Resident Routes (/resident/) ====================
+// ==================== Resident & User Routes ====================
 
 $router->get('/resident', [$resident, 'index'], ['auth']);
 $router->get('/resident/notifications', [$resident, 'notifications'], ['auth']);
 $router->post('/resident/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
-$router->get('/resident/profile', [$resident, 'profile'], ['auth']);
+$router->post('/resident/notifications/{id}/read', [$resident, 'markSingleNotificationRead'], ['auth']);
+
+// User Profile (/user/profile)
+$router->get('/user/profile', [$resident, 'profile'], ['auth']);
+$router->post('/user/profile', [$resident, 'updateProfile'], ['auth']);
+$router->post('/user/profile/password', [$resident, 'updatePassword'], ['auth']);
+$router->post('/user/profile/emergency', [$resident, 'updateEmergencyContact'], ['auth']);
+$router->post('/user/profile/pin', [$resident, 'updatePin'], ['auth']);
+$router->post('/user/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
+$router->get('/resident/profile', function() { redirect('/user/profile'); }, ['auth']);
 $router->post('/resident/profile', [$resident, 'updateProfile'], ['auth']);
 $router->post('/resident/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
+
 $router->get('/resident/documents', [$resident, 'documents'], ['auth']);
 $router->post('/resident/documents/upload', [$resident, 'uploadDocument'], ['auth']);
 $router->get('/resident/bills', [$resident, 'bills'], ['auth']);
@@ -591,14 +603,15 @@ $router->any('/client', function() {
     redirect(getUserRoleDashboardUrl($user));
 }, ['auth']);
 $router->any('/client/{path+}', function($path) { redirect('/resident/' . $path); }, ['auth']);
-$router->get('/profile', function() { redirect('/resident/profile'); }, ['auth']);
-$router->get('/admin/profile', function() { redirect('/resident/profile'); }, ['auth']);
+$router->get('/profile', function() { redirect('/user/profile'); }, ['auth']);
+$router->get('/admin/profile', function() { redirect('/user/profile'); }, ['auth']);
 
 // ==================== Admin Routes ====================
 
 $router->get('/admin', [$admin, 'index'], ['auth', 'admin']);
 $router->get('/admin/societies', [$admin, 'societies'], ['auth', 'admin']);
 $router->post('/admin/societies', [$admin, 'createSociety'], ['auth', 'admin']);
+$router->post('/admin/societies/{id}/toggle-status', [$admin, 'toggleSocietyStatus'], ['auth', 'admin']);
 $router->post('/admin/societies/{id}/update', [$admin, 'updateSociety'], ['auth', 'admin']);
 $router->post('/admin/societies/{id}/delete', [$admin, 'deleteSociety'], ['auth', 'admin']);
 $router->post('/admin/societies/requests/{id}/approve', [$admin, 'approveSocietyRequest'], ['auth', 'admin']);
@@ -612,6 +625,7 @@ $router->get('/admin/settings', [$admin, 'settings'], ['auth', 'admin']);
 $router->post('/admin/settings', [$admin, 'updateSettings'], ['auth', 'admin']);
 $router->post('/admin/settings/toggle-maintenance', [$admin, 'toggleMaintenance'], ['auth', 'admin']);
 $router->post('/admin/settings/test-email', [$admin, 'testEmail'], ['auth', 'admin']);
+$router->post('/admin/settings/test-db', [$admin, 'testDb'], ['auth', 'admin']);
 
 // Redirect legacy admin paths to committee
 $router->get('/admin/bills', function() { redirect('/comitee/bills'); }, ['auth']);

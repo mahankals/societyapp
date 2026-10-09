@@ -36,7 +36,28 @@ if (!function_exists('parseSessionLifetime')) {
     }
 }
 
-$rawLifetime = getenv('SESSION_LIFETIME') ?: ($_ENV['SESSION_LIFETIME'] ?? '60min');
+$rawLifetime = getenv('SESSION_LIFETIME') ?: ($_ENV['SESSION_LIFETIME'] ?? null);
+
+// If not in environment, read directly from .env file
+if ($rawLifetime === null || $rawLifetime === '') {
+    $envPath = (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__)) . '/.env';
+    if (file_exists($envPath)) {
+        $envLines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        foreach ($envLines as $line) {
+            $line = trim($line);
+            if (str_starts_with($line, '#')) continue;
+            if (str_starts_with($line, 'SESSION_LIFETIME=')) {
+                $rawLifetime = trim(substr($line, strlen('SESSION_LIFETIME=')));
+                $rawLifetime = trim($rawLifetime, '"\'');
+                break;
+            }
+        }
+    }
+}
+
+if (empty($rawLifetime)) {
+    $rawLifetime = '60min';
+}
 
 return [
     'name' => 'SOCIETYAPP_SESSION',

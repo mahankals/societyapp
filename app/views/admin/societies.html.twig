@@ -3,106 +3,123 @@
 {% block title %}Societies Management | Admin{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <a href="/admin" class="text-xs text-brand-400 hover:underline">← Platform Dashboard</a>
+                <a href="/admin" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">&larr; Platform Dashboard</a>
             </div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Societies Management</h1>
-            <p class="text-xs text-surface-200/60">{{ societies|length }} Housing Societies on Platform</p>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Societies Management</h1>
+            <p class="text-xs text-slate-500 dark:text-surface-200/60">{{ societies|length }} Housing Societies on Platform</p>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.remove('hidden')" class="px-3.5 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2 transition-all shadow-sm">
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.remove('hidden')" class="px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2 transition-all shadow-sm">
                 <i data-lucide="inbox" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
                 <span>Pending Proposals</span>
                 <span class="px-2 py-0.5 rounded-full {{ pendingRequestsCount > 0 ? 'bg-amber-500 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-surface-200/70' }} text-[10px]">
                     {{ pendingRequestsCount }}
                 </span>
             </button>
-            <button type="button" onclick="document.getElementById('addSocietyModal').classList.remove('hidden')" class="btn-primary !px-4 !py-2.5 flex items-center gap-2 text-xs font-semibold">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add New Society</span>
-            </button>
         </div>
     </div>
 
     {% if flash.success %}
-    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2">
         <i data-lucide="check-circle" class="w-4 h-4"></i>
         <span>{{ flash.success }}</span>
     </div>
     {% endif %}
     {% if flash.error %}
-    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4"></i>
         <span>{{ flash.error }}</span>
     </div>
     {% endif %}
 
     <!-- Societies Table -->
-    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-surface-200/80">
-                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+            <table class="w-full text-left text-sm text-slate-700 dark:text-surface-200/80">
+                <thead class="text-xs uppercase bg-slate-50 dark:bg-white/[0.03] text-slate-500 dark:text-surface-200/60 border-b border-slate-200 dark:border-white/5">
                     <tr>
                         <th class="py-3.5 px-4 font-semibold">Society Name</th>
                         <th class="py-3.5 px-4 font-semibold">Code / Reg No</th>
                         <th class="py-3.5 px-4 font-semibold">Location</th>
-                        <th class="py-3.5 px-4 font-semibold">Flats & Members</th>
+                        <th class="py-3.5 px-4 font-semibold">Flats &amp; Members</th>
                         <th class="py-3.5 px-4 font-semibold">UPI Details</th>
+                        <th class="py-3.5 px-4 font-semibold">Status</th>
                         <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5">
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                     {% for s in societies %}
-                    <tr class="hover:bg-white/[0.02] transition-colors">
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
                         <td class="py-3.5 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 flex items-center justify-center font-bold text-xs">
+                                <div class="w-9 h-9 rounded-xl bg-brand-500/15 text-brand-600 dark:text-brand-300 flex items-center justify-center font-bold text-xs">
                                     {{ s.name|first|upper }}
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-white">{{ s.name }}</p>
-                                    <span class="text-[11px] text-surface-200/40">Created {{ s.created_at|date('d M Y') }}</span>
+                                    <p class="font-semibold text-slate-900 dark:text-white">{{ s.name }}</p>
+                                    <span class="text-[11px] text-slate-400 dark:text-surface-200/40">Created {{ s.created_at|date('d M Y') }}</span>
                                 </div>
                             </div>
                         </td>
                         <td class="py-3.5 px-4 text-xs font-mono">
-                            <span class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white font-bold">{{ s.society_code }}</span>
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white font-bold">{{ s.society_code }}</span>
                             {% if s.registration_no %}
-                            <p class="text-[11px] text-surface-200/40 mt-1">Reg: {{ s.registration_no }}</p>
+                            <p class="text-[11px] text-slate-400 dark:text-surface-200/40 mt-1">Reg: {{ s.registration_no }}</p>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4 text-xs">
-                            <p class="text-white">{{ s.city ?: 'City N/A' }}{% if s.state %}, {{ s.state }}{% endif %}</p>
-                            <p class="text-surface-200/40 truncate max-w-xs">{{ s.address ?: '-' }}</p>
+                            <p class="text-slate-900 dark:text-white font-medium">{{ s.city ?: 'City N/A' }}{% if s.state %}, {{ s.state }}{% endif %}</p>
+                            <p class="text-slate-400 dark:text-surface-200/40 truncate max-w-xs">{{ s.address ?: '-' }}</p>
                         </td>
                         <td class="py-3.5 px-4 text-xs font-medium">
-                            <p class="text-brand-300">{{ s.total_flats }} Flats</p>
-                            <p class="text-surface-200/50">{{ s.total_members }} Active Members</p>
+                            <p class="text-brand-600 dark:text-brand-300 font-semibold">{{ s.total_flats }} Flats</p>
+                            <p class="text-slate-500 dark:text-surface-200/50">{{ s.total_members }} Active Members</p>
                         </td>
                         <td class="py-3.5 px-4 text-xs">
                             {% if s.upi_id %}
-                            <p class="font-mono text-emerald-400">{{ s.upi_id }}</p>
-                            <p class="text-surface-200/40 text-[11px]">{{ s.payee_name ?: s.name }}</p>
+                            <p class="font-mono text-emerald-600 dark:text-emerald-400 font-medium">{{ s.upi_id }}</p>
+                            <p class="text-slate-400 dark:text-surface-200/40 text-[11px]">{{ s.payee_name ?: s.name }}</p>
                             {% else %}
-                            <span class="text-surface-200/40 italic">Not configured</span>
+                            <span class="text-slate-400 dark:text-surface-200/40 italic">Not configured</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if s.is_active|default(1) %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+                                Disabled
+                            </span>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4 text-right">
-                            <div class="flex items-center justify-end gap-1.5">
+                            <div class="flex items-center justify-end gap-2">
                                 <button type="button" 
-                                    onclick='openEditSocietyModal({{ s|json_encode|raw }})' 
-                                    class="p-1.5 rounded-lg hover:bg-brand-500/15 text-surface-200/50 hover:text-brand-300 transition-colors" 
-                                    title="Edit Society">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                    onclick='openViewSocietyModal({{ s|json_encode|raw }})' 
+                                    class="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-surface-200/80 text-xs font-medium transition-colors" 
+                                    title="View Full Details">
+                                    Show
                                 </button>
-                                <form action="/admin/societies/{{ s.id }}/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete society {{ s.name }}? This will remove its associated data.')">
+                                
+                                <form action="/admin/societies/{{ s.id }}/toggle-status" method="POST" class="inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                                    <button type="submit" class="p-1.5 rounded-lg hover:bg-rose-500/10 text-surface-200/40 hover:text-rose-400 transition-colors" title="Delete Society">
+                                    <button type="submit" 
+                                        class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors {{ s.is_active|default(1) ? 'border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10' : 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10' }}">
+                                        {{ s.is_active|default(1) ? 'Disable' : 'Enable' }}
+                                    </button>
+                                </form>
+
+                                <form action="/admin/societies/{{ s.id }}/delete" method="POST" onsubmit="event.preventDefault(); window.appConfirm('Are you sure you want to delete society {{ s.name }}? This will remove all associated units.', () => this.submit());">
+                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-colors" title="Delete Society">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                 </form>
@@ -111,7 +128,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-surface-200/50">No societies found. Click "Add New Society" above to add the first society.</td>
+                        <td colspan="7" class="py-8 text-center text-slate-400 dark:text-surface-200/50">No societies found. New societies are created via user proposals.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -121,191 +138,83 @@
 
 </div>
 
-<!-- Add Society Modal -->
-<div id="addSocietyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-panel rounded-2xl max-w-lg w-full border border-slate-200/80 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <!-- Fixed Modal Header -->
-        <div class="flex items-center justify-between p-5 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+<!-- View Society Details Modal (Show) -->
+<div id="viewSocietyModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/10 shrink-0">
             <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <i data-lucide="building-2" class="w-4 h-4 text-brand-600 dark:text-brand-400"></i>
-                <span>Add New Housing Society</span>
+                <i data-lucide="building-2" class="w-4 h-4 text-brand-500"></i>
+                <span id="viewSocTitle">Society Details</span>
             </h3>
-            <button type="button" onclick="document.getElementById('addSocietyModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white p-1">✕</button>
+            <button type="button" onclick="document.getElementById('viewSocietyModal').classList.add('hidden')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
         </div>
 
-        <form action="/admin/societies" method="POST" class="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-
-            <!-- Scrollable Modal Body -->
-            <div class="p-6 overflow-y-auto flex-1 space-y-4">
+        <div class="p-6 overflow-y-auto flex-1 space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Society Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" placeholder="e.g. Green Meadows Co-operative Housing Society" required class="input-glass w-full text-sm">
+                    <span class="block text-xs text-slate-500 dark:text-surface-200/50 font-medium">Society Code</span>
+                    <span id="viewSocCode" class="font-mono font-bold text-slate-900 dark:text-white"></span>
                 </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Society Code</label>
-                        <input type="text" name="society_code" placeholder="e.g. GMS-01 (Auto if blank)" class="input-glass w-full text-sm font-mono uppercase">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Registration No</label>
-                        <input type="text" name="registration_no" placeholder="e.g. BOM/HSG/1234/2020" class="input-glass w-full text-sm">
-                    </div>
-                </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Premises Address</label>
-                    <textarea name="address" rows="2" placeholder="Full society street address" class="input-glass w-full text-sm resize-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">City</label>
-                        <input type="text" name="city" placeholder="Mumbai" class="input-glass w-full text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">State</label>
-                        <input type="text" name="state" placeholder="Maharashtra" class="input-glass w-full text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">PIN Code</label>
-                        <input type="text" name="pincode" placeholder="400001" class="input-glass w-full text-sm font-mono">
-                    </div>
-                </div>
-
-                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 space-y-3">
-                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
-                        <span>UPI Payment Settings (For Resident Dues)</span>
-                    </p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-surface-200/60 mb-1">Society UPI ID / VPA</label>
-                            <input type="text" name="upi_id" placeholder="societyname@bankupi" class="input-glass w-full text-xs font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-surface-200/60 mb-1">Payee Name</label>
-                            <input type="text" name="payee_name" placeholder="Society Bank Account Name" class="input-glass w-full text-xs">
-                        </div>
-                    </div>
+                    <span class="block text-xs text-slate-500 dark:text-surface-200/50 font-medium">Registration No</span>
+                    <span id="viewSocReg" class="font-medium text-slate-900 dark:text-white"></span>
                 </div>
             </div>
 
-            <!-- Fixed Modal Footer -->
-            <div class="flex justify-end gap-2 p-4 border-t border-slate-200/80 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900/80">
-                <button type="button" onclick="document.getElementById('addSocietyModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-600 dark:text-surface-200/80">Cancel</button>
-                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold">Create Society</button>
+            <div>
+                <span class="block text-xs text-slate-500 dark:text-surface-200/50 font-medium mb-1">Premises Address &amp; Location</span>
+                <p id="viewSocAddress" class="text-slate-900 dark:text-white leading-relaxed"></p>
+                <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-1" id="viewSocCityState"></p>
             </div>
-        </form>
-    </div>
-</div>
 
-<!-- Edit Society Modal -->
-<div id="editSocietyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-panel rounded-2xl max-w-lg w-full border border-slate-200/80 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <!-- Fixed Modal Header -->
-        <div class="flex items-center justify-between p-5 border-b border-slate-200/80 dark:border-white/10 shrink-0">
-            <h3 id="editSocietyModalTitle" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <i data-lucide="edit-2" class="w-4 h-4 text-brand-600 dark:text-brand-400"></i>
-                <span>Edit Society</span>
-            </h3>
-            <button type="button" onclick="document.getElementById('editSocietyModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white p-1">✕</button>
+            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
+                <div>
+                    <span class="block text-xs text-slate-500 dark:text-surface-200/50 font-medium">Total Flats</span>
+                    <span id="viewSocFlats" class="font-bold text-brand-600 dark:text-brand-300"></span>
+                </div>
+                <div>
+                    <span class="block text-xs text-slate-500 dark:text-surface-200/50 font-medium">Active Members</span>
+                    <span id="viewSocMembers" class="font-bold text-emerald-600 dark:text-emerald-400"></span>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
+                <span class="block text-xs font-semibold text-blue-900 dark:text-blue-300">UPI Payment Settings</span>
+                <p class="text-xs font-mono text-slate-900 dark:text-white" id="viewSocUpi"></p>
+                <p class="text-[11px] text-slate-500 dark:text-surface-200/60" id="viewSocPayee"></p>
+            </div>
         </div>
 
-        <form id="editSocietyForm" action="" method="POST" class="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-
-            <!-- Scrollable Modal Body -->
-            <div class="p-6 overflow-y-auto flex-1 space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Society Name <span class="text-red-500">*</span></label>
-                    <input type="text" id="edit_soc_name" name="name" required class="input-glass w-full text-sm">
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Society Code <span class="text-red-500">*</span></label>
-                        <input type="text" id="edit_soc_code" name="society_code" required class="input-glass w-full text-sm font-mono uppercase">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Registration No</label>
-                        <input type="text" id="edit_soc_reg" name="registration_no" class="input-glass w-full text-sm">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">Premises Address</label>
-                    <textarea id="edit_soc_address" name="address" rows="2" class="input-glass w-full text-sm resize-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">City</label>
-                        <input type="text" id="edit_soc_city" name="city" class="input-glass w-full text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">State</label>
-                        <input type="text" id="edit_soc_state" name="state" class="input-glass w-full text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1">PIN Code</label>
-                        <input type="text" id="edit_soc_pincode" name="pincode" class="input-glass w-full text-sm font-mono">
-                    </div>
-                </div>
-
-                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 space-y-3">
-                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
-                        <span>UPI Payment Settings (For Resident Dues)</span>
-                    </p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-surface-200/60 mb-1">Society UPI ID / VPA</label>
-                            <input type="text" id="edit_soc_upi" name="upi_id" class="input-glass w-full text-xs font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-surface-200/60 mb-1">Payee Name</label>
-                            <input type="text" id="edit_soc_payee" name="payee_name" class="input-glass w-full text-xs">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fixed Modal Footer -->
-            <div class="flex justify-end gap-2 p-4 border-t border-slate-200/80 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900/80">
-                <button type="button" onclick="document.getElementById('editSocietyModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-600 dark:text-surface-200/80">Cancel</button>
-                <button type="submit" class="btn-primary !px-5 !py-2 text-xs font-semibold flex items-center gap-1.5">
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                    <span>Update Society</span>
-                </button>
-            </div>
-        </form>
+        <div class="flex justify-end p-4 border-t border-slate-200 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900">
+            <button type="button" onclick="document.getElementById('viewSocietyModal').classList.add('hidden')" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all">Close</button>
+        </div>
     </div>
 </div>
 
 <!-- Pending Society Proposals Modal -->
-<div id="pendingRequestsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-panel rounded-2xl max-w-2xl w-full border border-slate-200/80 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <!-- Fixed Modal Header -->
-        <div class="flex items-center justify-between p-5 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+<div id="pendingRequestsModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-2xl w-full border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/10 shrink-0">
             <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <i data-lucide="inbox" class="w-4 h-4 text-amber-500"></i>
                 <span>Contributed Society Proposals ({{ pendingRequestsCount }})</span>
             </h3>
-            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white p-1">✕</button>
+            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.add('hidden')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
         </div>
 
-        <!-- Scrollable Modal Body -->
         <div class="p-6 overflow-y-auto flex-1 space-y-4">
             {% if pendingRequests|length > 0 %}
                 {% for req in pendingRequests %}
-                <div class="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] flex flex-col gap-3">
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] flex flex-col gap-3">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                         <div>
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ req.society_name }}</h4>
                             <p class="text-xs text-slate-600 dark:text-surface-200/70 mt-0.5">
-                                {{ req.city }}{% if req.address %}, {{ req.address }}{% endif %}
+                                {{ req.city }}{% if req.state %}, {{ req.state }}{% endif %}{% if req.pincode %} - {{ req.pincode }}{% endif %}{% if req.address %}<br>{{ req.address }}{% endif %}
                             </p>
                             <p class="text-[11px] text-slate-500 dark:text-surface-200/50 mt-1">
                                 Submitted by: <strong class="text-slate-800 dark:text-surface-200/90">{{ req.requester_name|default('User #' ~ req.user_id) }}</strong> ({{ req.requester_email ?: req.requester_phone }}) &middot; {{ req.created_at|date('M d, Y') }}
@@ -314,7 +223,7 @@
                     </div>
 
                     {% if req.contact1_name or req.contact2_name %}
-                    <div class="p-2.5 rounded-lg bg-white dark:bg-surface-800/50 border border-slate-200/60 dark:border-white/5 text-[11px] space-y-1">
+                    <div class="p-2.5 rounded-lg bg-white dark:bg-surface-800/50 border border-slate-200 dark:border-white/5 text-[11px] space-y-1">
                         <p class="font-semibold text-slate-700 dark:text-surface-200/80">Proposed Contacts:</p>
                         {% if req.contact1_name %}
                         <p class="text-slate-600 dark:text-surface-200/60">&bull; {{ req.contact1_name }} ({{ req.contact1_phone }}) - Flat {{ req.contact1_flat }}</p>
@@ -325,8 +234,8 @@
                     </div>
                     {% endif %}
 
-                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60 dark:border-white/5">
-                        <form action="/admin/societies/requests/{{ req.id }}/reject" method="POST" onsubmit="return confirm('Reject this society proposal?')">
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-white/5">
+                        <form action="/admin/societies/requests/{{ req.id }}/reject" method="POST" onsubmit="event.preventDefault(); window.appConfirm('Reject this society proposal?', () => this.submit());">
                             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
                             <button type="submit" class="px-3 py-1.5 rounded-xl border border-rose-300 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-semibold transition-all">
                                 Reject
@@ -351,9 +260,8 @@
             {% endif %}
         </div>
 
-        <!-- Fixed Modal Footer -->
-        <div class="flex justify-end p-4 border-t border-slate-200/80 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900/80">
-            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-xs text-slate-600 dark:text-surface-200/80">Close</button>
+        <div class="flex justify-end p-4 border-t border-slate-200 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900">
+            <button type="button" onclick="document.getElementById('pendingRequestsModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-surface-200/80">Close</button>
         </div>
     </div>
 </div>
@@ -361,20 +269,18 @@
 
 {% block scripts %}
 <script>
-    function openEditSocietyModal(soc) {
+    function openViewSocietyModal(soc) {
         if (!soc) return;
-        document.getElementById('edit_soc_name').value = soc.name || '';
-        document.getElementById('edit_soc_code').value = soc.society_code || '';
-        document.getElementById('edit_soc_reg').value = soc.registration_no || '';
-        document.getElementById('edit_soc_address').value = soc.address || '';
-        document.getElementById('edit_soc_city').value = soc.city || '';
-        document.getElementById('edit_soc_state').value = soc.state || '';
-        document.getElementById('edit_soc_pincode').value = soc.pincode || '';
-        document.getElementById('edit_soc_upi').value = soc.upi_id || '';
-        document.getElementById('edit_soc_payee').value = soc.payee_name || '';
-        document.getElementById('editSocietyForm').action = '/admin/societies/' + soc.id + '/update';
-        document.getElementById('editSocietyModalTitle').innerHTML = '<i data-lucide="edit-2" class="w-4 h-4 text-brand-400"></i><span>Edit Society: ' + (soc.name || '') + '</span>';
-        document.getElementById('editSocietyModal').classList.remove('hidden');
+        document.getElementById('viewSocTitle').textContent = soc.name || 'Society Details';
+        document.getElementById('viewSocCode').textContent = soc.society_code || '-';
+        document.getElementById('viewSocReg').textContent = soc.registration_no || 'Not Registered';
+        document.getElementById('viewSocAddress').textContent = soc.address || 'Address not specified';
+        document.getElementById('viewSocCityState').textContent = (soc.city || '') + (soc.state ? ', ' + soc.state : '') + (soc.pincode ? ' - ' + soc.pincode : '');
+        document.getElementById('viewSocFlats').textContent = (soc.total_flats || 0) + ' Flats';
+        document.getElementById('viewSocMembers').textContent = (soc.total_members || 0) + ' Members';
+        document.getElementById('viewSocUpi').textContent = soc.upi_id ? ('VPA: ' + soc.upi_id) : 'VPA: Not configured';
+        document.getElementById('viewSocPayee').textContent = soc.payee_name ? ('Payee: ' + soc.payee_name) : '';
+        document.getElementById('viewSocietyModal').classList.remove('hidden');
         if (window.lucide) { lucide.createIcons(); }
     }
 </script>

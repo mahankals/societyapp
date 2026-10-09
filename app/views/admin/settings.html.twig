@@ -1,12 +1,12 @@
 {% extends "layouts/mobile.html.twig" %}
 
-{% block title %}System Settings & Maintenance | SocietyApp Admin{% endblock %}
+{% block title %}System Settings | SocietyApp Admin{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
     {% if flash %}
-    <div class="mb-6 p-4 rounded-xl {% if flash.type == 'error' %}bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400{% else %}bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400{% endif %} text-sm flex items-center gap-3">
+    <div class="mb-6 p-4 rounded-xl {% if flash.type == 'error' %}bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400{% else %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400{% endif %} text-sm flex items-center gap-3">
         <i data-lucide="{% if flash.type == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-5 h-5 flex-shrink-0"></i>
         <span>{{ flash.message }}</span>
     </div>
@@ -15,444 +15,570 @@
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">System Settings & Configuration</h1>
-            <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Control platform-wide maintenance mode, branding, email delivery, and server diagnostics</p>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">System Settings &amp; Configuration</h1>
+            <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Control platform infrastructure, branding, authentication, email delivery, and maintenance mode</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="/admin" class="px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-surface-200 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
-                Back to Dashboard
+            <a href="/admin" class="px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-surface-200 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
+                &larr; Back to Dashboard
             </a>
         </div>
     </div>
 
-    <!-- Hidden Form for Instant Maintenance Toggle -->
-    <form id="toggle-maintenance-form" action="/admin/settings/toggle-maintenance" method="POST" class="hidden">
-        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-    </form>
+    <!-- Layout: Left Vertical Tabs + Right Content Panels -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Vertical Tabs -->
+        <div class="lg:col-span-4">
+            <div class="bg-white dark:bg-surface-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-3 space-y-1.5">
+                <button type="button" onclick="switchSettingsTab('prerequisites')" id="tab-btn-prerequisites"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[11px]">1</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">Prerequisites</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">Environment &amp; Extensions</span>
+                        </span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                </button>
 
-    <!-- Tab Navigation -->
-    <div class="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 mb-6 shadow-sm overflow-x-auto max-w-full">
-        <button type="button" data-tab="general" class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all whitespace-nowrap {{ (activeTab|default('general') == 'general') ? 'bg-brand-500 shadow-md shadow-brand-500/25' : 'text-slate-600 dark:text-surface-200/70 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5' }}" {% if (activeTab|default('general') == 'general') %}style="color: #ffffff !important;"{% endif %}>
-            <i data-lucide="sliders" class="w-4 h-4"></i>
-            <span>General</span>
-        </button>
-        <button type="button" data-tab="email" class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all whitespace-nowrap {{ (activeTab|default('general') == 'email') ? 'bg-brand-500 shadow-md shadow-brand-500/25' : 'text-slate-600 dark:text-surface-200/70 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5' }}" {% if (activeTab|default('general') == 'email') %}style="color: #ffffff !important;"{% endif %}>
-            <i data-lucide="mail" class="w-4 h-4"></i>
-            <span>Email</span>
-        </button>
-        <button type="button" data-tab="maintenance" class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all whitespace-nowrap {{ (activeTab|default('general') == 'maintenance') ? 'bg-brand-500 shadow-md shadow-brand-500/25' : 'text-slate-600 dark:text-surface-200/70 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5' }}" {% if (activeTab|default('general') == 'maintenance') %}style="color: #ffffff !important;"{% endif %}>
-            <i data-lucide="wrench" class="w-4 h-4"></i>
-            <span>Maintenance</span>
-            {% if isMaintenanceOn %}
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse ml-0.5"></span>
-            {% endif %}
-        </button>
-    </div>
+                <button type="button" onclick="switchSettingsTab('database')" id="tab-btn-database"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-[11px]">2</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">Database Setup</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">MySQL / MariaDB Connection</span>
+                        </span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                </button>
 
-    <!-- Main Settings Form -->
-    <form action="/admin/settings" method="POST" id="settings-form">
-        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-        <input type="hidden" name="active_tab" id="active_tab_input" value="{{ activeTab|default('general') }}">
+                <button type="button" onclick="switchSettingsTab('branding')" id="tab-btn-branding"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-[11px]">3</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">Branding</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">App Name, Tagline &amp; Theme</span>
+                        </span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                </button>
 
-        <!-- ==================== TAB PANEL 1: GENERAL ==================== -->
-        <div id="tab-panel-general" class="space-y-6 {{ (activeTab|default('general') == 'general') ? '' : 'hidden' }}">
-            <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl">
-                <div class="flex items-center gap-3 pb-5 mb-5 border-b border-slate-200 dark:border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-brand-500/15 text-brand-500 dark:text-brand-400 border border-brand-500/25 flex items-center justify-center shrink-0 shadow-sm">
-                        <i data-lucide="sliders" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 dark:text-white">General Platform Configuration</h2>
-                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Branding, platform metadata, and interface preferences</p>
-                    </div>
-                </div>
+                <button type="button" onclick="switchSettingsTab('email')" id="tab-btn-email"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-[11px]">4</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">SMTP Email</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">Mail Server &amp; Notifications</span>
+                        </span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                </button>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Application Name</label>
-                        <input type="text" name="app_name" value="{{ settings.app_name|default('SocietyApp') }}" class="input-glass" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Support Email</label>
-                        <input type="email" name="support_email" value="{{ settings.support_email|default('support@societyapp.ddev.site') }}" class="input-glass">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Default Theme</label>
-                        <select name="default_theme" class="input-glass">
-                            <option value="system" {{ (settings.default_theme|default('system') == 'system') ? 'selected' : '' }}>System (Default)</option>
-                            <option value="light" {{ (settings.default_theme|default('') == 'light') ? 'selected' : '' }}>Light Mode</option>
-                            <option value="dark" {{ (settings.default_theme|default('') == 'dark') ? 'selected' : '' }}>Dark Mode</option>
-                        </select>
-                    </div>
-                </div>
+                <button type="button" onclick="switchSettingsTab('google')" id="tab-btn-google"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-[11px]">5</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">Google Sign-In</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">OAuth 2.0 Credentials</span>
+                        </span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                </button>
 
-                <div class="mb-5">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Application Description / Tagline</label>
-                    <input type="text" name="app_desc" value="{{ settings.app_desc|default('The premium management platform for modern residential communities.') }}" class="input-glass">
-                    <p class="text-[11px] text-slate-500 dark:text-surface-200/40 mt-1">Default tagline used across social media link previews, WhatsApp metadata, and app headers.</p>
-                </div>
-            </div>
-
-            <!-- Server Diagnostics Card -->
-            <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <i data-lucide="activity" class="w-4 h-4 text-purple-500"></i>
-                    <span>Server & Environment Diagnostics</span>
-                </h3>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">PHP Version</span>
-                        <strong class="text-xs text-slate-900 dark:text-white font-mono mt-1 block">{{ diagnostics.phpVersion }}</strong>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">Database</span>
-                        <strong class="text-xs text-emerald-600 dark:text-emerald-400 font-mono mt-1 block truncate">{{ diagnostics.databaseVersion }}</strong>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">.env File</span>
-                        <strong class="text-xs {{ diagnostics.envFileExists ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }} mt-1 block">
-                            {{ diagnostics.envFileExists ? 'Present (Active)' : 'Missing' }}
-                        </strong>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">.maintenance File</span>
-                        <strong class="text-xs {{ diagnostics.maintenanceFileExists ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-surface-200/50' }} mt-1 block">
-                            {{ diagnostics.maintenanceFileExists ? 'Present (Active)' : 'Not present' }}
-                        </strong>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">Session Lifetime</span>
-                        <strong class="text-xs text-slate-900 dark:text-white mt-1 block">{{ diagnostics.sessionLifetime }}</strong>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50 block">Server Software</span>
-                        <strong class="text-xs text-slate-700 dark:text-surface-200/80 mt-1 block truncate">{{ diagnostics.serverSoftware }}</strong>
-                    </div>
-                </div>
+                <button type="button" onclick="switchSettingsTab('maintenance')" id="tab-btn-maintenance"
+                    class="settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-[11px]">6</span>
+                        <span class="text-left">
+                            <span class="block text-sm font-semibold text-slate-900 dark:text-white">Maintenance Mode</span>
+                            <span class="block text-[11px] text-slate-500 dark:text-surface-200/50 font-normal">Offline Banner &amp; Bypass</span>
+                        </span>
+                    </span>
+                    {% if isMaintenanceOn %}
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    {% else %}
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
+                    {% endif %}
+                </button>
             </div>
         </div>
 
-        <!-- ==================== TAB PANEL 2: EMAIL ==================== -->
-        <div id="tab-panel-email" class="space-y-6 {{ (activeTab|default('general') == 'email') ? '' : 'hidden' }}">
-            <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl">
-                <div class="flex items-center gap-3 pb-5 mb-5 border-b border-slate-200 dark:border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-500 dark:text-blue-400 border border-blue-500/25 flex items-center justify-center shrink-0 shadow-sm">
-                        <i data-lucide="mail" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Email & SMTP Delivery</h2>
-                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Configure outgoing mail server for resident invitations, OTPs, and notifications</p>
-                    </div>
-                </div>
+        <!-- Right Content Panels -->
+        <div class="lg:col-span-8">
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            <!-- 1. PREREQUISITES PANEL -->
+            <div id="settings-panel-prerequisites" class="settings-tab-panel">
+                <div class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">SMTP Host</label>
-                        <input type="text" name="mail_host" value="{{ settings.mail_host|default('127.0.0.1') }}" class="input-glass">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Server &amp; Environment Readiness</h2>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Verifying that your runtime and PHP extensions meet platform requirements.</p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">SMTP Port</label>
-                        <input type="text" name="mail_port" value="{{ settings.mail_port|default('1025') }}" class="input-glass">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">SMTP Username</label>
-                        <input type="text" name="mail_username" value="{{ settings.mail_username|default('') }}" class="input-glass" placeholder="(Optional for Mailpit)">
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">SMTP Password</label>
-                        <input type="password" name="mail_password" value="" class="input-glass" placeholder="Leave empty to keep existing">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">From Address</label>
-                        <input type="email" name="mail_from_address" value="{{ settings.mail_from_address|default('no-reply@societyapp.ddev.site') }}" class="input-glass">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">From Display Name</label>
-                        <input type="text" name="mail_from_name" value="{{ settings.mail_from_name|default('SocietyApp Notifications') }}" class="input-glass">
-                    </div>
-                </div>
-
-                <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex items-start gap-3 text-xs text-slate-600 dark:text-surface-200/70">
-                    <i data-lucide="info" class="w-4 h-4 text-brand-500 shrink-0 mt-0.5"></i>
-                    <div>
-                        <strong class="text-slate-900 dark:text-white">SMTP Relay Tip:</strong> In local development with DDEV, emails are trapped by Mailpit at port 1025. For production deployments, enter your authenticated SMTP credentials (e.g. Gmail App Password, SendGrid, Amazon SES).
-                    </div>
-                </div>
-            </div>
-
-            <!-- Send Test Email Card -->
-            <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl">
-                <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200 dark:border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25 flex items-center justify-center shrink-0 shadow-sm">
-                        <i data-lucide="send" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Send Test Email</h3>
-                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Verify your SMTP connection and test live email deliverability</p>
-                    </div>
-                </div>
-
-                <div id="test-email-alert" class="hidden mb-4 p-4 rounded-xl text-xs flex items-start gap-3">
-                    <i id="test-email-alert-icon" data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                    <div id="test-email-alert-text" class="flex-1 font-medium leading-relaxed"></div>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Recipient Email Address</label>
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            <div class="flex-1">
-                                <input type="email" id="test_recipient_email" name="test_recipient_email" value="{{ user.email|default('admin@societyapp.ddev.site') }}" placeholder="recipient@example.com" class="input-glass">
+                    <div class="space-y-3">
+                        {% for key, pre in prerequisites %}
+                        <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg {{ pre.status ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400' }} flex items-center justify-center">
+                                    <i data-lucide="{{ pre.status ? 'check' : 'x' }}" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ pre.name }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-surface-200/50">{{ pre.status ? 'Requirement satisfied' : 'Action required' }}</p>
+                                </div>
                             </div>
-                            <button type="button" id="btn-send-test-email" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap shadow-md shadow-blue-600/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" style="color: #ffffff !important;">
-                                <i data-lucide="send" class="w-4 h-4 shrink-0"></i>
-                                <span id="btn-send-test-email-label">Send Test Email</span>
-                            </button>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold {{ pre.status ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20' }}">
+                                {{ pre.value }}
+                            </span>
                         </div>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-surface-200/50">
-                        This sends a verification message using the SMTP credentials provided above. Any unsaved edits in the form fields above will also be tested.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== TAB PANEL 3: MAINTENANCE ==================== -->
-        <div id="tab-panel-maintenance" class="space-y-6 {{ (activeTab|default('general') == 'maintenance') ? '' : 'hidden' }}">
-            <!-- Master Status Banner -->
-            <div class="glass-panel rounded-2xl p-6 border {% if isMaintenanceOn %}border-amber-500/40 bg-amber-500/[0.04]{% else %}border-emerald-500/30 bg-emerald-500/[0.02]{% endif %} shadow-xl transition-all">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-slate-200 dark:border-white/10">
-                    <div class="flex items-start gap-3.5 min-w-0 flex-1">
-                        <div class="w-11 h-11 rounded-2xl shrink-0 {% if isMaintenanceOn %}bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30{% else %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30{% endif %} flex items-center justify-center shadow-sm">
-                            <i data-lucide="{% if isMaintenanceOn %}wrench{% else %}shield-check{% endif %}" class="w-5 h-5"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2.5">
-                                <h2 class="text-base font-bold text-slate-900 dark:text-white">Maintenance Mode Status</h2>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider whitespace-nowrap shrink-0 {% if isMaintenanceOn %}bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30{% else %}bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30{% endif %}">
-                                    <span class="w-2 h-2 rounded-full shrink-0 {% if isMaintenanceOn %}bg-amber-500 animate-pulse{% else %}bg-emerald-500{% endif %}"></span>
-                                    <span>{{ isMaintenanceOn ? 'ACTIVE (RESTRICTED)' : 'INACTIVE (SITE LIVE)' }}</span>
-                                </span>
-                            </div>
-                            <p class="text-xs text-slate-600 dark:text-surface-200/70 mt-1 max-w-2xl leading-relaxed">
-                                {% if isMaintenanceOn %}
-                                <strong class="text-amber-600 dark:text-amber-300">Only Administrator accounts can log in and browse admin tools.</strong> All regular resident portals, committee routes, and dashboard pages redirect to the maintenance screen. The public landing page remains visible.
-                                {% else %}
-                                The platform is fully live. All residents, committee members, and visitors can access their accounts normally.
-                                {% endif %}
-                            </p>
-                        </div>
+                        {% endfor %}
                     </div>
 
-                    <!-- Instant Toggle & Preview Buttons -->
-                    <div class="shrink-0 sm:self-center flex flex-wrap items-center gap-2.5">
-                        <a href="/maintenance" target="_blank" class="px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-white inline-flex items-center gap-2 transition-all shadow-sm">
-                            <i data-lucide="external-link" class="w-4 h-4 text-brand-500"></i>
-                            <span>Preview Maintenance Page</span>
-                        </a>
-                        <button type="submit" form="toggle-maintenance-form" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap {% if isMaintenanceOn %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30{% else %}bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold shadow-md shadow-amber-500/30{% endif %}" {% if isMaintenanceOn %}style="color: #ffffff !important;"{% endif %}>
-                            <i data-lucide="power" class="w-4 h-4 shrink-0"></i>
-                            <span>{{ isMaintenanceOn ? 'Switch OFF Maintenance Mode' : 'Switch ON Maintenance Mode' }}</span>
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
+                        <button type="button" onclick="switchSettingsTab('database')" class="btn-primary !px-5 !py-2.5 text-xs font-semibold flex items-center gap-2">
+                            <span>Continue to Database</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Maintenance Form Fields -->
-                <div class="pt-6">
-                    <div class="mb-5 flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/10">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" id="maintenance_enabled" name="maintenance_enabled" value="1" {{ isMaintenanceOn ? 'checked' : '' }} class="w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-white/10 border-slate-300 dark:border-white/20">
-                            <label for="maintenance_enabled" class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white cursor-pointer select-none">
-                                Keep Maintenance Mode Enabled upon saving
+            <!-- 2. DATABASE SETUP PANEL -->
+            <div id="settings-panel-database" class="settings-tab-panel hidden">
+                <div class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Database Setup</h2>
+                            <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">MySQL / MariaDB platform connection credentials</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-mono font-bold">
+                            {{ diagnostics.databaseVersion }}
+                        </span>
+                    </div>
+
+                    <div id="dbTestResult" class="hidden p-3.5 rounded-xl text-xs font-medium"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input type="text" id="db_host" value="{{ dbConfig.host }}" readonly placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            <label for="db_host" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Database Host
                             </label>
                         </div>
-                        <span class="text-[11px] text-slate-500 dark:text-surface-200/50">Stored in <code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-black/40 text-slate-800 dark:text-surface-200">.maintenance</code></span>
+
+                        <div class="relative">
+                            <input type="number" id="db_port" value="{{ dbConfig.port }}" readonly placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            <label for="db_port" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Port
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="text" id="db_name" value="{{ dbConfig.name }}" readonly placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            <label for="db_name" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Database Name
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="text" id="db_user" value="{{ dbConfig.user }}" readonly placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            <label for="db_user" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Username
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Maintenance Notice Title</label>
-                            <input type="text" name="maintenance_title" value="{{ maintenance.title|default('Scheduled System Maintenance') }}" class="input-glass" placeholder="e.g. Scheduled System Upgrade">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Estimated Resumption Time (Optional)</label>
-                            <input type="text" name="maintenance_estimated_end" value="{{ maintenance.estimated_end|default('') }}" class="input-glass" placeholder="e.g. 10 Oct, 04:00 AM IST or Within 30 Mins">
-                            <p class="text-[10px] text-slate-500 dark:text-surface-200/40 mt-1">Leave empty if unconfirmed. When left blank, no Estimated Resumption card will be shown.</p>
-                        </div>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Resident Announcement Message</label>
-                        <textarea name="maintenance_message" rows="3" class="input-glass" placeholder="Enter message explaining the maintenance reasons...">{{ maintenance.message|default('Our engineering team is performing scheduled infrastructure improvements and database optimizations. Normal operations will resume shortly.') }}</textarea>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Developer Secret Bypass Key (Optional)</label>
-                            <input type="text" name="maintenance_bypass_key" value="{{ maintenance.bypass_key|default('') }}" class="input-glass font-mono text-xs" placeholder="e.g. secret_bypass_2026">
-                            <p class="text-[10px] text-slate-500 dark:text-surface-200/40 mt-1">Allows visiting any URL with <code class="px-1 py-0.5 rounded bg-slate-200 dark:bg-black/40 text-brand-600 dark:text-brand-300">?bypass=YOUR_KEY</code> to test pages during maintenance.</p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-1.5">Interactive Skyline Arcade Game</label>
-                            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/10 flex items-center justify-between">
-                                <span class="text-xs text-slate-800 dark:text-white flex items-center gap-2">
-                                    <span>🕹️</span>
-                                    <span>Skyline Arcade with Fullscreen</span>
-                                </span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/15 text-brand-600 dark:text-brand-300 border border-brand-500/25">Active</span>
-                            </div>
-                        </div>
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                        <span class="text-xs text-slate-500 dark:text-surface-200/50">Credentials managed in server <code>.env</code> file</span>
+                        <button type="button" id="testDbBtn" onclick="testDatabaseConnection()" class="px-4 py-2 rounded-xl border border-brand-500/30 bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-semibold flex items-center gap-2 transition-all">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Test DB Connection</span>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Submit & Actions Footer -->
-        <div class="mt-8 pt-5 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3">
-            <a href="/admin" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-medium text-slate-700 dark:text-surface-200 hover:text-slate-900 dark:hover:text-white transition-all">
-                Cancel
-            </a>
-            <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 !text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all flex items-center gap-2" style="color: #ffffff !important;">
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>Save All Settings</span>
-            </button>
-        </div>
-    </form>
+            <!-- 3. BRANDING PANEL -->
+            <div id="settings-panel-branding" class="settings-tab-panel hidden">
+                <form id="brandingForm" action="/admin/settings" method="POST" class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                    <input type="hidden" name="active_tab" value="branding">
 
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Branding &amp; Identity</h2>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Personalize application name, descriptions, and user interface preferences</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="text" id="app_name" name="app_name" value="{{ settings.app_name|default('SocietyApp') }}" required placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="app_name" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Application Name <span class="text-rose-500">*</span>
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <textarea id="app_desc" name="app_desc" rows="2" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 resize-none">{{ settings.app_desc|default('The premium management platform for modern residential communities.') }}</textarea>
+                            <label for="app_desc" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Application Description / Tagline
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="relative">
+                                <input type="email" id="support_email" name="support_email" value="{{ settings.support_email|default('support@societyapp.ddev.site') }}" placeholder=" "
+                                    class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                <label for="support_email" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                    Support Email
+                                </label>
+                            </div>
+
+                            <div class="relative">
+                                <select id="default_theme" name="default_theme"
+                                    class="block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                    <option value="system" {{ (settings.default_theme|default('system') == 'system') ? 'selected' : '' }}>System (Adaptive)</option>
+                                    <option value="light" {{ (settings.default_theme|default('') == 'light') ? 'selected' : '' }}>Light Mode</option>
+                                    <option value="dark" {{ (settings.default_theme|default('') == 'dark') ? 'selected' : '' }}>Dark Mode</option>
+                                </select>
+                                <label for="default_theme" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4">
+                                    Default Color Theme
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
+                        <button type="submit" id="saveBrandingBtn" disabled class="btn-primary !px-6 !py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Save Branding Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 4. SMTP EMAIL PANEL -->
+            <div id="settings-panel-email" class="settings-tab-panel hidden">
+                <form id="emailForm" action="/admin/settings" method="POST" class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                    <input type="hidden" name="active_tab" value="email">
+
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">SMTP Email Server</h2>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Outgoing mail transfer agent for billing notices, OTPs, and resident communications</p>
+                    </div>
+
+                    <div id="smtpTestResult" class="hidden p-3.5 rounded-xl text-xs font-medium"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input type="text" id="mail_host" name="mail_host" value="{{ settings.mail_host|default('localhost') }}" required placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_host" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                SMTP Host <span class="text-rose-500">*</span>
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="number" id="mail_port" name="mail_port" value="{{ settings.mail_port|default(1025) }}" required placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_port" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                SMTP Port <span class="text-rose-500">*</span>
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="text" id="mail_username" name="mail_username" value="{{ settings.mail_username|default('') }}" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_username" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                SMTP Username
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="password" id="mail_password" name="mail_password" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_password" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Password (leave blank to retain)
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="email" id="mail_from_address" name="mail_from_address" value="{{ settings.mail_from_address|default('noreply@societyapp.ddev.site') }}" required placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_from_address" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Sender From Email <span class="text-rose-500">*</span>
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="text" id="mail_from_name" name="mail_from_name" value="{{ settings.mail_from_name|default('SocietyApp Notifications') }}" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="mail_from_name" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Sender From Name
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <input type="email" id="test_recipient_email" placeholder="recipient@example.com" value="{{ user.email }}"
+                                class="px-3 py-2 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            <button type="button" id="testSmtpBtn" onclick="testSmtpConnection()" class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                <span>Send Test Email</span>
+                            </button>
+                        </div>
+
+                        <button type="submit" id="saveEmailBtn" disabled class="btn-primary !px-6 !py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Save Email Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 5. GOOGLE SIGN-IN PANEL -->
+            <div id="settings-panel-google" class="settings-tab-panel hidden">
+                <form id="googleForm" action="/admin/settings" method="POST" class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                    <input type="hidden" name="active_tab" value="google">
+
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Google Sign-In Credentials</h2>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Configure Google Cloud OAuth 2.0 Web Client credentials</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="text" id="google_client_id" name="google_client_id" value="{{ settings.google_client_id|default('') }}" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="google_client_id" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Google Client ID (.apps.googleusercontent.com)
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="password" id="google_client_secret" name="google_client_secret" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="google_client_secret" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Google Client Secret (leave blank to retain)
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <input type="url" id="google_redirect_uri" name="google_redirect_uri" value="{{ settings.google_redirect_uri|default('https://societyapp.ddev.site/auth/google/callback') }}" readonly placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-600 dark:text-white/60 bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-xl font-mono cursor-not-allowed">
+                            <label for="google_redirect_uri" class="absolute text-xs text-slate-400 dark:text-slate-500 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4">
+                                Authorized Redirect URI (Whitelist in Google Cloud Console)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
+                        <button type="submit" id="saveGoogleBtn" disabled class="btn-primary !px-6 !py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Save Google Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 6. MAINTENANCE MODE PANEL -->
+            <div id="settings-panel-maintenance" class="settings-tab-panel hidden">
+                <form id="maintenanceForm" action="/admin/settings" method="POST" class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                    <input type="hidden" name="active_tab" value="maintenance">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Platform Maintenance Mode</h2>
+                            <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Redirect public traffic to an offline splash page during scheduled infrastructure updates</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="maintenance_enabled" value="1" {{ isMaintenanceOn ? 'checked' : '' }} class="sr-only peer">
+                            <div class="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="text" id="maintenance_title" name="maintenance_title" value="{{ maintenance.title|default('Scheduled System Maintenance') }}" required placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="maintenance_title" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Notice Title
+                            </label>
+                        </div>
+
+                        <div class="relative">
+                            <textarea id="maintenance_message" name="maintenance_message" rows="3" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 resize-none">{{ maintenance.message|default('Our engineering team is performing scheduled improvements. Please check back shortly.') }}</textarea>
+                            <label for="maintenance_message" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Visitor Announcement Message
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="relative">
+                                <input type="text" id="maintenance_bypass_key" name="maintenance_bypass_key" value="{{ maintenance.bypass_key|default('') }}" placeholder=" "
+                                    class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                <label for="maintenance_bypass_key" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                    Secret Bypass Key (e.g. ?bypass=SECRET)
+                                </label>
+                            </div>
+
+                            <div class="relative">
+                                <input type="datetime-local" id="maintenance_estimated_end" name="maintenance_estimated_end" value="{{ maintenance.estimated_end|default('') }}" placeholder=" "
+                                    class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                <label for="maintenance_estimated_end" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                    Estimated End Time
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
+                        <button type="submit" id="saveMaintenanceBtn" disabled class="btn-primary !px-6 !py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Save Maintenance Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabBtns = document.querySelectorAll('.settings-tab-btn');
-    const tabPanels = {
-        general: document.getElementById('tab-panel-general'),
-        email: document.getElementById('tab-panel-email'),
-        maintenance: document.getElementById('tab-panel-maintenance')
-    };
-    const activeTabInput = document.getElementById('active_tab_input');
+const VALID_SETTINGS_TABS = ['prerequisites', 'database', 'branding', 'email', 'google', 'maintenance'];
 
-    function switchTab(tabName) {
-        if (!tabPanels[tabName]) tabName = 'general';
+function switchSettingsTab(tab) {
+    if (!VALID_SETTINGS_TABS.includes(tab)) tab = 'prerequisites';
 
-        tabBtns.forEach(btn => {
-            const isTarget = btn.getAttribute('data-tab') === tabName;
-            if (isTarget) {
-                btn.className = 'settings-tab-btn px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all whitespace-nowrap bg-brand-500 shadow-md shadow-brand-500/25';
-                btn.style.color = '#ffffff';
-            } else {
-                btn.className = 'settings-tab-btn px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all whitespace-nowrap text-slate-600 dark:text-surface-200/70 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5';
-                btn.style.color = '';
-            }
-        });
-
-        Object.keys(tabPanels).forEach(key => {
-            if (tabPanels[key]) {
-                if (key === tabName) {
-                    tabPanels[key].classList.remove('hidden');
-                } else {
-                    tabPanels[key].classList.add('hidden');
-                }
-            }
-        });
-
-        if (activeTabInput) {
-            activeTabInput.value = tabName;
-        }
-
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tabName);
-        window.history.replaceState({}, '', url);
-
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
-    }
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const target = this.getAttribute('data-tab');
-            switchTab(target);
-        });
+    document.querySelectorAll('.settings-tab-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+        btn.className = "settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all text-slate-600 dark:text-surface-200/70 hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent";
     });
 
-    // Check URL query param or hash on initial load
-    const urlParams = new URLSearchParams(window.location.search);
-    const hash = window.location.hash.replace('#', '');
-    const initialTab = urlParams.get('tab') || (hash && tabPanels[hash] ? hash : null);
-    if (initialTab && tabPanels[initialTab]) {
-        switchTab(initialTab);
+    const activePanel = document.getElementById('settings-panel-' + tab);
+    const activeBtn = document.getElementById('tab-btn-' + tab);
+    if (activePanel) activePanel.classList.remove('hidden');
+    if (activeBtn) {
+        activeBtn.className = "settings-nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/25";
     }
 
-    // Test Email Sending Handler
-    const testEmailBtn = document.getElementById('btn-send-test-email');
-    const testEmailLabel = document.getElementById('btn-send-test-email-label');
-    const testRecipientInput = document.getElementById('test_recipient_email');
-    const testAlert = document.getElementById('test-email-alert');
-    const testAlertText = document.getElementById('test-email-alert-text');
-    const testAlertIcon = document.getElementById('test-email-alert-icon');
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+}
 
-    function showEmailAlert(isSuccess, message) {
-        if (!testAlert || !testAlertText) return;
-        testAlert.classList.remove('hidden');
-        if (isSuccess) {
-            testAlert.className = 'mb-4 p-4 rounded-xl text-xs flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300';
-            if (testAlertIcon) testAlertIcon.setAttribute('data-lucide', 'check-circle');
+function setupFormWatcher(formId, submitBtnId) {
+    const form = document.getElementById(formId);
+    const submitBtn = document.getElementById(submitBtnId);
+    if (!form || !submitBtn) return;
+
+    form.addEventListener('input', () => { submitBtn.disabled = false; });
+    form.addEventListener('change', () => { submitBtn.disabled = false; });
+    form.addEventListener('reset', () => { setTimeout(() => { submitBtn.disabled = true; }, 50); });
+}
+
+function testDatabaseConnection() {
+    const btn = document.getElementById('testDbBtn');
+    const resultBox = document.getElementById('dbTestResult');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Testing...';
+    resultBox.classList.add('hidden');
+
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrfToken }}');
+
+    fetch('/admin/settings/test-db', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        resultBox.classList.remove('hidden');
+        if (data.success) {
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
+            resultBox.textContent = data.message;
         } else {
-            testAlert.className = 'mb-4 p-4 rounded-xl text-xs flex items-start gap-3 bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400';
-            if (testAlertIcon) testAlertIcon.setAttribute('data-lucide', 'alert-triangle');
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+            resultBox.textContent = 'Connection failed: ' + (data.error || 'Unable to connect to database.');
         }
-        testAlertText.textContent = message;
-        if (window.lucide) window.lucide.createIcons();
-    }
+    })
+    .catch(err => {
+        resultBox.classList.remove('hidden');
+        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = 'Network error testing database connection.';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="zap" class="w-4 h-4"></i><span>Test DB Connection</span>';
+        if (window.lucide) { lucide.createIcons(); }
+    });
+}
 
-    if (testEmailBtn) {
-        testEmailBtn.addEventListener('click', async function() {
-            const recipient = (testRecipientInput ? testRecipientInput.value : '').trim();
-            if (!recipient) {
-                showEmailAlert(false, 'Please enter a valid recipient email address.');
-                return;
-            }
+function testSmtpConnection() {
+    const btn = document.getElementById('testSmtpBtn');
+    const resultBox = document.getElementById('smtpTestResult');
+    const recipient = document.getElementById('test_recipient_email').value;
 
-            const formData = new FormData();
-            formData.append('csrf_token', '{{ csrfToken }}');
-            formData.append('test_recipient_email', recipient);
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Testing...';
+    resultBox.classList.add('hidden');
 
-            const form = document.getElementById('settings-form');
-            if (form) {
-                ['mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_from_address', 'mail_from_name'].forEach(name => {
-                    const el = form.querySelector(`[name="${name}"]`);
-                    if (el) formData.append(name, el.value);
-                });
-            }
+    const form = document.getElementById('emailForm');
+    const formData = new FormData(form);
+    formData.append('test_recipient_email', recipient);
 
-            testEmailBtn.disabled = true;
-            if (testEmailLabel) testEmailLabel.textContent = 'Sending...';
-            if (testAlert) testAlert.classList.add('hidden');
+    fetch('/admin/settings/test-email', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        resultBox.classList.remove('hidden');
+        if (data.success) {
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
+            resultBox.textContent = '✓ Test email dispatched successfully to ' + recipient;
+        } else {
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+            resultBox.textContent = 'SMTP test failed: ' + (data.message || 'Unable to dispatch test email.');
+        }
+    })
+    .catch(err => {
+        resultBox.classList.remove('hidden');
+        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = 'Network error testing SMTP delivery.';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Send Test Email</span>';
+        if (window.lucide) { lucide.createIcons(); }
+    });
+}
 
-            try {
-                const res = await fetch('/admin/settings/test-email', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showEmailAlert(true, data.message || 'Test email dispatched successfully! Check recipient inbox or Mailpit.');
-                } else {
-                    showEmailAlert(false, data.message || 'Failed to dispatch test email.');
-                }
-            } catch (err) {
-                showEmailAlert(false, 'Network or server error while sending test email: ' + err.message);
-            } finally {
-                testEmailBtn.disabled = false;
-                if (testEmailLabel) testEmailLabel.textContent = 'Send Test Email';
-                if (window.lucide) window.lucide.createIcons();
-            }
-        });
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormWatcher('brandingForm', 'saveBrandingBtn');
+    setupFormWatcher('emailForm', 'saveEmailBtn');
+    setupFormWatcher('googleForm', 'saveGoogleBtn');
+    setupFormWatcher('maintenanceForm', 'saveMaintenanceBtn');
+
+    const params = new URLSearchParams(window.location.search);
+    const initialTab = params.get('tab') || '{{ activeTab|default("prerequisites") }}';
+    switchSettingsTab(initialTab);
+
+    if (window.lucide) { lucide.createIcons(); }
 });
 </script>
 {% endblock %}

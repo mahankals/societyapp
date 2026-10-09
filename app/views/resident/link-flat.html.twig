@@ -109,7 +109,7 @@
                 <!-- Notice -->
                 <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2.5 font-medium">
                     <i data-lucide="info" class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"></i>
-                    <span id="residencyNoticeText" class="leading-relaxed">Once submitted, your linking request will be reviewed by the managing committee. Upon approval, you will gain full access to bills, receipts, maintenance notices, and resident communication.</span>
+                    <span id="residencyNoticeText" class="leading-relaxed">Once submitted, your linking request will be reviewed by the managing committee. Upon approval, you will gain full access to bills, receipts, maintenance notices, and resident contact.</span>
                 </div>
             </div>
 
@@ -154,7 +154,7 @@ function onResidencyTypeChanged(role) {
         ownerLabel.className = 'p-3.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer flex items-center gap-2.5 transition-all';
         
         if (notice) {
-            notice.textContent = 'Once submitted, your tenancy linking request will be verified by the flat owner and managing committee. Upon approval, you will gain access to society announcements, maintenance bills, receipts, and resident directory communication.';
+            notice.textContent = 'Once submitted, your tenancy linking request will be verified by the flat owner and managing committee. Upon approval, you will gain access to society announcements, resident contact.';
         }
     } else {
         tenantWrap.classList.add('hidden');
@@ -174,7 +174,7 @@ function onResidencyTypeChanged(role) {
         tenantLabel.className = 'p-3.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer flex items-center gap-2.5 transition-all';
 
         if (notice) {
-            notice.textContent = 'Once submitted, your linking request will be reviewed by the managing committee. Upon approval, you will gain full access to bills, receipts, maintenance notices, and resident communication.';
+            notice.textContent = 'Once submitted, your linking request will be reviewed by the managing committee. Upon approval, you will gain full access to bills, receipts, maintenance notices, and resident contact.';
         }
     }
 

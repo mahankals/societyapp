@@ -520,6 +520,67 @@ class SocietyController
     }
 
     /**
+     * Update Committee Role for Society Member
+     * Only flat owners can be assigned committee roles.
+     */
+    public function updateMemberRole(int $id)
+    {
+        $auth = $this->requireCommittee();
+        $societyId = (int)$auth['society']['id'];
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/members');
+        }
+
+        $membership = Database::fetchOne("
+            SELECT sm.*, u.name as member_name 
+            FROM society_members sm 
+            JOIN users u ON sm.user_id = u.id 
+            WHERE sm.id = ? AND sm.society_id = ?
+        ", [$id, $societyId]);
+
+        if (!$membership) {
+            Session::flash('error', 'Member record not found.');
+            redirect('/comitee/members');
+        }
+
+        $newRole = trim($_POST['role'] ?? 'owner');
+        $validRoles = ['chairman', 'secretary', 'treasurer', 'committee', 'owner'];
+        if (!in_array($newRole, $validRoles)) {
+            $newRole = 'owner';
+        }
+
+        // Enforce rule: Only flat owners can be assigned committee roles!
+        if (in_array($newRole, ['chairman', 'secretary', 'treasurer', 'committee'])) {
+            if ($membership['ownership_type'] === 'tenant' || $membership['role'] === 'tenant') {
+                Session::flash('error', 'Only flat owners can be assigned managing committee roles.');
+                redirect('/comitee/members');
+            }
+        }
+
+        Database::update('society_members', [
+            'role' => $newRole,
+        ], 'id = ?', [$id]);
+
+        // Sync users table role
+        if (in_array($newRole, ['chairman', 'secretary', 'treasurer', 'committee'])) {
+            Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$membership['user_id']]);
+        } else {
+            $otherPositions = Database::fetchOne("
+                SELECT id FROM society_members 
+                WHERE user_id = ? AND status = 'active' AND role IN ('chairman', 'secretary', 'treasurer', 'committee')
+            ", [$membership['user_id']]);
+            if (!$otherPositions) {
+                Database::query("UPDATE users SET role = 'resident' WHERE id = ? AND role = 'committee'", [$membership['user_id']]);
+            }
+        }
+
+        Session::flash('success', "Updated role for {$membership['member_name']} to " . ucfirst($newRole) . ".");
+        redirect('/comitee/members');
+    }
+
+    /**
      * Pending join requests
      */
     public function requests()
@@ -717,6 +778,8 @@ class SocietyController
             'user_id' => $userId,
             'society_name' => $name,
             'city' => $city,
+            'state' => trim($_POST['state'] ?? 'Maharashtra'),
+            'pincode' => trim($_POST['pincode'] ?? ''),
             'address' => $address,
             'contact1_name' => trim($_POST['c1_name'] ?? ''),
             'contact1_phone' => trim($_POST['c1_phone'] ?? ''),
@@ -750,7 +813,9 @@ class SocietyController
         $where = ['b.society_id = ?'];
         $params = [$societyId];
 
-        if ($statusFilter !== '') {
+        if ($statusFilter === 'rejected') {
+            $where[] = "(b.status = 'rejected' OR EXISTS (SELECT 1 FROM transactions t WHERE t.bill_id = b.id AND t.status = 'rejected'))";
+        } elseif ($statusFilter !== '') {
             $where[] = 'b.status = ?';
             $params[] = $statusFilter;
         }
@@ -784,6 +849,14 @@ class SocietyController
             FROM maintenance_bills
             WHERE society_id = ?
         ", [$societyId]);
+
+        $rejectedCount = (int)(Database::fetchOne("
+            SELECT COUNT(DISTINCT b.id) as c 
+            FROM maintenance_bills b
+            LEFT JOIN transactions t ON t.bill_id = b.id
+            WHERE b.society_id = ? AND (b.status = 'rejected' OR t.status = 'rejected')
+        ", [$societyId])['c'] ?? 0);
+        $stats['rejectedCount'] = $rejectedCount;
 
         // Occupied flats for bill creation
         $occupiedFlats = Database::fetchAll("
@@ -1031,7 +1104,7 @@ class SocietyController
     }
 
     /**
-     * Mark Bill Paid (Offline/Cash/Direct Transfer)
+     * Mark Bill Paid with Mode, Date, Notes & Receipt generation
      */
     public function markBillPaid(int $id)
     {
@@ -1043,19 +1116,101 @@ class SocietyController
             redirect('/comitee/bills');
         }
 
-        $bill = Database::fetchOne("SELECT id, bill_number FROM maintenance_bills WHERE id = ? AND society_id = ?", [$id, $societyId]);
+        $bill = Database::fetchOne("
+            SELECT b.*, u.name as user_name, u.email as user_email, f.flat_no, f.wing 
+            FROM maintenance_bills b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN flats f ON b.flat_id = f.id
+            WHERE b.id = ? AND b.society_id = ?
+        ", [$id, $societyId]);
+
         if (!$bill) {
             Session::flash('error', 'Bill not found.');
             redirect('/comitee/bills');
         }
 
+        $paymentDate = !empty($_POST['payment_date']) ? trim($_POST['payment_date']) : date('Y-m-d');
+        $paymentMode = trim($_POST['payment_mode'] ?? 'cash');
+        if (!in_array($paymentMode, ['cash', 'cheque', 'bank_transfer', 'upi'])) {
+            $paymentMode = 'cash';
+        }
+        $refNotes = trim($_POST['reference_notes'] ?? '');
+        $receiptNo = 'REC-' . date('Y') . '-' . str_pad($bill['id'], 5, '0', STR_PAD_LEFT);
+
         Database::update('maintenance_bills', [
             'status' => 'paid',
-            'paid_at' => date('Y-m-d H:i:s'),
-            'payment_method' => 'manual_committee',
+            'paid_at' => $paymentDate . ' ' . date('H:i:s'),
+            'payment_method' => $paymentMode,
+            'transaction_id' => $refNotes ?: ('OFFLINE-' . date('YmdHis')),
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
-        Session::flash('success', "Bill {$bill['bill_number']} marked as paid.");
+        $existingTxn = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ?", [$id]);
+        if ($existingTxn) {
+            Database::update('transactions', [
+                'receipt_no' => $receiptNo,
+                'status' => 'completed',
+                'payment_method' => $paymentMode,
+                'payment_date' => $paymentDate,
+                'transaction_ref' => $refNotes ?: ('OFFLINE-' . date('YmdHis')),
+                'remark' => 'Marked paid by committee: ' . $refNotes,
+                'reviewed_by' => (int)$auth['user']['id'],
+                'reviewed_at' => date('Y-m-d H:i:s'),
+            ], 'id = ?', [$existingTxn['id']]);
+        } else {
+            Database::insert('transactions', [
+                'receipt_no' => $receiptNo,
+                'society_id' => $societyId,
+                'flat_id' => $bill['flat_id'],
+                'user_id' => $bill['user_id'] ?: (int)$auth['user']['id'],
+                'bill_id' => $bill['id'],
+                'amount' => $bill['amount'],
+                'payment_method' => $paymentMode,
+                'transaction_ref' => $refNotes ?: ('OFFLINE-' . date('YmdHis')),
+                'particulars' => $bill['title'] . ' (' . ($bill['particulars'] ?: $bill['month']) . ')',
+                'payment_date' => $paymentDate,
+                'status' => 'completed',
+                'remark' => 'Settled via ' . strtoupper($paymentMode) . ($refNotes ? ': ' . $refNotes : ''),
+                'reviewed_by' => (int)$auth['user']['id'],
+                'reviewed_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if (!empty($bill['user_id'])) {
+            Database::insert('notifications', [
+                'user_id' => $bill['user_id'],
+                'title' => 'Payment Receipt Issued',
+                'message' => "Payment of ₹" . number_format($bill['amount'], 2) . " for Bill #{$bill['bill_number']} marked paid via " . strtoupper($paymentMode) . ". Receipt {$receiptNo} generated.",
+                'type' => 'success',
+                'action_url' => '/resident/receipts',
+            ]);
+        }
+
+        Session::flash('success', "Bill {$bill['bill_number']} marked paid. Receipt {$receiptNo} generated.");
+        redirect('/comitee/bills');
+    }
+
+    /**
+     * Update Society UPI Payment Configuration
+     */
+    public function updateUpiSettings()
+    {
+        $auth = $this->requireCommittee();
+        $societyId = (int)$auth['society']['id'];
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/bills');
+        }
+
+        $upiId = trim($_POST['upi_id'] ?? '');
+        $payeeName = trim($_POST['payee_name'] ?? '');
+
+        Database::update('societies', [
+            'upi_id' => $upiId ?: null,
+            'payee_name' => $payeeName ?: null,
+        ], 'id = ?', [$societyId]);
+
+        Session::flash('success', 'Society UPI Payment settings saved successfully.');
         redirect('/comitee/bills');
     }
 

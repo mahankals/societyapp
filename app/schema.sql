@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NULL,
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NULL,
+    is_whatsapp TINYINT(1) DEFAULT 1,
     google_id VARCHAR(255) NULL UNIQUE,
     profile_photo VARCHAR(255) NULL,
     role ENUM('admin', 'committee', 'resident') DEFAULT 'resident',
@@ -42,16 +43,11 @@ CREATE TABLE IF NOT EXISTS societies (
     pincode VARCHAR(20) NULL,
     upi_id VARCHAR(100) NULL,
     payee_name VARCHAR(100) NULL,
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_society_code (society_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Default Initial Society
-INSERT INTO societies (name, society_code, address, city, state)
-SELECT 'Society App', 'SOC-MAIN', 'Main Campus', 'Metro', 'State'
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM societies LIMIT 1);
 
 -- Flats / Units Table
 CREATE TABLE IF NOT EXISTS flats (
@@ -129,6 +125,8 @@ CREATE TABLE IF NOT EXISTS society_requests (
     user_id INT UNSIGNED NOT NULL,
     society_name VARCHAR(150) NOT NULL,
     city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NULL,
+    pincode VARCHAR(20) NULL,
     address TEXT NULL,
     contact1_name VARCHAR(100) NULL,
     contact1_phone VARCHAR(20) NULL,
@@ -207,6 +205,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     type ENUM('info', 'warning', 'success', 'error', 'announcement') DEFAULT 'info',
+    action_url VARCHAR(255) NULL,
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

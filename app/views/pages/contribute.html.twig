@@ -3,123 +3,190 @@
 {% block title %}Add New Society | SocietyApp{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-6">
 
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-white tracking-tight">Add Your Society</h1>
-        <p class="text-xs text-surface-200/60">Propose a new housing society to be onboarded onto the SocietyApp platform with founding committee members.</p>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Add Your Society</h1>
+        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-1">Propose a new housing society to be onboarded onto the SocietyApp platform with founding committee members.</p>
     </div>
 
     {% if flash.error %}
-    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4"></i>
         <span>{{ flash.error }}</span>
     </div>
     {% endif %}
 
-    <form action="/society/contribute" method="POST" class="glass-panel rounded-2xl p-6 sm:p-8 border border-white/10 space-y-6">
+    <form id="contributeSocietyForm" action="/society/contribute" method="POST" class="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
         <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
 
         <!-- Society Info -->
         <div>
-            <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <i data-lucide="building" class="w-4 h-4 text-brand-400"></i>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <i data-lucide="building" class="w-4 h-4 text-brand-500"></i>
                 <span>Society Details</span>
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Society Name <span class="text-brand-400">*</span></label>
-                    <input type="text" name="society_name" placeholder="e.g. Sea View Cooperative Housing Society" required class="input-glass w-full text-sm">
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="text" id="society_name" name="society_name" placeholder=" " required
+                        class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500">
+                    <label for="society_name" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                        Society Name <span class="text-rose-500">*</span>
+                    </label>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">City <span class="text-brand-400">*</span></label>
-                    <input type="text" name="city" placeholder="e.g. Mumbai, Pune, Thane" required class="input-glass w-full text-sm">
+
+                <!-- Full-width Locality / Address textarea -->
+                <div class="relative">
+                    <textarea id="address" name="address" rows="3" placeholder=" " required
+                        class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 resize-none"></textarea>
+                    <label for="address" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                        Locality / Complete Address <span class="text-rose-500">*</span>
+                    </label>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1">Locality / Address</label>
-                    <input type="text" name="address" placeholder="e.g. Sector 19, Palm Beach Rd" class="input-glass w-full text-sm">
+
+                <!-- City, State, Pincode inline -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input type="text" id="city" name="city" placeholder=" " required
+                            class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500">
+                        <label for="city" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                            City <span class="text-rose-500">*</span>
+                        </label>
+                    </div>
+
+                    <div class="relative">
+                        <input type="text" id="state" name="state" value="Maharashtra" placeholder=" " required
+                            class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500">
+                        <label for="state" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                            State <span class="text-rose-500">*</span>
+                        </label>
+                    </div>
+
+                    <div class="relative">
+                        <input type="text" id="pincode" name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder=" " required
+                            class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 font-mono">
+                        <label for="pincode" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                            PIN Code <span class="text-rose-500">*</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 4 Committee Persons (Society Mitra Parity) -->
-        <div class="pt-4 border-t border-white/5">
-            <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+        <!-- 4 Committee Persons -->
+        <div class="pt-4 border-t border-slate-100 dark:border-white/5">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i>
                 <span>Founding Committee Members</span>
             </h3>
-            <p class="text-xs text-surface-200/50 mb-4">Provide at least one primary committee representative to verify onboarding.</p>
+            <p class="text-xs text-slate-500 dark:text-surface-200/50 mb-4">You are prefilled as Person 1 (Primary contact) and will be assigned committee access upon approval.</p>
 
             <div class="space-y-3">
-                <!-- Person 1 (Primary - prefilled) -->
-                <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Person 1 (Primary)</label>
-                        <input type="text" name="c1_name" value="{{ user.name }}" required class="input-glass w-full text-xs">
+                <!-- Person 1 (Primary - prefilled with current logged-in user) -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input type="text" id="c1_name" name="c1_name" value="{{ user.name }}" required placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        <label for="c1_name" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Person 1 (Primary - You) *
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Mobile Number</label>
-                        <input type="text" name="c1_phone" value="{{ user.phone }}" required class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c1_phone" name="c1_phone" value="{{ user.phone }}" required placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c1_phone" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Mobile Number *
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Flat No.</label>
-                        <input type="text" name="c1_flat" placeholder="A-101" class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c1_flat" name="c1_flat" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c1_flat" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Flat No. (e.g. A-101)
+                        </label>
                     </div>
                 </div>
 
                 <!-- Person 2 -->
-                <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Person 2 (Optional)</label>
-                        <input type="text" name="c2_name" placeholder="Member Name" class="input-glass w-full text-xs">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input type="text" id="c2_name" name="c2_name" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        <label for="c2_name" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Person 2 (Optional)
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Mobile Number</label>
-                        <input type="text" name="c2_phone" placeholder="+91..." class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c2_phone" name="c2_phone" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c2_phone" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Mobile Number
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Flat No.</label>
-                        <input type="text" name="c2_flat" placeholder="A-102" class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c2_flat" name="c2_flat" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c2_flat" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Flat No. (e.g. A-102)
+                        </label>
                     </div>
                 </div>
 
                 <!-- Person 3 -->
-                <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Person 3 (Optional)</label>
-                        <input type="text" name="c3_name" placeholder="Member Name" class="input-glass w-full text-xs">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input type="text" id="c3_name" name="c3_name" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        <label for="c3_name" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Person 3 (Optional)
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Mobile Number</label>
-                        <input type="text" name="c3_phone" placeholder="+91..." class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c3_phone" name="c3_phone" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c3_phone" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Mobile Number
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Flat No.</label>
-                        <input type="text" name="c3_flat" placeholder="B-201" class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c3_flat" name="c3_flat" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c3_flat" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Flat No.
+                        </label>
                     </div>
                 </div>
 
                 <!-- Person 4 -->
-                <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Person 4 (Optional)</label>
-                        <input type="text" name="c4_name" placeholder="Member Name" class="input-glass w-full text-xs">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input type="text" id="c4_name" name="c4_name" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        <label for="c4_name" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Person 4 (Optional)
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Mobile Number</label>
-                        <input type="text" name="c4_phone" placeholder="+91..." class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c4_phone" name="c4_phone" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c4_phone" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Mobile Number
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-[11px] text-surface-200/60 mb-1">Flat No.</label>
-                        <input type="text" name="c4_flat" placeholder="B-202" class="input-glass w-full text-xs font-mono">
+                    <div class="relative">
+                        <input type="text" id="c4_flat" name="c4_flat" placeholder=" "
+                            class="peer block w-full px-3.5 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono">
+                        <label for="c4_flat" class="absolute text-[11px] text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2 scale-75 top-3 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2 peer-focus:text-brand-500">
+                            Flat No.
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
-            <a href="/resident" class="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-surface-200/70">Cancel</a>
-            <button type="submit" class="btn-primary !px-6 !py-2.5 text-xs font-semibold flex items-center gap-2">
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+            <a href="/resident" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-surface-200/70">Cancel</a>
+            <button type="submit" id="submitSocietyProposalBtn" disabled class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i data-lucide="check" class="w-4 h-4"></i>
                 <span>Submit Society Proposal</span>
             </button>
@@ -127,4 +194,16 @@
     </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('contributeSocietyForm');
+    const submitBtn = document.getElementById('submitSocietyProposalBtn');
+    if (form && submitBtn) {
+        form.addEventListener('input', () => { submitBtn.disabled = false; });
+        form.addEventListener('change', () => { submitBtn.disabled = false; });
+    }
+    if (window.lucide) { lucide.createIcons(); }
+});
+</script>
 {% endblock %}

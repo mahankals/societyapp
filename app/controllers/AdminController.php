@@ -258,6 +258,37 @@ class AdminController
     }
 
     /**
+     * Toggle Society Enabled / Disabled Status
+     */
+    public function toggleSocietyStatus(int $id)
+    {
+        requireAdmin();
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/admin/societies');
+        }
+
+        $society = Database::fetchOne("SELECT id, name, is_active FROM societies WHERE id = ?", [$id]);
+        if (!$society) {
+            Session::flash('error', 'Society not found.');
+            redirect('/admin/societies');
+        }
+
+        $newStatus = ($society['is_active'] ? 0 : 1);
+        Database::update('societies', ['is_active' => $newStatus], 'id = ?', [$id]);
+
+        $statusStr = $newStatus ? 'enabled' : 'disabled';
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'society_status_changed',
+            'description' => ucfirst($statusStr) . " society: {$society['name']} (ID: {$id})",
+        ]);
+
+        Session::flash('success', "Society '{$society['name']}' has been {$statusStr}.");
+        redirect('/admin/societies');
+    }
+
+    /**
      * Approve Society Proposal / Contribution Request
      */
     public function approveSocietyRequest(int $requestId)
@@ -293,7 +324,9 @@ class AdminController
             'society_code' => $code,
             'address' => $req['address'] ?: null,
             'city' => $req['city'] ?: null,
-            'state' => 'Maharashtra',
+            'state' => $req['state'] ?: 'Maharashtra',
+            'pincode' => $req['pincode'] ?: null,
+            'is_active' => 1,
         ]);
 
         // Link requester as initial committee chairman
@@ -305,6 +338,7 @@ class AdminController
                 'status' => 'active',
                 'ownership_type' => 'owner',
             ]);
+            Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$req['user_id']]);
         }
 
         // Mark request as approved
@@ -719,12 +753,22 @@ class AdminController
             'envFileExists' => file_exists(ROOT_PATH . '/.env'),
             'maintenanceFileExists' => file_exists(ROOT_PATH . '/.maintenance'),
             'databaseVersion' => Database::fetchOne("SELECT VERSION() as v")['v'] ?? 'Unknown',
-            'sessionLifetime' => config('session.lifetime', 3600) / 60 . ' mins',
+            'sessionLifetime' => (config('session.lifetime', 3600) / 60) . ' mins',
         ];
 
-        $activeTab = $_GET['tab'] ?? 'general';
-        if (!in_array($activeTab, ['general', 'email', 'maintenance'], true)) {
-            $activeTab = 'general';
+        $prerequisites = [
+            'php' => ['name' => 'PHP Version >= 8.1', 'status' => version_compare(PHP_VERSION, '8.1.0', '>='), 'value' => PHP_VERSION],
+            'pdo' => ['name' => 'PDO & MySQL Extension', 'status' => extension_loaded('pdo_mysql'), 'value' => extension_loaded('pdo_mysql') ? 'Enabled' : 'Missing'],
+            'curl' => ['name' => 'cURL Extension', 'status' => extension_loaded('curl'), 'value' => extension_loaded('curl') ? 'Enabled' : 'Missing'],
+            'mbstring' => ['name' => 'Mbstring Extension', 'status' => extension_loaded('mbstring'), 'value' => extension_loaded('mbstring') ? 'Enabled' : 'Missing'],
+            'fileinfo' => ['name' => 'Fileinfo Extension', 'status' => extension_loaded('fileinfo'), 'value' => extension_loaded('fileinfo') ? 'Enabled' : 'Missing'],
+            'writable' => ['name' => 'Storage Directory Writable', 'status' => is_writable(ROOT_PATH . '/storage'), 'value' => is_writable(ROOT_PATH . '/storage') ? 'Writable' : 'Not Writable'],
+        ];
+
+        $activeTab = $_GET['tab'] ?? 'prerequisites';
+        $validTabs = ['prerequisites', 'database', 'branding', 'email', 'google', 'maintenance'];
+        if (!in_array($activeTab, $validTabs, true)) {
+            $activeTab = 'prerequisites';
         }
 
         echo view('admin/settings', [
@@ -738,7 +782,14 @@ class AdminController
             'maintenance' => $maintenanceDetails,
             'settings' => $settings,
             'diagnostics' => $diagnostics,
+            'prerequisites' => $prerequisites,
             'activeTab' => $activeTab,
+            'dbConfig' => [
+                'host' => DB_HOST,
+                'port' => DB_PORT,
+                'name' => DB_NAME,
+                'user' => DB_USER,
+            ],
         ]);
     }
 
@@ -806,15 +857,27 @@ class AdminController
             setSetting('mail_from_name', trim($_POST['mail_from_name'] ?? ''), 'email');
         }
 
+        // 4. Google Sign-In Settings
+        if (isset($_POST['google_client_id'])) {
+            setSetting('google_client_id', trim($_POST['google_client_id']), 'auth');
+            if (!empty($_POST['google_client_secret'])) {
+                setSetting('google_client_secret', trim($_POST['google_client_secret']), 'auth');
+            }
+            if (isset($_POST['google_redirect_uri'])) {
+                setSetting('google_redirect_uri', trim($_POST['google_redirect_uri']), 'auth');
+            }
+        }
+
         Database::insert('activity_logs', [
             'user_id' => Session::get('user_id'),
             'action' => 'settings_updated',
             'description' => "Updated system configuration (Maintenance: " . ($enableMaintenance ? 'ON' : 'OFF') . ")",
         ]);
 
-        $activeTab = $_POST['active_tab'] ?? 'general';
-        if (!in_array($activeTab, ['general', 'email', 'maintenance'], true)) {
-            $activeTab = 'general';
+        $activeTab = $_POST['active_tab'] ?? 'prerequisites';
+        $validTabs = ['prerequisites', 'database', 'branding', 'email', 'google', 'maintenance'];
+        if (!in_array($activeTab, $validTabs, true)) {
+            $activeTab = 'prerequisites';
         }
 
         Session::flash('success', 'System settings saved successfully!');
@@ -919,4 +982,49 @@ class AdminController
         echo json_encode($result);
         exit;
     }
+
+    /**
+     * Live test database connection from settings panel
+     */
+    public function testDb()
+    {
+        requireAdmin();
+        header('Content-Type: application/json');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            echo json_encode(['success' => false, 'error' => 'Invalid security token.']);
+            exit;
+        }
+
+        $host = trim($_POST['db_host'] ?? DB_HOST);
+        $port = (int)($_POST['db_port'] ?? DB_PORT);
+        $name = trim($_POST['db_name'] ?? DB_NAME);
+        $user = trim($_POST['db_user'] ?? DB_USER);
+        $pass = $_POST['db_pass'] ?? DB_PASS;
+
+        try {
+            $dsn = "mysql:host={$host};port={$port};charset=utf8mb4";
+            $pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 3,
+            ]);
+
+            $version = $pdo->query('SELECT VERSION()')->fetchColumn();
+            $stmt = $pdo->query("SHOW DATABASES LIKE " . $pdo->quote($name));
+            $dbExists = (bool)$stmt->fetch();
+
+            echo json_encode([
+                'success' => true,
+                'message' => "✓ Database connection successful! Server: {$version}" . ($dbExists ? " (Database `{$name}` ready)" : " (Database `{$name}` will be created)"),
+                'version' => $version,
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        exit;
+    }
 }
+

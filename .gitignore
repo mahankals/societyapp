@@ -68,3 +68,6 @@ access_log
 # Uploaded files
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# Storage & sessions
+/storage/
