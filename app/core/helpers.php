@@ -41,10 +41,21 @@ function getUser(): ?array {
     if (!isLoggedIn()) {
         return null;
     }
-    return Database::fetchOne(
-        "SELECT * FROM users WHERE id = ?",
-        [Session::get('user_id')]
-    );
+    try {
+        $user = Database::fetchOne(
+            "SELECT * FROM users WHERE id = ?",
+            [Session::get('user_id')]
+        );
+        if (!$user) {
+            Session::forget('user_id');
+            Session::forget('role');
+            Session::forget('email');
+            return null;
+        }
+        return $user;
+    } catch (\Throwable $e) {
+        return null;
+    }
 }
 
 function getUserProfile(): ?array {
@@ -203,41 +214,52 @@ function view(string $name, array $data = []): string {
         if (!isset($data['user'])) {
             $data['user'] = getUser();
         }
-        if (!isset($data['profile'])) {
-            $data['profile'] = getUserProfile();
-        }
-        if (!isset($data['userCaps'])) {
-            $userId = isset($data['user']['id']) ? (int)$data['user']['id'] : null;
-            $data['userCaps'] = getUserCapabilities($userId);
-        }
-        if (!isset($data['isCommittee'])) {
-            $data['isCommittee'] = $data['userCaps']['isCommittee'];
-        }
+        if (!$data['user']) {
+            $data['user'] = null;
+            $data['profile'] = null;
+            $data['userCaps'] = [
+                'isAdmin' => false,
+                'isCommittee' => false,
+                'isResident' => false,
+            ];
+            $data['isCommittee'] = false;
+        } else {
+            if (!isset($data['profile'])) {
+                $data['profile'] = getUserProfile();
+            }
+            if (!isset($data['userCaps'])) {
+                $userId = isset($data['user']['id']) ? (int)$data['user']['id'] : null;
+                $data['userCaps'] = getUserCapabilities($userId);
+            }
+            if (!isset($data['isCommittee'])) {
+                $data['isCommittee'] = $data['userCaps']['isCommittee'];
+            }
 
-        // Fetch unread count & latest notifications for navbar dropdown
-        $nUserId = isset($data['user']['id']) ? (int)$data['user']['id'] : null;
-        if ($nUserId) {
-            try {
-                if (!isset($data['unreadNotifications'])) {
-                    $unreadRow = Database::fetchOne("
-                        SELECT COUNT(*) as cnt 
-                        FROM notifications 
-                        WHERE (user_id = ? OR user_id IS NULL) AND is_read = 0
-                    ", [$nUserId]);
-                    $data['unreadNotifications'] = (int)($unreadRow['cnt'] ?? 0);
+            // Fetch unread count & latest notifications for navbar dropdown
+            $nUserId = isset($data['user']['id']) ? (int)$data['user']['id'] : null;
+            if ($nUserId) {
+                try {
+                    if (!isset($data['unreadNotifications'])) {
+                        $unreadRow = Database::fetchOne("
+                            SELECT COUNT(*) as cnt 
+                            FROM notifications 
+                            WHERE (user_id = ? OR user_id IS NULL) AND is_read = 0
+                        ", [$nUserId]);
+                        $data['unreadNotifications'] = (int)($unreadRow['cnt'] ?? 0);
+                    }
+                    if (!isset($data['latestNotifications'])) {
+                        $data['latestNotifications'] = Database::fetchAll("
+                            SELECT id, title, message, type, is_read, created_at 
+                            FROM notifications 
+                            WHERE user_id = ? OR user_id IS NULL 
+                            ORDER BY created_at DESC 
+                            LIMIT 5
+                        ", [$nUserId]);
+                    }
+                } catch (\Throwable $e) {
+                    $data['unreadNotifications'] = $data['unreadNotifications'] ?? 0;
+                    $data['latestNotifications'] = $data['latestNotifications'] ?? [];
                 }
-                if (!isset($data['latestNotifications'])) {
-                    $data['latestNotifications'] = Database::fetchAll("
-                        SELECT id, title, message, type, is_read, created_at 
-                        FROM notifications 
-                        WHERE user_id = ? OR user_id IS NULL 
-                        ORDER BY created_at DESC 
-                        LIMIT 5
-                    ", [$nUserId]);
-                }
-            } catch (\Throwable $e) {
-                $data['unreadNotifications'] = $data['unreadNotifications'] ?? 0;
-                $data['latestNotifications'] = $data['latestNotifications'] ?? [];
             }
         }
     } else {

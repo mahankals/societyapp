@@ -73,8 +73,13 @@ $isSetupRoute = (strpos($requestUri, '/setup') === 0)
     || (strpos($requestUri, '/auth/google-one-tap') === 0);
 $isAsset = (bool)preg_match('/\.(css|js|png|jpg|jpeg|svg|gif|ico|webp|woff2?|ttf|map)$/i', $requestUri);
 
-if (!$isSetupRoute && !$isAsset) {
-    if (!isAppSetupCompleted()) {
+if (!isAppSetupCompleted()) {
+    if (Session::has('user_id')) {
+        Session::forget('user_id');
+        Session::forget('role');
+        Session::forget('email');
+    }
+    if (!$isSetupRoute && !$isAsset) {
         header('Location: /setup');
         exit;
     }
@@ -112,6 +117,7 @@ require_once ROOT_PATH . '/routes.php';
 // ==================== Error Handler ====================
 
 set_exception_handler(function($e) {
+    error_log("Exception: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine() . "\n" . $e->getTraceAsString());
     $config = require CONFIG_PATH . '/app.php';
     $requestUri = $_SERVER['REQUEST_URI'] ?? '';
     $isJson = (strpos($requestUri, '/api/') === 0)
