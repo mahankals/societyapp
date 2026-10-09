@@ -519,6 +519,7 @@ foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
     $router->post($cPrefix . '/flats/add', [$society, 'addFlat'], ['auth']);
     $router->post($cPrefix . '/flats/{id}/update', [$society, 'updateFlat'], ['auth']);
     $router->post($cPrefix . '/flats/{id}/edit', [$society, 'updateFlat'], ['auth']);
+    $router->post($cPrefix . '/flats/{id}/toggle-rent', [$society, 'toggleFlatRent'], ['auth']);
     $router->post($cPrefix . '/flats/{id}/delete', [$society, 'deleteFlat'], ['auth']);
     $router->get($cPrefix . '/members', [$society, 'members'], ['auth']);
     $router->post($cPrefix . '/members/assign', [$society, 'assignMember'], ['auth']);
@@ -566,9 +567,11 @@ $router->get('/resident/bills', [$resident, 'bills'], ['auth']);
 $router->post('/resident/bills/{id}/pay', [$resident, 'recordPayment'], ['auth']);
 $router->get('/resident/receipts', [$resident, 'receipts'], ['auth']);
 $router->get('/resident/receipts/{id}', [$resident, 'viewReceipt'], ['auth']);
-$router->get('/resident/directory', [$resident, 'directory'], ['auth']);
+$router->get('/resident/members', [$resident, 'members'], ['auth']);
+$router->get('/resident/directory', function() { redirect('/resident/members'); }, ['auth']);
 $router->get('/resident/link-flat', [$resident, 'linkFlat'], ['auth']);
 $router->post('/resident/link-flat', [$resident, 'handleLinkFlat'], ['auth']);
+$router->post('/resident/flats/{id}/toggle-rent', [$resident, 'toggleFlatRent'], ['auth']);
 $router->get('/resident/requests', [$resident, 'requests'], ['auth']);
 $router->post('/resident/requests', [$resident, 'createRequest'], ['auth']);
 

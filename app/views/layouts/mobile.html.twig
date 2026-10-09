@@ -265,11 +265,8 @@
                         <a href="/resident/receipts" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/receipts' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
                             Receipts
                         </a>
-                        <a href="/resident/directory" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/directory' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                            Directory
-                        </a>
-                        <a href="/resident/link-flat" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/link-flat' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                            Link Flat
+                        <a href="/resident/members" class="px-3 py-1.5 rounded-lg transition-colors {{ currentRoute starts with '/resident/members' ? 'text-brand-400 bg-brand-500/10' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                            Members
                         </a>
                     {% endif %}
                 </div>
@@ -527,13 +524,9 @@
                     <i data-lucide="file-check-2" class="w-5 h-5"></i>
                     <span class="text-[10px] font-medium">Receipts</span>
                 </a>
-                <a href="/resident/directory" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/directory' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
+                <a href="/resident/members" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/members' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
                     <i data-lucide="users" class="w-5 h-5"></i>
-                    <span class="text-[10px] font-medium">Directory</span>
-                </a>
-                <a href="/resident/link-flat" class="flex flex-col items-center gap-1 {{ currentRoute starts with '/resident/link-flat' ? 'text-brand-400' : 'text-surface-200/60 hover:text-white' }} transition-colors">
-                    <i data-lucide="building" class="w-5 h-5"></i>
-                    <span class="text-[10px] font-medium">Flats</span>
+                    <span class="text-[10px] font-medium">Members</span>
                 </a>
             {% endif %}
         </div>

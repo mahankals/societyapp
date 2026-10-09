@@ -433,19 +433,42 @@ html.light .text-white,
   color: #0f172a !important;
 }
 
-html.light .text-surface-200\/40,
-html.light .text-surface-200\/50,
-html.light .text-surface-200\/60,
-html.light .text-surface-200\/70,
+html.light .text-surface-200,
+html.light .text-surface-200\/90,
 html.light .text-surface-200\/80,
-[data-theme="light"] .text-surface-200\/60 {
+html.light .text-surface-200\/70,
+html.light .text-surface-200\/60,
+html.light .text-surface-200\/50,
+html.light .text-surface-200\/40,
+html.light .text-surface-200\/30,
+[data-theme="light"] .text-surface-200,
+[data-theme="light"] .text-surface-200\/90,
+[data-theme="light"] .text-surface-200\/80,
+[data-theme="light"] .text-surface-200\/70,
+[data-theme="light"] .text-surface-200\/60,
+[data-theme="light"] .text-surface-200\/50,
+[data-theme="light"] .text-surface-200\/40,
+[data-theme="light"] .text-surface-200\/30 {
   color: #475569 !important;
+}
+
+html.light .text-surface-200\/90,
+[data-theme="light"] .text-surface-200\/90 {
+  color: #1e293b !important;
 }
 
 html.light .bg-surface-950,
 html.light .bg-surface-900,
+html.light .bg-surface-950\/80,
+html.light .bg-surface-950\/90,
+html.light .bg-surface-950\/95,
+html.light .bg-surface-900\/80,
 [data-theme="light"] .bg-surface-950,
-[data-theme="light"] .bg-surface-900 {
+[data-theme="light"] .bg-surface-900,
+[data-theme="light"] .bg-surface-950\/80,
+[data-theme="light"] .bg-surface-950\/90,
+[data-theme="light"] .bg-surface-950\/95,
+[data-theme="light"] .bg-surface-900\/80 {
   background-color: #f1f5f9 !important;
 }
 

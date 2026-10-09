@@ -212,14 +212,14 @@
 
                 <!-- Billing Calculation Mode Selector -->
                 <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Calculation Method</label>
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
-                        <label id="singleModeFixedBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1.5">Calculation Method</label>
+                    <div class="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 dark:bg-black/40 rounded-xl border border-slate-200 dark:border-white/10">
+                        <label id="singleModeFixedBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm">
                             <input type="radio" name="billing_type" value="fixed" checked class="hidden" onchange="setSingleBillMode('fixed')">
                             <i data-lucide="equal" class="w-3.5 h-3.5"></i>
                             <span>Fixed Amount</span>
                         </label>
-                        <label id="singleModeSqftBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5">
+                        <label id="singleModeSqftBtn" class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent">
                             <input type="radio" name="billing_type" value="per_sqft" class="hidden" onchange="setSingleBillMode('per_sqft')">
                             <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
                             <span>Multiply with Sq. Ft</span>
@@ -311,14 +311,14 @@
             <div class="space-y-4 mb-6">
                 <!-- Applicable For: All vs Occupied -->
                 <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Applicable For</label>
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
-                        <label id="bulkTargetOccupiedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1.5">Applicable For</label>
+                    <div class="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 dark:bg-black/40 rounded-xl border border-slate-200 dark:border-white/10">
+                        <label id="bulkTargetOccupiedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm">
                             <input type="radio" name="target_flats" value="occupied" checked class="hidden" onchange="setBulkTargetMode('occupied')">
                             <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
                             <span>Occupied ({{ occupiedFlats|length }})</span>
                         </label>
-                        <label id="bulkTargetAllBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent">
+                        <label id="bulkTargetAllBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent">
                             <input type="radio" name="target_flats" value="all" class="hidden" onchange="setBulkTargetMode('all')">
                             <i data-lucide="building" class="w-3.5 h-3.5"></i>
                             <span>All Flats ({{ totalFlatsCount }})</span>
@@ -328,14 +328,14 @@
 
                 <!-- Bulk Calculation Mode Selector -->
                 <div>
-                    <label class="block text-xs font-semibold text-surface-200/70 mb-1.5">Calculation Method</label>
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-950/80 rounded-xl border border-white/10">
-                        <label id="bulkModeFixedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/70 mb-1.5">Calculation Method</label>
+                    <div class="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 dark:bg-black/40 rounded-xl border border-slate-200 dark:border-white/10">
+                        <label id="bulkModeFixedBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm">
                             <input type="radio" name="billing_type" value="fixed" checked class="hidden" onchange="setBulkBillMode('fixed')">
                             <i data-lucide="equal" class="w-3.5 h-3.5"></i>
                             <span>Fixed Amount per Flat</span>
                         </label>
-                        <label id="bulkModeSqftBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent">
+                        <label id="bulkModeSqftBtn" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent">
                             <input type="radio" name="billing_type" value="per_sqft" class="hidden" onchange="setBulkBillMode('per_sqft')">
                             <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
                             <span>Multiply with Sq. Ft</span>
@@ -444,16 +444,19 @@
         const fixedInput = document.getElementById('singleFixedAmountInput');
         const rateInput = document.getElementById('singleRateSqftInput');
 
+        const activeCls = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm';
+        const inactiveCls = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent';
+
         if (mode === 'fixed') {
-            fixedBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            sqftBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            fixedBtn.className = activeCls;
+            sqftBtn.className = inactiveCls;
             fixedContainer.classList.remove('hidden');
             sqftContainer.classList.add('hidden');
             fixedInput.setAttribute('required', 'required');
             rateInput.removeAttribute('required');
         } else {
-            sqftBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            fixedBtn.className = 'flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            sqftBtn.className = activeCls;
+            fixedBtn.className = inactiveCls;
             sqftContainer.classList.remove('hidden');
             fixedContainer.classList.add('hidden');
             rateInput.setAttribute('required', 'required');
@@ -490,13 +493,15 @@
         currentBulkTarget = target;
         const occBtn = document.getElementById('bulkTargetOccupiedBtn');
         const allBtn = document.getElementById('bulkTargetAllBtn');
+        const activeCls = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm';
+        const inactiveCls = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent';
 
         if (target === 'occupied') {
-            occBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            allBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            occBtn.className = activeCls;
+            allBtn.className = inactiveCls;
         } else {
-            allBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            occBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            allBtn.className = activeCls;
+            occBtn.className = inactiveCls;
         }
         calculateBulkTotals();
     }
@@ -511,17 +516,19 @@
         const sqftContainer = document.getElementById('bulkSqftContainer');
         const fixedInput = document.getElementById('bulkFixedAmountInput');
         const rateInput = document.getElementById('bulkRateSqftInput');
+        const activeCls = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-white dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-slate-300/80 dark:border-brand-500/30 shadow-sm';
+        const inactiveCls = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-slate-600 dark:text-surface-200/60 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5 border border-transparent';
 
         if (mode === 'fixed') {
-            fixedBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            sqftBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            fixedBtn.className = activeCls;
+            sqftBtn.className = inactiveCls;
             fixedContainer.classList.remove('hidden');
             sqftContainer.classList.add('hidden');
             fixedInput.setAttribute('required', 'required');
             rateInput.removeAttribute('required');
         } else {
-            sqftBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-brand-500/20 text-brand-300 border border-brand-500/30';
-            fixedBtn.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold cursor-pointer transition-all text-surface-200/60 hover:text-white hover:bg-white/5 border border-transparent';
+            sqftBtn.className = activeCls;
+            fixedBtn.className = inactiveCls;
             sqftContainer.classList.remove('hidden');
             fixedContainer.classList.add('hidden');
             rateInput.setAttribute('required', 'required');

@@ -22,7 +22,7 @@ class ResidentController
         // 1. Fetch all flats linked to this resident (Society Mitra multi-society / multi-flat core)
         $myFlats = Database::fetchAll("
             SELECT sm.*, 
-                   f.flat_no, f.wing, f.floor, f.area_sqft, f.flat_type,
+                   f.flat_no, f.wing, f.floor, f.area_sqft, f.flat_type, f.is_for_rent,
                    s.id as society_id, s.name as society_name, s.society_code, s.upi_id, s.payee_name
             FROM society_members sm
             JOIN societies s ON sm.society_id = s.id
@@ -248,22 +248,32 @@ class ResidentController
     }
 
     /**
-     * Society Resident Directory (Contacts tab in Society Mitra)
+     * Resident Members (Contacts & Neighbors for linked society)
      */
-    public function directory()
+    public function members()
     {
         requireLogin();
         $user = getUser();
         $userId = (int)Session::get('user_id');
 
-        // Find primary society of resident
-        $socMember = Database::fetchOne("SELECT society_id FROM society_members WHERE user_id = ? AND status = 'active' LIMIT 1", [$userId]);
-        $societyId = $socMember ? (int)$socMember['society_id'] : (int)(Database::fetchOne("SELECT id FROM societies ORDER BY id ASC LIMIT 1")['id'] ?? 1);
+        // Find all linked societies of resident
+        $linkedSocieties = Database::fetchAll("
+            SELECT DISTINCT s.* FROM societies s
+            JOIN society_members sm ON s.id = sm.society_id
+            WHERE sm.user_id = ? AND sm.status = 'active'
+            ORDER BY s.name ASC
+        ", [$userId]);
 
-        $society = Database::fetchOne("SELECT * FROM societies WHERE id = ?", [$societyId]);
+        $selectedSocietyId = (int)($_GET['society_id'] ?? ($linkedSocieties[0]['id'] ?? 0));
+        if ($selectedSocietyId <= 0) {
+            $defaultSoc = Database::fetchOne("SELECT id FROM societies ORDER BY id ASC LIMIT 1");
+            $selectedSocietyId = $defaultSoc ? (int)$defaultSoc['id'] : 1;
+        }
+
+        $society = Database::fetchOne("SELECT * FROM societies WHERE id = ?", [$selectedSocietyId]);
 
         $search = trim($_GET['q'] ?? '');
-        $params = [$societyId];
+        $params = [$selectedSocietyId];
         $searchSql = "";
         if (!empty($search)) {
             $searchSql = "AND (u.name LIKE ? OR u.phone LIKE ? OR f.flat_no LIKE ? OR f.wing LIKE ?)";
@@ -273,26 +283,45 @@ class ResidentController
             $params[] = "%{$search}%";
         }
 
-        $residents = Database::fetchAll("
+        // Details of members + tenants (allowed by owner: is_for_rent=1 OR approved_by IS NOT NULL)
+        $members = Database::fetchAll("
             SELECT u.id as user_id, u.name, u.email, u.phone, u.profile_photo,
                    sm.role as member_role, sm.ownership_type,
-                   f.flat_no, f.wing, f.floor
+                   f.id as flat_id, f.flat_no, f.wing, f.floor, f.is_for_rent,
+                   s.name as society_name, s.city as society_city
             FROM society_members sm
             JOIN users u ON sm.user_id = u.id
+            JOIN societies s ON sm.society_id = s.id
             LEFT JOIN flats f ON sm.flat_id = f.id
-            WHERE sm.society_id = ? AND sm.status = 'active' {$searchSql}
-            ORDER BY f.wing ASC, f.flat_no ASC, u.name ASC
+            WHERE sm.society_id = ? 
+              AND sm.status = 'active'
+              AND (
+                  sm.role != 'tenant'
+                  OR (sm.role = 'tenant' AND (f.is_for_rent = 1 OR sm.approved_by IS NOT NULL))
+              )
+              {$searchSql}
+            ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC, u.name ASC
         ", $params);
 
-        echo view('resident/directory', [
+        echo view('resident/members', [
             'basePath' => '/',
             'user' => $user,
             'society' => $society,
-            'residents' => $residents,
+            'linkedSocieties' => $linkedSocieties,
+            'selectedSocietyId' => $selectedSocietyId,
+            'members' => $members,
             'search' => $search,
             'profile' => $user,
-            'currentRoute' => '/resident/directory',
+            'currentRoute' => '/resident/members',
         ]);
+    }
+
+    /**
+     * Legacy Directory redirect
+     */
+    public function directory()
+    {
+        redirect('/resident/members');
     }
 
     /**
@@ -308,11 +337,25 @@ class ResidentController
 
         $selectedSocietyId = (int)($_GET['society_id'] ?? ($societies[0]['id'] ?? 1));
 
-        $vacantFlats = Database::fetchAll("
+        // 1. For Owner: Unlinked flats of selected society (flats without an active owner)
+        $unlinkedFlats = Database::fetchAll("
             SELECT f.* FROM flats f
-            LEFT JOIN society_members sm ON f.id = sm.flat_id AND sm.status = 'active'
-            WHERE f.society_id = ? AND sm.id IS NULL
-            ORDER BY f.wing ASC, f.flat_no ASC
+            WHERE f.society_id = ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM society_members sm 
+                  WHERE sm.flat_id = f.id 
+                    AND sm.role = 'owner' 
+                    AND sm.status = 'active'
+              )
+            ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
+        ", [$selectedSocietyId]);
+
+        // 2. For Tenant: Flats available for rent in selected society (is_for_rent = 1)
+        $rentalFlats = Database::fetchAll("
+            SELECT f.* FROM flats f
+            WHERE f.society_id = ?
+              AND f.is_for_rent = 1
+            ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
         ", [$selectedSocietyId]);
 
         echo view('resident/link-flat', [
@@ -320,7 +363,9 @@ class ResidentController
             'user' => $user,
             'societies' => $societies,
             'selectedSocietyId' => $selectedSocietyId,
-            'vacantFlats' => $vacantFlats,
+            'unlinkedFlats' => $unlinkedFlats,
+            'rentalFlats' => $rentalFlats,
+            'vacantFlats' => $unlinkedFlats,
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
             'profile' => $user,
@@ -356,6 +401,23 @@ class ResidentController
             redirect('/resident');
         }
 
+        if ($role === 'tenant') {
+            $flat = Database::fetchOne("SELECT id, is_for_rent FROM flats WHERE id = ? AND society_id = ?", [$flatId, $societyId]);
+            if (!$flat || empty($flat['is_for_rent'])) {
+                Session::flash('error', 'This unit is not marked as available for rent. The owner must enable rent availability first.');
+                redirect('/resident/link-flat?society_id=' . $societyId);
+            }
+        } else {
+            $existingOwner = Database::fetchOne("
+                SELECT id FROM society_members 
+                WHERE society_id = ? AND flat_id = ? AND role = 'owner' AND status = 'active'
+            ", [$societyId, $flatId]);
+            if ($existingOwner) {
+                Session::flash('error', 'This flat already has an active registered owner. Please contact the committee.');
+                redirect('/resident/link-flat?society_id=' . $societyId);
+            }
+        }
+
         Database::insert('society_members', [
             'society_id' => $societyId,
             'flat_id' => $flatId,
@@ -366,6 +428,39 @@ class ResidentController
         ]);
 
         Session::flash('success', 'Your flat linking request has been submitted to the managing committee.');
+        redirect('/resident');
+    }
+
+    /**
+     * Flat Owner toggle rent availability
+     */
+    public function toggleFlatRent(int $flatId)
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/resident');
+        }
+
+        // Verify the user is an active owner of this flat
+        $membership = Database::fetchOne("
+            SELECT sm.id, f.wing, f.flat_no, f.is_for_rent 
+            FROM society_members sm 
+            JOIN flats f ON sm.flat_id = f.id 
+            WHERE sm.flat_id = ? AND sm.user_id = ? AND sm.role = 'owner' AND sm.status = 'active'
+        ", [$flatId, $userId]);
+
+        if (!$membership) {
+            Session::flash('error', 'Only the flat owner can toggle rent availability.');
+            redirect('/resident');
+        }
+
+        $newStatus = $membership['is_for_rent'] ? 0 : 1;
+        Database::update('flats', ['is_for_rent' => $newStatus], 'id = ?', [$flatId]);
+
+        Session::flash('success', "Unit {$membership['wing']}-{$membership['flat_no']} rental status updated to " . ($newStatus ? 'Available for Rent' : 'Not for Rent') . ".");
         redirect('/resident');
     }
 

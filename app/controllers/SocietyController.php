@@ -185,6 +185,7 @@ class SocietyController
         $floor = trim($_POST['floor'] ?? '');
         $area = (float)($_POST['area_sqft'] ?? 0);
         $type = trim($_POST['flat_type'] ?? '2BHK');
+        $isForRent = !empty($_POST['is_for_rent']) ? 1 : 0;
         $action = trim($_POST['action'] ?? 'save');
 
         if (empty($flatNo)) {
@@ -205,6 +206,7 @@ class SocietyController
             'floor' => $floor,
             'area_sqft' => $area,
             'flat_type' => $type,
+            'is_for_rent' => $isForRent,
         ]);
 
         Session::flash('success', "Flat {$wing}-{$flatNo} added successfully.");
@@ -247,6 +249,7 @@ class SocietyController
         $floor = trim($_POST['floor'] ?? '');
         $area = (float)($_POST['area_sqft'] ?? 0);
         $type = trim($_POST['flat_type'] ?? '2BHK');
+        $isForRent = !empty($_POST['is_for_rent']) ? 1 : 0;
 
         if (empty($flatNo)) {
             Session::flash('error', 'Flat number is required.');
@@ -268,9 +271,36 @@ class SocietyController
             'floor' => $floor,
             'area_sqft' => $area,
             'flat_type' => $type,
+            'is_for_rent' => $isForRent,
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
         Session::flash('success', "Flat {$wing}-{$flatNo} updated successfully.");
+        redirect('/comitee/flats');
+    }
+
+    /**
+     * Toggle flat rent availability
+     */
+    public function toggleFlatRent(int $id)
+    {
+        $auth = $this->requireCommittee();
+        $societyId = (int)$auth['society']['id'];
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/flats');
+        }
+
+        $flat = Database::fetchOne("SELECT id, wing, flat_no, is_for_rent FROM flats WHERE id = ? AND society_id = ?", [$id, $societyId]);
+        if (!$flat) {
+            Session::flash('error', 'Flat not found.');
+            redirect('/comitee/flats');
+        }
+
+        $newStatus = $flat['is_for_rent'] ? 0 : 1;
+        Database::update('flats', ['is_for_rent' => $newStatus], 'id = ? AND society_id = ?', [$id, $societyId]);
+
+        Session::flash('success', "Flat {$flat['wing']}-{$flat['flat_no']} rental status updated to " . ($newStatus ? 'Available for Rent' : 'Not for Rent') . ".");
         redirect('/comitee/flats');
     }
 
