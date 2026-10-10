@@ -3,89 +3,86 @@
 {% block title %}Join Requests | {{ society.name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
     <div class="flex items-center justify-between gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <a href="/comitee" class="text-xs text-brand-400 hover:underline">← Committee Dashboard</a>
+                <a href="/comitee" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">&larr; Committee Dashboard</a>
             </div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Pending Join Requests</h1>
-            <p class="text-xs text-surface-200/60">{{ society.name }} &middot; Review and approve resident access</p>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Pending Join Requests</h1>
+            <p class="text-xs text-slate-500 dark:text-surface-200/60">{{ society.name }} &middot; Review and approve resident access</p>
         </div>
     </div>
 
     {% if flash.success %}
-    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2">
         <i data-lucide="check-circle" class="w-4 h-4"></i>
         <span>{{ flash.success }}</span>
     </div>
     {% endif %}
     {% if flash.error %}
-    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2">
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4"></i>
         <span>{{ flash.error }}</span>
     </div>
     {% endif %}
 
-    <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-surface-200/80">
-                <thead class="text-xs uppercase bg-white/[0.03] text-surface-200/60 border-b border-white/5">
+            <table class="w-full text-left text-sm text-slate-700 dark:text-surface-200/80">
+                <thead class="text-xs uppercase bg-slate-50 dark:bg-white/[0.03] text-slate-500 dark:text-surface-200/60 border-b border-slate-200 dark:border-white/5">
                     <tr>
                         <th class="py-3.5 px-4 font-semibold">Resident Name</th>
                         <th class="py-3.5 px-4 font-semibold">Requested Unit</th>
-                        <th class="py-3.5 px-4 font-semibold">Contact Email & Phone</th>
+                        <th class="py-3.5 px-4 font-semibold">Contact Email &amp; Phone</th>
                         <th class="py-3.5 px-4 font-semibold">Requested Role</th>
                         <th class="py-3.5 px-4 font-semibold">Date Requested</th>
                         <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5">
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                     {% for req in requests %}
-                    <tr class="hover:bg-white/[0.02] transition-colors">
-                        <td class="py-3.5 px-4 font-medium text-white">
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <td class="py-3.5 px-4 font-medium text-slate-900 dark:text-white">
                             {{ req.user_name }}
                         </td>
-                        <td class="py-3.5 px-4 font-mono font-bold text-brand-300">
+                        <td class="py-3.5 px-4 font-mono font-bold text-brand-600 dark:text-brand-300">
                             {{ req.wing }}-{{ req.flat_no }}
                         </td>
                         <td class="py-3.5 px-4 text-xs">
-                            <p class="text-white">{{ req.user_phone ?: '-' }}</p>
-                            <p class="text-surface-200/50">{{ req.user_email }}</p>
+                            <p class="text-slate-900 dark:text-white font-medium">{{ req.user_phone ?: '-' }}</p>
+                            <p class="text-slate-500 dark:text-surface-200/50">{{ req.user_email }}</p>
                         </td>
                         <td class="py-3.5 px-4">
-                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-surface-200 border border-white/10 capitalize">
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-surface-200 border border-slate-200 dark:border-white/10 capitalize">
                                 {{ req.role }}
                             </span>
                         </td>
-                        <td class="py-3.5 px-4 text-xs text-surface-200/50 font-mono">
+                        <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-surface-200/50 font-mono">
                             {{ req.created_at|date('M d, Y H:i') }}
                         </td>
                         <td class="py-3.5 px-4 text-right">
                             <div class="inline-flex items-center gap-2">
-                                <form action="/comitee/requests/{{ req.id }}/approve" method="POST">
+                                <form action="/comitee/requests/{{ req.id }}/approve" method="POST" data-confirm="Approve linking request for {{ req.user_name }} to flat {{ req.wing }}-{{ req.flat_no }}?">
                                     <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                    <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm">
                                         <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                         <span>Approve</span>
                                     </button>
                                 </form>
-                                <form action="/comitee/requests/{{ req.id }}/reject" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
-                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
-                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                        <span>Reject</span>
-                                    </button>
-                                </form>
+                                <button type="button" onclick="openMemberRejectModal({{ req.id }}, '{{ req.user_name|e('js') }}', '{{ (req.wing ~ '-' ~ req.flat_no)|e('js') }}')" class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/25 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    <span>Reject</span>
+                                </button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="py-12 text-center text-surface-200/50">
-                            <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60"></i>
-                            <p class="font-medium text-white">All caught up!</p>
+                        <td colspan="6" class="py-12 text-center text-slate-500 dark:text-surface-200/50">
+                            <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-60"></i>
+                            <p class="font-medium text-slate-800 dark:text-white">All caught up!</p>
                             <p class="text-xs mt-1">There are no pending join requests for {{ society.name }}.</p>
                         </td>
                     </tr>
@@ -96,4 +93,56 @@
     </div>
 
 </div>
+
+<!-- Member Rejection Remark Modal -->
+<div id="memberRejectModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl relative animate-fade-in">
+        <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Reject Resident Request</h3>
+                <p id="memberRejectSub" class="text-xs text-slate-500 dark:text-surface-200/50 mt-0.5"></p>
+            </div>
+            <button type="button" onclick="closeMemberRejectModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:text-surface-200/50 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="memberRejectForm" method="POST" action="" class="py-4 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+            <div>
+                <label for="reject_remark" class="block text-xs font-semibold text-slate-700 dark:text-surface-200 mb-1.5">
+                    Rejection Remark / Reason <span class="text-rose-500">*</span>
+                </label>
+                <textarea id="reject_remark" name="remark" required rows="3" placeholder="Provide reason to resident for rejecting this flat linking request..."
+                    class="block w-full px-3.5 py-2.5 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeMemberRejectModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-surface-200/70 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20">
+                    Confirm Rejection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openMemberRejectModal(id, name, unit) {
+        document.getElementById('memberRejectSub').textContent = name + ' (' + unit + ')';
+        document.getElementById('memberRejectForm').action = '/comitee/requests/' + id + '/reject';
+        document.getElementById('memberRejectModal').classList.remove('hidden');
+        if (window.lucide) { lucide.createIcons(); }
+    }
+
+    function closeMemberRejectModal() {
+        document.getElementById('memberRejectModal').classList.add('hidden');
+    }
+
+    if (window.lucide) { lucide.createIcons(); }
+</script>
 {% endblock %}

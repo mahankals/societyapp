@@ -1,0 +1,210 @@
+{% extends "layouts/mobile.html.twig" %}
+
+{% block title %}Pending Society Proposals | Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-white/10">
+        <div class="flex items-center gap-3">
+            <a href="/admin/societies" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Pending Society Proposals</h1>
+                <p class="text-xs text-slate-500 dark:text-surface-200/60">{{ pendingRequestsCount }} proposals awaiting administrative review</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="/admin/societies" class="px-4 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-surface-200 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
+                View Registered Societies
+            </a>
+        </div>
+    </div>
+
+    {% if flash.success %}
+    <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>{{ flash.success }}</span>
+    </div>
+    {% endif %}
+    {% if flash.error %}
+    <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <span>{{ flash.error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- List of Proposals -->
+    <div class="space-y-6">
+        {% for req in pendingRequests %}
+        <div class="bg-white dark:bg-surface-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
+            <!-- Proposal Top Summary Header -->
+            <div class="p-5 sm:p-6 bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                        <i data-lucide="building-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">{{ req.society_name }}</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 uppercase tracking-wider">Pending Review</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-1">
+                            <span class="font-medium text-slate-700 dark:text-surface-200">{{ req.city }}{% if req.state %}, {{ req.state }}{% endif %}{% if req.pincode %} - {{ req.pincode }}{% endif %}</span>
+                            {% if req.address %}&bull; <span class="italic text-slate-400 dark:text-surface-200/40">{{ req.address }}</span>{% endif %}
+                        </p>
+                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-surface-200/50 mt-2">
+                            <span>Submitted by: <strong class="text-slate-800 dark:text-white">{{ req.requester_name }}</strong> ({{ req.requester_email }}{% if req.requester_phone %} &bull; {{ req.requester_phone }}{% endif %})</span>
+                            <span>&bull;</span>
+                            <span>{{ req.created_at|date('M d, Y h:i A') }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 self-start md:self-center shrink-0">
+                    <form method="POST" action="/admin/societies/requests/{{ req.id }}/approve" class="inline" data-confirm="Approve society proposal for '{{ req.society_name }}'? This will create the society, automatically register all proposed flats, and link founding committee members.">
+                        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+                        <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Approve Proposal</span>
+                        </button>
+                    </form>
+
+                    <button type="button" onclick="openRejectModal({{ req.id }}, '{{ req.society_name|e('js') }}')" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/25 text-xs font-bold flex items-center gap-1.5 transition-all">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        <span>Reject</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Proposed Founding Committee Members & Units -->
+            <div class="p-5 sm:p-6">
+                <h3 class="text-xs font-bold text-slate-500 dark:text-surface-200/60 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-brand-500"></i>
+                    <span>Founding Committee Members &amp; Units ({{ req.members|length }})</span>
+                </h3>
+
+                {% if req.members|length > 0 %}
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/5">
+                    <table class="w-full text-left text-xs text-slate-700 dark:text-surface-200/80">
+                        <thead class="bg-slate-50 dark:bg-white/[0.02] text-slate-500 dark:text-surface-200/50 uppercase font-semibold border-b border-slate-200 dark:border-white/5">
+                            <tr>
+                                <th class="py-2.5 px-3">Role</th>
+                                <th class="py-2.5 px-3">Member Name</th>
+                                <th class="py-2.5 px-3">Contact</th>
+                                <th class="py-2.5 px-3">Unit / Flat</th>
+                                <th class="py-2.5 px-3">Wing / Floor</th>
+                                <th class="py-2.5 px-3">Type &amp; Area</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                            {% for m in req.members %}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                                <td class="py-2.5 px-3">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-sans font-bold uppercase
+                                        {% if m.role == 'chairman' %}bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25
+                                        {% elseif m.role == 'secretary' %}bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25
+                                        {% elseif m.role == 'treasurer' %}bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25
+                                        {% else %}bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-surface-200 border border-slate-200 dark:border-white/10{% endif %}">
+                                        {{ m.role }}
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-900 dark:text-white">
+                                    {{ m.name }}
+                                </td>
+                                <td class="py-2.5 px-3 font-sans text-slate-600 dark:text-surface-200/70">
+                                    {{ m.phone ?: (m.email ?: '-') }}
+                                </td>
+                                <td class="py-2.5 px-3 font-bold text-brand-600 dark:text-brand-300">
+                                    {{ m.flat_number }}
+                                </td>
+                                <td class="py-2.5 px-3 font-sans">
+                                    {{ m.wing ?: '-' }} / Floor {{ m.floor ?: 'G' }}
+                                </td>
+                                <td class="py-2.5 px-3 font-sans">
+                                    {{ m.flat_type ?: 'Flat' }}{% if m.area_sqft %} ({{ m.area_sqft }} sq.ft){% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-xs text-slate-400 dark:text-surface-200/40 italic">No member breakdown specified. Primary proposer will be designated as Chairman.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="p-12 text-center bg-white dark:bg-surface-900 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-surface-200/40 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-500"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">All Caught Up!</h3>
+            <p class="text-xs text-slate-500 dark:text-surface-200/50 mt-1">There are no pending society proposals awaiting review right now.</p>
+            <div class="mt-4">
+                <a href="/admin/societies" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-500 text-white text-xs font-semibold hover:bg-brand-600 transition-colors">
+                    <span>Back to Societies</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div id="proposalRejectModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-900 shadow-2xl relative animate-fade-in">
+        <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Reject Society Proposal</h3>
+                <p id="rejectModalSub" class="text-xs text-slate-500 dark:text-surface-200/50 mt-0.5"></p>
+            </div>
+            <button type="button" onclick="closeRejectModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:text-surface-200/50 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="rejectForm" method="POST" action="" class="py-4 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+            <div>
+                <label for="rejection_reason" class="block text-xs font-semibold text-slate-700 dark:text-surface-200 mb-1.5">
+                    Rejection Remark / Reason <span class="text-rose-500">*</span>
+                </label>
+                <textarea id="rejection_reason" name="rejection_reason" required rows="3" placeholder="Specify why this society proposal cannot be approved..."
+                    class="block w-full px-3.5 py-2.5 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeRejectModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-surface-200/70 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20">
+                    Confirm Rejection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openRejectModal(id, name) {
+        document.getElementById('rejectModalSub').textContent = 'Proposal for: ' + name;
+        document.getElementById('rejectForm').action = '/admin/societies/requests/' + id + '/reject';
+        document.getElementById('proposalRejectModal').classList.remove('hidden');
+        if (window.lucide) { lucide.createIcons(); }
+    }
+
+    function closeRejectModal() {
+        document.getElementById('proposalRejectModal').classList.add('hidden');
+    }
+
+    if (window.lucide) { lucide.createIcons(); }
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "layouts/base.html.twig" %}
+
+{% block title %}Contact Us | SocietyApp{% endblock %}
+
+{% block content %}
+<div class="relative pt-32 pb-20 overflow-hidden">
+    <!-- Ambient gradients -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-brand-600/15 via-emerald-500/10 to-transparent blur-[120px] rounded-full pointer-events-none -z-10"></div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-12">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20 mb-3">
+                <i data-lucide="life-buoy" class="w-3.5 h-3.5"></i>
+                <span>Get In Touch</span>
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">Contact SocietyApp Support</h1>
+            <p class="text-sm sm:text-base text-white/60 max-w-xl mx-auto mt-3">
+                Have questions about onboarding your society, membership, or need technical assistance? Fill out the form below or chat directly with our team.
+            </p>
+        </div>
+
+        {% if flash.success %}
+        <div class="mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+            <span>{{ flash.success }}</span>
+        </div>
+        {% endif %}
+        {% if flash.error %}
+        <div class="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-rose-400 shrink-0"></i>
+            <span>{{ flash.error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+            <!-- Left: Info card -->
+            <div class="md:col-span-5 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-7 space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white">Developer &amp; Support</h3>
+                    <p class="text-xs text-white/60 mt-1">Direct inquiries &amp; society onboarding</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-brand-500/15 text-brand-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-white/50">Lead Architect &amp; Developer</p>
+                            <p class="text-sm font-bold text-white">Atul Mahankal</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-white/50">Phone &amp; Direct Support</p>
+                            <a href="tel:+919967181952" class="text-sm font-mono font-bold text-white hover:text-brand-400 transition-colors">+91 9967 181 952</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-white/50">Instant Messaging</p>
+                            <a href="https://wa.me/919967181952?text=Hello%20SocietyApp%20Support" target="_blank" class="text-sm font-bold text-emerald-400 hover:underline">Chat on WhatsApp &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/5 text-[11px] text-white/40 leading-relaxed">
+                    Response time is typically within 2-4 hours during business days. For urgent society production issues, please reach out via WhatsApp.
+                </div>
+            </div>
+
+            <!-- Right: Contact form -->
+            <div class="md:col-span-7 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-7 shadow-2xl">
+                <form action="/contact" method="POST" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+                    <div>
+                        <label class="block text-xs font-semibold text-white/80 mb-1.5">Your Full Name <span class="text-rose-400">*</span></label>
+                        <input type="text" name="name" value="{{ user.name|default('') }}" required placeholder="e.g. Ramesh Kulkarni"
+                            class="input-glass w-full">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-white/80 mb-1.5">Email Address <span class="text-rose-400">*</span></label>
+                            <input type="email" name="email" value="{{ user.email|default('') }}" required placeholder="e.g. ramesh@example.com"
+                                class="input-glass w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-white/80 mb-1.5">Phone Number</label>
+                            <input type="tel" name="phone" value="{{ user.phone|default('') }}" placeholder="e.g. 9876543210"
+                                class="input-glass w-full font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-white/80 mb-1.5">Subject / Category <span class="text-rose-400">*</span></label>
+                        <select name="subject" required class="input-glass w-full">
+                            <option value="Society Onboarding">Society Onboarding &amp; Setup</option>
+                            <option value="Technical Support">Technical Support / Bug Report</option>
+                            <option value="Feature Inquiry">Feature Inquiry</option>
+                            <option value="General Support">General Support</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-white/80 mb-1.5">Message <span class="text-rose-400">*</span></label>
+                        <textarea name="message" rows="4" required placeholder="How can we assist you today?"
+                            class="input-glass w-full resize-none"></textarea>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="btn-primary w-full !py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Send Message</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

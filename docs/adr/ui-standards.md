@@ -104,3 +104,17 @@ Text elements must maintain sufficient WCAG 2.1 AA contrast ratio across both Li
 Browser-native `alert()`, `confirm()`, and `prompt()` dialogues are deprecated in SocietyApp.
 - Use `window.appAlert(message, title)` and `window.appConfirm(message, callback, title)` defined globally in the base layout (`mobile.html.twig` / `base.html.twig`).
 - These custom modals integrate with the application's theme, handle asynchronous actions cleanly, and avoid browser pop-up blocking issues.
+
+---
+
+## 7. Data Tables: Real-Time Search and Contextual Filters
+
+### Decision
+Every tabular data view across Admin, Committee, and Resident portals must provide an intuitive, client-side or server-side search input and contextual filter controls.
+
+### Implementation Pattern
+- **Search Bar**: Provide an accessible input with search icon (`<i data-lucide="search"></i>`) filtering table rows in real-time by text matching across names, unit numbers, phone numbers, codes, or descriptions.
+- **Contextual Filters**: Use segmented tabs (e.g. `#all`, `#paid`, `#unpaid`, `#pending`, `#rejected`) or select dropdowns to filter rows by status or type without unnecessary full-page reload jumps.
+- **Empty State**: Render a friendly "No matching records found" row or banner when active search/filter queries yield 0 results.
+- **Theming & Accessibility**: Filter controls must adhere to WCAG AA contrast standards in both dark and light modes with proper focus ring styling.
+

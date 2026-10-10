@@ -136,15 +136,23 @@
 
     <!-- Associated Flats & Societies Section (Bottom Card) -->
     <div class="bg-white dark:bg-surface-900 rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
             <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <i data-lucide="home" class="w-4 h-4 text-brand-500"></i>
                 <span>My Associated Flats &amp; Societies</span>
             </h2>
-            <a href="/resident/link-flat" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-500 flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                <span>Link Flat</span>
-            </a>
+            <div class="flex items-center gap-2">
+                {% if rejectedFlats|length > 0 %}
+                <button type="button" onclick="document.getElementById('rejectedRequestsModal').classList.remove('hidden')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition-colors flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+                    <span>Rejected ({{ rejectedFlats|length }})</span>
+                </button>
+                {% endif %}
+                <a href="/resident/link-flat" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-500 flex items-center gap-1">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Link Flat</span>
+                </a>
+            </div>
         </div>
 
         {% if myFlats|length > 0 %}
@@ -155,7 +163,7 @@
                     <div>
                         <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                             <span class="font-mono font-bold text-slate-900 dark:text-white text-base">
-                                {{ flat.wing ? flat.wing ~ '-' : '' }}{{ flat.flat_no ?: 'Unit Pending' }}
+                                {{ flat.wing ? flat.wing ~ '-' : '' }}{{ flat.flat_no }}
                             </span>
                             <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full {{ flat.status == 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400' }}">
                                 {{ flat.status|capitalize }}
@@ -239,8 +247,50 @@
 
 </div>
 
+<!-- Rejected Requests Modal -->
+<div id="rejectedRequestsModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
+    <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/10 shrink-0">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-500"></i>
+                <span>Rejected Linking Requests</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('rejectedRequestsModal').classList.add('hidden')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-surface-200/50 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            {% for r in rejectedFlats %}
+            <div class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white">
+                        {{ r.society_name }} &middot; Unit {{ r.wing ? r.wing ~ '-' : '' }}{{ r.flat_no ?: '-' }}
+                    </span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-400">
+                        Rejected
+                    </span>
+                </div>
+                <div class="text-xs text-slate-600 dark:text-surface-200/70">
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">Rejection Reason:</span>
+                    <p class="mt-1 p-2.5 rounded-lg bg-white/70 dark:bg-black/20 border border-rose-500/15 text-slate-700 dark:text-surface-200/80 italic">
+                        "{{ r.rejection_reason ?: 'No specific reason provided by society committee.' }}"
+                    </p>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-xs text-center text-slate-500 dark:text-surface-200/50 py-4">No rejected requests found.</p>
+            {% endfor %}
+        </div>
+
+        <div class="flex justify-end p-4 border-t border-slate-200 dark:border-white/10 shrink-0 bg-slate-50 dark:bg-surface-900">
+            <button type="button" onclick="document.getElementById('rejectedRequestsModal').classList.add('hidden')" class="btn-primary !px-5 !py-2 text-xs font-semibold">Close</button>
+        </div>
+    </div>
+</div>
+
 <!-- Manage Occupancy Status Modal (High z-index z-[200] & viewport constraint) -->
-<div id="occupancyModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+<div id="occupancyModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
     <div class="bg-white dark:bg-surface-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-white/10 shadow-2xl max-h-[calc(100vh-2rem)] flex flex-col my-auto overflow-hidden">
         <!-- Fixed Modal Header -->
         <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/10 shrink-0">
@@ -258,7 +308,10 @@
             <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
 
             <!-- Scrollable Modal Body -->
-            <div class="p-6 overflow-y-auto flex-1 space-y-5">
+            <div class="p-6 overflow-y-auto overflow-x-hidden flex-1 space-y-5">
+                <!-- Inline Error Alert Container -->
+                <div id="occupancyErrorMsg" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300 text-xs font-medium flex items-center gap-2"></div>
+
                 <!-- Status Options Selector -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-surface-200/80 mb-2">Select Occupancy Status</label>
@@ -419,11 +472,23 @@
 
     function onTenantUserSelect(select) {
         const option = select.options[select.selectedIndex];
+        const nameInput = document.getElementById('occ_tenant_name');
+        const phoneInput = document.getElementById('occ_tenant_phone');
+
         if (option && option.value) {
             const name = option.getAttribute('data-name');
             const phone = option.getAttribute('data-phone');
-            if (name) document.getElementById('occ_tenant_name').value = name;
-            if (phone) document.getElementById('occ_tenant_phone').value = phone;
+            if (name) nameInput.value = name;
+            if (phone) phoneInput.value = phone;
+            nameInput.readOnly = true;
+            phoneInput.readOnly = true;
+            nameInput.classList.add('bg-slate-100', 'dark:bg-white/[0.02]', 'cursor-not-allowed', 'opacity-80');
+            phoneInput.classList.add('bg-slate-100', 'dark:bg-white/[0.02]', 'cursor-not-allowed', 'opacity-80');
+        } else {
+            nameInput.readOnly = false;
+            phoneInput.readOnly = false;
+            nameInput.classList.remove('bg-slate-100', 'dark:bg-white/[0.02]', 'cursor-not-allowed', 'opacity-80');
+            phoneInput.classList.remove('bg-slate-100', 'dark:bg-white/[0.02]', 'cursor-not-allowed', 'opacity-80');
         }
         const btn = document.getElementById('saveOccupancyBtn');
         if (btn) btn.disabled = false;
@@ -435,6 +500,20 @@
         form.action = '/resident/flats/' + flat.id + '/occupancy';
 
         document.getElementById('occupancyModalTitle').innerHTML = '<i data-lucide="home" class="w-4 h-4 text-brand-500"></i><span>Manage Flat ' + (flat.wing ? flat.wing + '-' : '') + flat.flat_no + ' Occupancy</span>';
+
+        // Clear previous error message
+        const errBox = document.getElementById('occupancyErrorMsg');
+        if (errBox) {
+            errBox.classList.add('hidden');
+            errBox.textContent = '';
+        }
+
+        // Reset tenant user selection
+        const tenantSelect = document.getElementById('occ_tenant_user_id');
+        if (tenantSelect) {
+            tenantSelect.value = '';
+            onTenantUserSelect(tenantSelect);
+        }
 
         // Prepopulate values
         document.getElementById('occ_expected_rent').value = flat.expected_rent || '';
@@ -465,13 +544,57 @@
         document.getElementById('saveOccupancyBtn').disabled = false;
     });
 
-    document.getElementById('occupancyForm').addEventListener('submit', function() {
+    document.getElementById('occupancyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const btn = document.getElementById('saveOccupancyBtn');
+        const errBox = document.getElementById('occupancyErrorMsg');
+
         if (currentOccupancyType === 'rented') {
             const rentedRent = document.getElementById('occ_rented_rent').value;
             if (rentedRent) {
                 document.getElementById('occ_expected_rent').value = rentedRent;
             }
         }
+
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="animate-spin inline-block mr-1">&#9696;</span> Saving...';
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => null);
+            if (response.ok && data && data.success) {
+                window.location.reload();
+            } else {
+                const errMsg = (data && data.error) ? data.error : 'An error occurred while saving occupancy status. Please try again.';
+                if (errBox) {
+                    errBox.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i><span>' + errMsg + '</span>';
+                    errBox.classList.remove('hidden');
+                    if (window.lucide) { lucide.createIcons(); }
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            if (errBox) {
+                errBox.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i><span>Network error. Please check your connection and try again.</span>';
+                errBox.classList.remove('hidden');
+                if (window.lucide) { lucide.createIcons(); }
+            }
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
     });
 
     document.addEventListener('DOMContentLoaded', function() {

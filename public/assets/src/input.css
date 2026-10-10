@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source "../../../app";
 @source "../../../public";
 @source "../../../routes.php";
@@ -890,6 +892,71 @@ html.light .text-brand-400,
 [data-theme="light"] .text-brand-400 {
   color: #047857 !important;
 }
+
+/* ===== Sidebar, Society Switcher, & Breadcrumb Theming ===== */
+
+/* Society Switcher Dropdown */
+html.dark #society-switcher-dropdown,
+html:not(.light) #society-switcher-dropdown {
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+html.light #society-switcher-dropdown,
+[data-theme="light"] #society-switcher-dropdown {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+html.light #society-switcher-dropdown a,
+[data-theme="light"] #society-switcher-dropdown a {
+  color: #334155 !important;
+}
+html.light #society-switcher-dropdown a:hover,
+[data-theme="light"] #society-switcher-dropdown a:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+html.light #society-switcher-btn,
+[data-theme="light"] #society-switcher-btn {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Sidebar Light Mode */
+html.light aside,
+[data-theme="light"] aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 1px 0 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+html.light aside a.text-surface-200\/70,
+[data-theme="light"] aside a.text-surface-200\/70 {
+  color: #475569 !important;
+}
+html.light aside a:hover,
+[data-theme="light"] aside a:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Breadcrumb Bar Light Mode */
+html.light div.breadcrumb-bar,
+[data-theme="light"] div.breadcrumb-bar {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+html.light div.breadcrumb-bar span.text-white,
+[data-theme="light"] div.breadcrumb-bar span.text-white {
+  color: #0f172a !important;
+}
+html.light div.breadcrumb-bar a,
+[data-theme="light"] div.breadcrumb-bar a {
+  color: #475569 !important;
+}
+
 
 
 

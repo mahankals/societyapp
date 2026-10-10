@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Setup Security Verification &bull; SocietyApp</title>
+    <link rel="icon" href="/assets/icons/logo.svg?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="/assets/dist/output.css?v=6" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+        }
+        body {
+            background-color: #0b0f17;
+            color: #f1f5f9;
+        }
+        .setup-glow {
+            background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 20% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col setup-glow antialiased selection:bg-brand-500/30 selection:text-brand-200">
+    <div class="flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-md">
+            <!-- Header Brand -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-xl shadow-brand-500/20 mb-4 border border-white/10">
+                    <i data-lucide="shield-check" class="w-7 h-7 text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-white font-['Lexend']">Installation Security Check</h1>
+                <p class="text-sm text-surface-200/60 mt-1">Authenticate with your deployment key to access the setup wizard</p>
+            </div>
+
+            <!-- Card Box -->
+            <div class="bg-surface-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+                {% if error %}
+                <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <div class="p-3.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs text-brand-300 flex items-start gap-2.5">
+                    <i data-lucide="key" class="w-4 h-4 text-brand-400 shrink-0 mt-0.5"></i>
+                    <div class="space-y-1">
+                        <span class="font-semibold text-white">SETUP_KEY generated in .env</span>
+                        <p class="text-surface-200/60 leading-relaxed">
+                            For security, please open your application's <code class="px-1.5 py-0.5 rounded bg-white/10 font-mono text-brand-200">.env</code> file, copy the value of <code class="px-1.5 py-0.5 rounded bg-white/10 font-mono text-brand-200">SETUP_KEY</code>, and paste it below.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="POST" action="/setup/verify-key" class="space-y-5">
+                    <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+
+                    <div class="relative">
+                        <input type="text" 
+                               id="setup_key" 
+                               name="setup_key" 
+                               required 
+                               autocomplete="off" 
+                               spellcheck="false"
+                               placeholder=" " 
+                               class="peer w-full h-13 px-4 pt-4 pb-1 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm tracking-wider focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-transparent">
+                        <label for="setup_key" 
+                               class="absolute left-4 top-2 text-[10px] uppercase font-bold tracking-wider text-surface-200/50 transition-all pointer-events-none peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:uppercase peer-focus:font-bold peer-focus:text-brand-400">
+                            Setup Key from .env
+                        </label>
+                    </div>
+
+                    <button type="submit" class="w-full h-12 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[0.99] font-medium text-sm text-white shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 transition-all">
+                        <span>Authenticate & Start Setup</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+
+            <p class="text-center text-xs text-surface-200/40 mt-6">
+                Designed &amp; Developed by Atul Mahankal &bull; SocietyApp Platform
+            </p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

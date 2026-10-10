@@ -256,6 +256,15 @@
                                 </label>
                             </div>
                         </div>
+
+                        <div class="relative">
+                            <input type="text" id="session_lifetime" name="session_lifetime" value="{{ settings.session_lifetime|default(diagnostics.sessionLifetime|default('60min')) }}" placeholder=" "
+                                class="peer block w-full px-4 pt-5 pb-2 text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <label for="session_lifetime" class="absolute text-xs text-slate-500 dark:text-slate-400 duration-200 transform -translate-y-2.5 scale-75 top-4 z-10 origin-[0] start-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-brand-500">
+                                Session Lifetime (e.g. 60min, 120min, 24h)
+                            </label>
+                            <p class="text-[11px] text-slate-500 dark:text-surface-200/50 mt-1">Configures idle session expiration for logged-in users. Automatically updates <code>SESSION_LIFETIME</code> in server <code>.env</code>.</p>
+                        </div>
                     </div>
 
                     <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">

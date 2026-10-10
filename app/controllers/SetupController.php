@@ -13,6 +13,17 @@ class SetupController
             redirect('/');
         }
 
+        // Setup security key verification
+        $setupKey = $this->getOrCreateSetupKey();
+        if (Session::get('setup_key_authenticated') !== true) {
+            echo view('setup/auth', [
+                'basePath' => '/',
+                'csrfToken' => generateCSRFToken(),
+                'error' => Session::getFlash('error') ?? null,
+            ]);
+            return;
+        }
+
         $requirements = $this->checkRequirements();
         $envDefaults = getEnvironmentDefaults();
 
@@ -788,18 +799,21 @@ class SetupController
             exit;
         }
 
-        if (!empty($adminPhone)) {
-            $cleanPhone = preg_replace('/[^\d+]/', '', $adminPhone);
-            if (str_starts_with($cleanPhone, '+91')) {
-                $national = substr($cleanPhone, 3);
-                if (!preg_match('/^[6-9]\d{9}$/', $national)) {
-                    echo json_encode(['success' => false, 'error' => 'Please provide a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.']);
-                    exit;
-                }
-            } elseif (!preg_match('/^\+?\d{7,15}$/', $cleanPhone)) {
-                echo json_encode(['success' => false, 'error' => 'Please provide a valid mobile number (7 to 15 digits).']);
+        if (empty($adminPhone)) {
+            echo json_encode(['success' => false, 'error' => 'Super Administrator mobile number is required.']);
+            exit;
+        }
+
+        $cleanPhone = preg_replace('/[^\d+]/', '', $adminPhone);
+        if (str_starts_with($cleanPhone, '+91')) {
+            $national = substr($cleanPhone, 3);
+            if (!preg_match('/^[6-9]\d{9}$/', $national)) {
+                echo json_encode(['success' => false, 'error' => 'Please provide a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.']);
                 exit;
             }
+        } elseif (!preg_match('/^\+?\d{7,15}$/', $cleanPhone)) {
+            echo json_encode(['success' => false, 'error' => 'Please provide a valid mobile number (7 to 15 digits).']);
+            exit;
         }
 
         try {
@@ -1161,5 +1175,52 @@ class SetupController
             putenv("{$key}={$val}");
             $_ENV[$key] = $val;
         }
+    }
+
+    public function verifyKey()
+    {
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Session expired. Please try again.');
+            redirect('/setup');
+        }
+
+        $enteredKey = trim($_POST['setup_key'] ?? '');
+        $validKey = $this->getOrCreateSetupKey();
+
+        if (!empty($enteredKey) && hash_equals($validKey, $enteredKey)) {
+            Session::put('setup_key_authenticated', true);
+            redirect('/setup');
+        } else {
+            Session::flash('error', 'Invalid Setup Key. Please verify the SETUP_KEY in your .env file.');
+            redirect('/setup');
+        }
+    }
+
+    private function getOrCreateSetupKey(): string
+    {
+        $key = getenv('SETUP_KEY') ?: ($_ENV['SETUP_KEY'] ?? '');
+        if (!empty($key)) {
+            return $key;
+        }
+
+        $envFile = ROOT_PATH . '/.env';
+        if (file_exists($envFile)) {
+            $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (str_starts_with($line, 'SETUP_KEY=')) {
+                    $val = trim(substr($line, 10), " \t\n\r\0\x0B\"'");
+                    if (!empty($val)) {
+                        putenv("SETUP_KEY={$val}");
+                        $_ENV['SETUP_KEY'] = $val;
+                        return $val;
+                    }
+                }
+            }
+        }
+
+        $newKey = bin2hex(random_bytes(16));
+        $this->updateEnvFile(['SETUP_KEY' => $newKey]);
+        return $newKey;
     }
 }

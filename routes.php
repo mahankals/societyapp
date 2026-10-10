@@ -42,6 +42,52 @@ $router->get('/', function() {
     ]);
 });
 
+$router->get('/contact', function() {
+    echo view('pages/contact', [
+        'basePath' => '/',
+        'csrfToken' => generateCSRFToken(),
+        'flash' => Session::getFlash(),
+        'user' => getUser(),
+    ]);
+});
+
+$router->post('/contact', function() {
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        Session::flash('error', 'Invalid security token.');
+        redirect('/contact');
+    }
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $subject = trim($_POST['subject'] ?? 'General Inquiry');
+    $message = trim($_POST['message'] ?? '');
+
+    if (empty($name) || (empty($email) && empty($phone)) || empty($message)) {
+        Session::flash('error', 'Please fill in your name, contact information, and message.');
+        redirect('/contact');
+    }
+
+    try {
+        Database::insert('activity_logs', [
+            'user_id' => Session::get('user_id'),
+            'action' => 'contact_inquiry',
+            'description' => "Contact inquiry from {$name} ({$email} / {$phone}): [{$subject}] {$message}",
+        ]);
+    } catch (\Throwable $e) {}
+
+    $supportEmail = getSetting('support_email', 'support@societyapp.ddev.site');
+    if (!empty($supportEmail)) {
+        sendEmail(
+            $supportEmail,
+            "New Support Inquiry: [{$subject}] from {$name}",
+            "<h3>New Support Inquiry</h3><p><b>Name:</b> " . htmlspecialchars($name) . "</p><p><b>Email:</b> " . htmlspecialchars($email) . "</p><p><b>Phone:</b> " . htmlspecialchars($phone) . "</p><p><b>Subject:</b> " . htmlspecialchars($subject) . "</p><p><b>Message:</b><br>" . nl2br(htmlspecialchars($message)) . "</p>"
+        );
+    }
+
+    Session::flash('success', 'Thank you for reaching out! We have received your message and will get back to you shortly.');
+    redirect($_SERVER['HTTP_REFERER'] ?? '/contact');
+});
+
 $router->get('/auth/login', function() {
     $returnUrl = $_GET['return_url'] ?? Session::get('return_url', '');
     Session::forget('return_url');
@@ -188,39 +234,134 @@ $router->get('/auth/logout', function() {
 });
 
 $router->get('/auth/reset-password', function() {
+    $token = trim($_GET['token'] ?? '');
+    $resetUser = null;
+
+    if (!empty($token)) {
+        $hashed = hash('sha256', $token);
+        $resetUser = Database::fetchOne("
+            SELECT prt.id, prt.user_id, prt.expires_at, u.email, u.name 
+            FROM password_reset_tokens prt 
+            JOIN users u ON prt.user_id = u.id 
+            WHERE (prt.token = ? OR prt.token = ?) AND prt.expires_at > NOW() AND prt.used_at IS NULL 
+            LIMIT 1
+        ", [$hashed, $token]);
+
+        if (!$resetUser) {
+            Session::flash('error', 'The password reset link is invalid or has expired. Please request a new one.');
+            redirect('/auth/reset-password');
+        }
+    }
+
     echo view('auth/reset-password', [
         'basePath' => '/',
         'csrfToken' => generateCSRFToken(),
+        'token' => $token,
+        'resetUser' => $resetUser,
     ]);
 }, ['guest']);
 
 $router->post('/auth/reset-password', function() {
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        Session::flash('error', 'Invalid request. Please try again.');
+        Session::flash('error', 'Invalid request or session expired. Please try again.');
         redirect('/auth/reset-password');
     }
 
-    if (empty($email)) {
-        Session::flash('error', 'Please enter your email address.');
+    $token = trim($_POST['token'] ?? '');
+
+    // 1. Password Update Mode (when token is submitted)
+    if (!empty($token)) {
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if (empty($password) || strlen($password) < 8) {
+            Session::flash('error', 'Password must be at least 8 characters.');
+            redirect('/auth/reset-password?token=' . urlencode($token));
+        }
+
+        if ($password !== $confirmPassword) {
+            Session::flash('error', 'Passwords do not match.');
+            redirect('/auth/reset-password?token=' . urlencode($token));
+        }
+
+        $hashed = hash('sha256', $token);
+        $resetRow = Database::fetchOne("
+            SELECT prt.id, prt.user_id 
+            FROM password_reset_tokens prt 
+            WHERE (prt.token = ? OR prt.token = ?) AND prt.expires_at > NOW() AND prt.used_at IS NULL 
+            LIMIT 1
+        ", [$hashed, $token]);
+
+        if (!$resetRow) {
+            Session::flash('error', 'Invalid or expired token. Please request a new reset link.');
+            redirect('/auth/reset-password');
+        }
+
+        $newPasswordHash = password_hash($password, PASSWORD_DEFAULT, ['cost' => 12]);
+        Database::update('users', [
+            'password_hash' => $newPasswordHash,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$resetRow['user_id']]);
+
+        Database::update('password_reset_tokens', [
+            'used_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$resetRow['id']]);
+
+        Session::flash('success', 'Your password has been reset successfully! Please sign in with your new password.');
+        redirect('/auth/login');
+    }
+
+    // 2. Request Reset Link Mode
+    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        Session::flash('error', 'Please enter a valid email address.');
         redirect('/auth/reset-password');
     }
 
-    $user = Database::fetchOne("SELECT id, email, name FROM users WHERE email = ?", [$email]);
+    $user = Database::fetchOne("SELECT id, email, name FROM users WHERE email = ? AND is_active = 1", [$email]);
     if ($user) {
-        $token = bin2hex(random_bytes(32));
+        $plainToken = bin2hex(random_bytes(32));
+        $hashedToken = hash('sha256', $plainToken);
         $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
         Database::insert('password_reset_tokens', [
             'user_id' => $user['id'],
-            'token' => password_hash($token, PASSWORD_DEFAULT),
+            'token' => $hashedToken,
             'expires_at' => $expiresAt,
         ]);
-        $resetLink = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/auth/reset-password?token=' . $token;
-        error_log("Password reset link for {$user['email']}: {$resetLink}");
+
+        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'societyapp.ddev.site';
+        $resetLink = "{$scheme}://{$host}/auth/reset-password?token={$plainToken}";
+
+        $appName = getSetting('app_name', 'SocietyApp');
+        $subject = "Reset Your {$appName} Password";
+        $userName = htmlspecialchars($user['name'] ?? 'Resident');
+
+        $htmlBody = "
+        <div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; background: #ffffff; color: #1e293b; border-radius: 16px; border: 1px solid #e2e8f0;'>
+            <div style='text-align: center; margin-bottom: 24px;'>
+                <div style='display: inline-block; width: 48px; height: 48px; line-height: 48px; border-radius: 12px; background: #4f46e5; color: #ffffff; font-size: 20px; font-weight: bold;'>SA</div>
+                <h2 style='color: #0f172a; margin: 12px 0 4px;'>Password Reset Request</h2>
+                <p style='color: #64748b; font-size: 14px; margin: 0;'>Secure access to your {$appName} account</p>
+            </div>
+            <p>Hello {$userName},</p>
+            <p>We received a request to reset your password. Click the button below to choose a new password:</p>
+            <div style='margin: 32px 0; text-align: center;'>
+                <a href='{$resetLink}' style='background: #4f46e5; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);'>Reset My Password</a>
+            </div>
+            <p style='font-size: 13px; color: #64748b;'>Or copy and paste this link into your browser:</p>
+            <p style='font-size: 12px; word-break: break-all; color: #4f46e5; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;'><a href='{$resetLink}' style='color: #4f46e5; text-decoration: none;'>{$resetLink}</a></p>
+            <p style='font-size: 12px; color: #94a3b8; margin-top: 28px; border-top: 1px solid #f1f5f9; pt: 16px;'>This link is valid for 1 hour. If you didn't request this change, you can safely ignore this email.</p>
+        </div>";
+
+        $mailRes = sendEmail($user['email'], $subject, $htmlBody);
+        if (!$mailRes['success']) {
+            error_log("Failed to send password reset email to {$user['email']}: " . ($mailRes['message'] ?? 'unknown error'));
+        }
     }
 
-    Session::flash('success', 'If an account with that email exists, we have sent password reset instructions.');
+    Session::flash('success', 'If an account with that email exists, we have sent password reset instructions to your inbox.');
     redirect('/auth/reset-password');
 });
 
@@ -496,6 +637,7 @@ $router->post('/auth/google-one-tap', function() {
 // ==================== Setup Wizard ====================
 
 $router->get('/setup', [$setup, 'index']);
+$router->post('/setup/verify-key', [$setup, 'verifyKey']);
 $router->get('/setup/csrf-token', [$setup, 'getCsrfToken']);
 $router->post('/setup/test-db', [$setup, 'testDb']);
 $router->post('/setup/test-email', [$setup, 'testEmail']);
@@ -507,6 +649,7 @@ $router->post('/setup/install', [$setup, 'install']);
 
 $router->get('/join/{code}', [$society, 'publicJoin']);
 $router->post('/join/{code}', [$society, 'handleJoin']);
+$router->get('/society/contribute/search-user', [$society, 'searchUserForContribution']);
 $router->get('/society/contribute', [$society, 'contribute']);
 $router->post('/society/contribute', [$society, 'handleContribute']);
 
@@ -560,9 +703,14 @@ $router->get('/admin/commitee', function() { redirect('/comitee'); }, ['auth']);
 // ==================== Resident & User Routes ====================
 
 $router->get('/resident', [$resident, 'index'], ['auth']);
-$router->get('/resident/notifications', [$resident, 'notifications'], ['auth']);
+$router->get('/user/notification', [$resident, 'notifications'], ['auth']);
+$router->post('/user/notification/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
+$router->post('/user/notification/{id}/read', [$resident, 'markSingleNotificationRead'], ['auth']);
+$router->post('/user/notification/{id}/toggle-read', [$resident, 'toggleNotificationRead'], ['auth']);
+$router->get('/resident/notifications', function() { redirect('/user/notification'); }, ['auth']);
 $router->post('/resident/notifications/mark-read', [$resident, 'markNotificationsRead'], ['auth']);
 $router->post('/resident/notifications/{id}/read', [$resident, 'markSingleNotificationRead'], ['auth']);
+$router->get('/user/switch-society/{id}', [$resident, 'switchSociety'], ['auth']);
 
 // User Profile (/user/profile)
 $router->get('/user/profile', [$resident, 'profile'], ['auth']);
@@ -571,6 +719,7 @@ $router->post('/user/profile/password', [$resident, 'updatePassword'], ['auth'])
 $router->post('/user/profile/emergency', [$resident, 'updateEmergencyContact'], ['auth']);
 $router->post('/user/profile/pin', [$resident, 'updatePin'], ['auth']);
 $router->post('/user/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
+$router->post('/user/profile/disconnect-google', [$resident, 'disconnectGoogle'], ['auth']);
 $router->get('/resident/profile', function() { redirect('/user/profile'); }, ['auth']);
 $router->post('/resident/profile', [$resident, 'updateProfile'], ['auth']);
 $router->post('/resident/profile/photo', [$resident, 'uploadPhoto'], ['auth']);
@@ -610,6 +759,7 @@ $router->get('/admin/profile', function() { redirect('/user/profile'); }, ['auth
 
 $router->get('/admin', [$admin, 'index'], ['auth', 'admin']);
 $router->get('/admin/societies', [$admin, 'societies'], ['auth', 'admin']);
+$router->get('/admin/societies/pending', [$admin, 'pendingSocieties'], ['auth', 'admin']);
 $router->post('/admin/societies', [$admin, 'createSociety'], ['auth', 'admin']);
 $router->post('/admin/societies/{id}/toggle-status', [$admin, 'toggleSocietyStatus'], ['auth', 'admin']);
 $router->post('/admin/societies/{id}/update', [$admin, 'updateSociety'], ['auth', 'admin']);

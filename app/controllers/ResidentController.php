@@ -19,7 +19,13 @@ class ResidentController
         $userId = (int)Session::get('user_id');
         $profile = $user;
 
-        // 1. Fetch all flats linked to this resident (Society Mitra multi-society / multi-flat core)
+        // Mobile number is mandatory for resident features
+        if (empty($user['phone'])) {
+            Session::flash('error', 'Please update your mobile number in your profile before proceeding.');
+            redirect('/user/profile');
+        }
+
+        // 1. Fetch only active flats linked to this resident (omit pending/unlinked units)
         $myFlats = Database::fetchAll("
             SELECT sm.*, 
                    f.flat_no, f.wing, f.floor, f.area_sqft, f.flat_type, f.is_for_rent,
@@ -29,9 +35,22 @@ class ResidentController
                    s.id as society_id, s.name as society_name, s.society_code, s.upi_id, s.payee_name
             FROM society_members sm
             JOIN societies s ON sm.society_id = s.id
+            JOIN flats f ON sm.flat_id = f.id
+            WHERE sm.user_id = ? AND sm.status = 'active'
+            ORDER BY s.name ASC, f.wing ASC, f.flat_no ASC
+        ", [$userId]);
+
+        // Fetch rejected requests if any
+        $rejectedFlats = Database::fetchAll("
+            SELECT sm.*, 
+                   COALESCE(sm.rejection_reason, sm.notes) as rejection_reason,
+                   f.flat_no, f.wing,
+                   s.name as society_name, s.society_code
+            FROM society_members sm
+            JOIN societies s ON sm.society_id = s.id
             LEFT JOIN flats f ON sm.flat_id = f.id
-            WHERE sm.user_id = ? AND sm.status IN ('active', 'pending')
-            ORDER BY sm.status ASC, s.name ASC
+            WHERE sm.user_id = ? AND sm.status = 'rejected'
+            ORDER BY sm.created_at DESC
         ", [$userId]);
 
         // Check if user has any committee role
@@ -121,6 +140,7 @@ class ResidentController
             'unpaidBillsTotal' => $unpaidBills['total'] ?? 0,
             'recentBills' => $recentBills,
             'recentReceipts' => $recentReceipts,
+            'rejectedFlats' => $rejectedFlats,
             'profileComplete' => $profileComplete,
             'currentRoute' => '/resident',
         ]);
@@ -524,24 +544,30 @@ class ResidentController
 
         $selectedSocietyId = (int)($_GET['society_id'] ?? ($societies[0]['id'] ?? 1));
 
-        // 1. For Owner: Unlinked flats of selected society (flats without an active owner)
+        // 1. For Owner: Unlinked flats of selected society (exclude any flats with an active or pending owner/resident/committee link)
         $unlinkedFlats = Database::fetchAll("
             SELECT f.* FROM flats f
             WHERE f.society_id = ?
               AND NOT EXISTS (
                   SELECT 1 FROM society_members sm 
                   WHERE sm.flat_id = f.id 
-                    AND sm.role = 'owner' 
-                    AND sm.status = 'active'
+                    AND sm.status IN ('active', 'pending')
+                    AND sm.role IN ('owner', 'resident', 'chairman', 'secretary', 'treasurer', 'committee')
               )
             ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
         ", [$selectedSocietyId]);
 
-        // 2. For Tenant: Flats available for rent in selected society (is_for_rent = 1)
+        // 2. For Tenant: Flats available for rent in selected society (is_for_rent = 1 or occupancy_status = available_for_rent, and not occupied by an active tenant)
         $rentalFlats = Database::fetchAll("
             SELECT f.* FROM flats f
             WHERE f.society_id = ?
-              AND f.is_for_rent = 1
+              AND (f.is_for_rent = 1 OR f.occupancy_status = 'available_for_rent')
+              AND NOT EXISTS (
+                  SELECT 1 FROM society_members sm 
+                  WHERE sm.flat_id = f.id 
+                    AND sm.role = 'tenant' 
+                    AND sm.status IN ('active', 'pending')
+              )
             ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
         ", [$selectedSocietyId]);
 
@@ -614,6 +640,35 @@ class ResidentController
             'ownership_type' => $role === 'tenant' ? 'tenant' : 'owner',
         ]);
 
+        // Send notifications to society committee members
+        try {
+            $committeeMembers = Database::fetchAll("
+                SELECT DISTINCT sm.user_id 
+                FROM society_members sm 
+                JOIN users u ON sm.user_id = u.id 
+                WHERE sm.society_id = ? AND sm.status = 'active' 
+                  AND (sm.role IN ('chairman', 'secretary', 'treasurer', 'committee') OR u.role = 'committee')
+            ", [$societyId]);
+
+            $flatInfo = Database::fetchOne("SELECT wing, flat_no FROM flats WHERE id = ?", [$flatId]);
+            $flatLabel = ($flatInfo['wing'] ? $flatInfo['wing'] . '-' : '') . ($flatInfo['flat_no'] ?? '');
+            $userObj = getUser();
+            $requesterName = $userObj['name'] ?? 'A resident';
+
+            foreach ($committeeMembers as $cm) {
+                Database::insert('notifications', [
+                    'user_id' => $cm['user_id'],
+                    'title' => 'New Flat Linking Request',
+                    'message' => "{$requesterName} requested to link unit {$flatLabel} as " . ($role === 'tenant' ? 'Tenant' : 'Owner') . ".",
+                    'type' => 'flat_request',
+                    'action_url' => '/comitee/requests',
+                    'is_read' => 0,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            error_log("Failed to create committee notifications for flat request: " . $e->getMessage());
+        }
+
         Session::flash('success', 'Your flat linking request has been submitted to the managing committee.');
         redirect('/resident');
     }
@@ -664,7 +719,16 @@ class ResidentController
         requireLogin();
         $userId = (int)Session::get('user_id');
 
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') 
+            || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Invalid security token. Please refresh the page and try again.']);
+                exit;
+            }
             Session::flash('error', 'Invalid security token.');
             redirect('/resident');
         }
@@ -677,6 +741,12 @@ class ResidentController
         ", [$flatId, $userId]);
 
         if (!$membership) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Only the flat owner can update occupancy and rental status.']);
+                exit;
+            }
             Session::flash('error', 'Only the flat owner can update occupancy and rental status.');
             redirect('/resident');
         }
@@ -763,6 +833,12 @@ class ResidentController
             'rented' => 'Rented'
         ];
 
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => "Flat {$membership['wing']}-{$membership['flat_no']} status updated to {$labels[$occupancy]}."]);
+            exit;
+        }
+
         Session::flash('success', "Flat {$membership['wing']}-{$membership['flat_no']} status updated to {$labels[$occupancy]}.");
         redirect('/resident');
     }
@@ -816,12 +892,16 @@ class ResidentController
         $user = getUser();
         $userId = (int)Session::get('user_id');
 
-        // Automatically mark all unread notifications as read when visiting notification screen
-        Database::update('notifications', ['is_read' => 1], 'user_id = ? AND is_read = 0', [$userId]);
+        $where = ["(user_id = ? OR (user_id IS NULL AND type = 'announcement'))"];
+        $params = [$userId];
 
+        // Proposal approvals show in Societies Management only, not in notification feed
+        $where[] = "type != 'society_proposal'";
+
+        $whereClause = implode(' AND ', $where);
         $notifications = Database::fetchAll(
-            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
-            [$userId]
+            "SELECT * FROM notifications WHERE {$whereClause} ORDER BY created_at DESC LIMIT 50",
+            $params
         );
         $profile = $user;
 
@@ -831,7 +911,7 @@ class ResidentController
             'notifications' => $notifications,
             'csrfToken' => generateCSRFToken(),
             'profile' => $profile,
-            'currentRoute' => '/resident/notifications',
+            'currentRoute' => '/user/notification',
         ]);
     }
 
@@ -839,22 +919,40 @@ class ResidentController
     {
         requireLogin();
         if (verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            Database::update('notifications', ['is_read' => 1], 'user_id = ? AND is_read = 0', [Session::get('user_id')]);
+            Database::update('notifications', ['is_read' => 1], '(user_id = ? OR user_id IS NULL) AND is_read = 0', [Session::get('user_id')]);
         }
-        redirect('/resident/notifications');
+        redirect('/user/notification');
+    }
+
+    public function toggleNotificationRead(int $id)
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+        $notif = Database::fetchOne("SELECT id, is_read FROM notifications WHERE id = ? AND (user_id = ? OR user_id IS NULL)", [$id, $userId]);
+        $newStatus = 1;
+        if ($notif) {
+            $newStatus = $notif['is_read'] ? 0 : 1;
+            Database::update('notifications', ['is_read' => $newStatus], 'id = ?', [$id]);
+        }
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'is_read' => $newStatus]);
+            exit;
+        }
+        redirect('/user/notification');
     }
 
     public function markSingleNotificationRead(int $id)
     {
         requireLogin();
         $userId = (int)Session::get('user_id');
-        Database::update('notifications', ['is_read' => 1], 'id = ? AND user_id = ?', [$id, $userId]);
+        Database::update('notifications', ['is_read' => 1], 'id = ? AND (user_id = ? OR user_id IS NULL)', [$id, $userId]);
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
             header('Content-Type: application/json');
             echo json_encode(['success' => true]);
             exit;
         }
-        redirect('/resident/notifications');
+        redirect('/user/notification');
     }
 
     public function profile()
@@ -1003,6 +1101,27 @@ class ResidentController
         redirect('/user/profile?tab=pin');
     }
 
+    public function disconnectGoogle()
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/user/profile?tab=accounts');
+        }
+
+        $user = getUser();
+        if (empty($user['password_hash'])) {
+            Session::flash('error', 'Please set an account password in "Change Password" before unlinking your Google account.');
+            redirect('/user/profile?tab=password');
+        }
+
+        Database::query("UPDATE users SET google_id = NULL WHERE id = ?", [$userId]);
+        Session::flash('success', 'Google account unlinked successfully.');
+        redirect('/user/profile?tab=accounts');
+    }
+
     public function documents()
     {
         requireLogin();
@@ -1120,4 +1239,27 @@ class ResidentController
         Session::flash('success', 'Service request submitted successfully!');
         redirect('/resident/requests');
     }
+
+    public function switchSociety(int $id): void
+    {
+        requireLogin();
+        $userId = (int)Session::get('user_id');
+
+        $member = Database::fetchOne("
+            SELECT id FROM society_members 
+            WHERE user_id = ? AND society_id = ? AND status = 'active'
+            LIMIT 1
+        ", [$userId, $id]);
+
+        if ($member) {
+            Session::put('active_society_id', $id);
+            Session::flash('success', 'Switched society context.');
+        } else {
+            Session::flash('error', 'You are not an active member of this society.');
+        }
+
+        $referer = $_SERVER['HTTP_REFERER'] ?? '/resident';
+        redirect($referer);
+    }
 }
+

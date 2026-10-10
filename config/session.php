@@ -13,9 +13,6 @@ if (!function_exists('parseSessionLifetime')) {
         if (empty($value)) {
             return 3600; // default 60 min
         }
-        if (is_numeric($value)) {
-            return max(60, (int)$value);
-        }
         $val = strtolower(trim((string)$value));
         if (preg_match('/^(\d+)\s*(d|day|days)$/', $val, $m)) {
             return (int)$m[1] * 86400;
@@ -27,10 +24,15 @@ if (!function_exists('parseSessionLifetime')) {
             return (int)$m[1] * 60;
         }
         if (preg_match('/^(\d+)\s*(s|sec|secs|second|seconds)$/', $val, $m)) {
-            return (int)$m[1];
+            return max(60, (int)$m[1]);
         }
         if (preg_match('/^(\d+)\s*(w|week|weeks)$/', $val, $m)) {
             return (int)$m[1] * 604800;
+        }
+        if (is_numeric($val)) {
+            $num = (int)$val;
+            // Standard convention: if <= 1440 (up to 24h in minutes), treat as minutes; otherwise seconds
+            return ($num <= 1440) ? ($num * 60) : max(60, $num);
         }
         return 3600;
     }

@@ -33,6 +33,14 @@
     </div>
     {% endif %}
 
+    <!-- Real-time Search Filter Bar -->
+    <div class="mb-4 flex items-center justify-between gap-4">
+        <div class="relative max-w-sm w-full">
+            <i data-lucide="search" class="w-4 h-4 text-surface-200/40 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="flatSearchInput" placeholder="Search flats by unit, wing, occupant, or type..." class="input-glass w-full !pl-10 !py-2 text-xs" oninput="filterFlatsTable()">
+        </div>
+    </div>
+
     <!-- Flats Table -->
     <div class="glass-panel rounded-2xl overflow-hidden border border-white/10">
         <div class="overflow-x-auto">
@@ -47,7 +55,12 @@
                         <th class="py-3.5 px-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5">
+                <tbody id="flatsTableBody" class="divide-y divide-white/5">
+                    <tr id="flatsEmptySearchRow" style="display: none;">
+                        <td colspan="6" class="py-8 text-center text-xs text-surface-200/40">
+                            No matching flats found.
+                        </td>
+                    </tr>
                     {% for flat in flats %}
                     <tr class="hover:bg-white/[0.02] transition-colors">
                         <td class="py-3.5 px-4 font-mono font-bold text-white">
@@ -278,5 +291,25 @@
             }
         }
     });
+
+    function filterFlatsTable() {
+        const q = (document.getElementById('flatSearchInput').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#flatsTableBody tr');
+        let visible = 0;
+        rows.forEach(r => {
+            if (r.id === 'flatsEmptySearchRow') return;
+            const text = r.textContent.toLowerCase();
+            if (!q || text.includes(q)) {
+                r.style.display = '';
+                visible++;
+            } else {
+                r.style.display = 'none';
+            }
+        });
+        const emptyRow = document.getElementById('flatsEmptySearchRow');
+        if (emptyRow) {
+            emptyRow.style.display = (visible === 0) ? '' : 'none';
+        }
+    }
 </script>
 {% endblock %}

@@ -243,22 +243,55 @@ function view(string $name, array $data = []): string {
                         $unreadRow = Database::fetchOne("
                             SELECT COUNT(*) as cnt 
                             FROM notifications 
-                            WHERE (user_id = ? OR user_id IS NULL) AND is_read = 0
+                            WHERE (user_id = ? OR (user_id IS NULL AND type = 'announcement')) AND is_read = 0 AND type != 'society_proposal'
                         ", [$nUserId]);
                         $data['unreadNotifications'] = (int)($unreadRow['cnt'] ?? 0);
                     }
                     if (!isset($data['latestNotifications'])) {
                         $data['latestNotifications'] = Database::fetchAll("
-                            SELECT id, title, message, type, is_read, created_at 
+                            SELECT id, title, message, type, is_read, action_url, created_at 
                             FROM notifications 
-                            WHERE user_id = ? OR user_id IS NULL 
+                            WHERE (user_id = ? OR (user_id IS NULL AND type = 'announcement')) AND is_read = 0 AND type != 'society_proposal' 
                             ORDER BY created_at DESC 
                             LIMIT 5
                         ", [$nUserId]);
                     }
+
+                    if (!isset($data['userSocieties'])) {
+                        $data['userSocieties'] = Database::fetchAll("
+                            SELECT DISTINCT s.id, s.name, s.society_code, s.city, sm.role, f.wing, f.flat_no
+                            FROM society_members sm
+                            JOIN societies s ON sm.society_id = s.id
+                            LEFT JOIN flats f ON sm.flat_id = f.id
+                            WHERE sm.user_id = ? AND sm.status = 'active'
+                            ORDER BY s.name ASC
+                        ", [$nUserId]);
+                    }
+                    $activeSocId = Session::get('active_society_id');
+                    if (!$activeSocId && !empty($data['userSocieties'])) {
+                        $activeSocId = (int)$data['userSocieties'][0]['id'];
+                        Session::put('active_society_id', $activeSocId);
+                    }
+                    $data['activeSocietyId'] = $activeSocId;
+                    $data['activeSociety'] = null;
+                    if (!empty($data['userSocieties'])) {
+                        foreach ($data['userSocieties'] as $us) {
+                            if ((int)$us['id'] === (int)$activeSocId) {
+                                $data['activeSociety'] = $us;
+                                break;
+                            }
+                        }
+                        if (!$data['activeSociety']) {
+                            $data['activeSociety'] = $data['userSocieties'][0];
+                            $data['activeSocietyId'] = (int)$data['userSocieties'][0]['id'];
+                        }
+                    }
                 } catch (\Throwable $e) {
                     $data['unreadNotifications'] = $data['unreadNotifications'] ?? 0;
                     $data['latestNotifications'] = $data['latestNotifications'] ?? [];
+                    $data['userSocieties'] = $data['userSocieties'] ?? [];
+                    $data['activeSociety'] = $data['activeSociety'] ?? null;
+                    $data['activeSocietyId'] = $data['activeSocietyId'] ?? null;
                 }
             }
         }

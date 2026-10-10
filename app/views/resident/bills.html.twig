@@ -37,9 +37,25 @@
     </div>
     {% endif %}
 
-    <div class="space-y-4">
+    <!-- Search & Status Filter Bar -->
+    <div class="mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="relative flex-1 sm:max-w-xs">
+            <i data-lucide="search" class="w-4 h-4 text-surface-200/40 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="billSearchInput" placeholder="Search bills by #, title, flat..." class="input-glass w-full !pl-10 !py-2 text-xs" oninput="filterResidentBills()">
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+            <button type="button" onclick="setBillStatusFilter('all')" class="bill-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300" data-filter="all">All</button>
+            <button type="button" onclick="setBillStatusFilter('pending')" class="bill-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-surface-200 hover:text-white hover:bg-white/5" data-filter="pending">Pending</button>
+            <button type="button" onclick="setBillStatusFilter('paid')" class="bill-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-surface-200 hover:text-white hover:bg-white/5" data-filter="paid">Paid</button>
+        </div>
+    </div>
+
+    <div id="residentBillsContainer" class="space-y-4">
+        <div id="residentBillsEmptyFilterRow" class="hidden glass-panel rounded-2xl p-8 text-center text-xs text-surface-200/50">
+            No bills matching your search or filter.
+        </div>
         {% for bill in bills %}
-        <div class="glass-panel rounded-2xl p-5 sm:p-6 border {{ bill.status == 'pending' ? 'border-red-500/30 bg-red-500/[0.03]' : 'border-white/10' }} flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="resident-bill-card glass-panel rounded-2xl p-5 sm:p-6 border {{ bill.status == 'pending' ? 'border-red-500/30 bg-red-500/[0.03]' : 'border-white/10' }} flex flex-col md:flex-row md:items-center justify-between gap-4" data-status="{{ bill.status }}">
             <div class="space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="font-mono text-xs text-surface-200/50">#{{ bill.bill_number }}</span>
@@ -66,10 +82,17 @@
                 </div>
 
                 {% if bill.status == 'pending' %}
-                <button type="button" onclick="openUpiModal('{{ bill.id }}', '{{ bill.amount }}', '{{ bill.bill_number }}', '{{ bill.society_name }}', '{{ bill.upi_id ?: 'society@upi' }}', '{{ bill.payee_name ?: bill.society_name }}')" class="btn-primary !px-5 !py-2.5 text-xs font-semibold flex items-center gap-2 shadow-lg shadow-brand-500/25">
-                    <i data-lucide="qr-code" class="w-4 h-4"></i>
-                    <span>Pay with UPI</span>
-                </button>
+                    {% if bill.upi_id %}
+                    <button type="button" onclick="openUpiModal('{{ bill.id }}', '{{ bill.amount }}', '{{ bill.bill_number }}', '{{ bill.society_name }}', '{{ bill.upi_id }}', '{{ bill.payee_name ?: bill.society_name }}')" class="btn-primary !px-5 !py-2.5 text-xs font-semibold flex items-center gap-2 shadow-lg shadow-brand-500/25">
+                        <i data-lucide="qr-code" class="w-4 h-4"></i>
+                        <span>Pay with UPI</span>
+                    </button>
+                    {% else %}
+                    <span class="text-xs text-slate-500 dark:text-surface-200/50 bg-slate-100 dark:bg-white/5 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 flex items-center gap-1.5" title="Committee has not configured society UPI ID yet">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        <span>UPI Not Registered</span>
+                    </span>
+                    {% endif %}
                 {% else %}
                 <div class="text-right">
                     <span class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
@@ -231,6 +254,43 @@
         document.getElementById('bulkUpiQrImage').src = qrUrl;
 
         document.getElementById('bulkUpiModal').classList.remove('hidden');
+    }
+
+    let currentBillFilter = 'all';
+    function setBillStatusFilter(status) {
+        currentBillFilter = status;
+        document.querySelectorAll('.bill-filter-btn').forEach(btn => {
+            if (btn.getAttribute('data-filter') === status) {
+                btn.className = 'bill-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300';
+            } else {
+                btn.className = 'bill-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-surface-200 hover:text-white hover:bg-white/5';
+            }
+        });
+        filterResidentBills();
+    }
+
+    function filterResidentBills() {
+        const query = (document.getElementById('billSearchInput').value || '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.resident-bill-card');
+        let visible = 0;
+        cards.forEach(card => {
+            const status = card.getAttribute('data-status') || '';
+            const text = card.textContent.toLowerCase();
+            const matchesQuery = !query || text.includes(query);
+            const matchesStatus = (currentBillFilter === 'all') || (status === currentBillFilter);
+
+            if (matchesQuery && matchesStatus) {
+                card.style.display = '';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const empty = document.getElementById('residentBillsEmptyFilterRow');
+        if (empty) {
+            empty.style.display = (visible === 0) ? '' : 'none';
+        }
     }
 </script>
 {% endblock %}

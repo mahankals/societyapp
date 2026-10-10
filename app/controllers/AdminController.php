@@ -104,6 +104,39 @@ class AdminController
     }
 
     /**
+     * Dedicated Pending Society Proposals Page
+     */
+    public function pendingSocieties()
+    {
+        requireAdmin();
+        $user = getUser();
+
+        $pendingRequests = Database::fetchAll("
+            SELECT sr.*, u.name as requester_name, u.email as requester_email, u.phone as requester_phone
+            FROM society_requests sr
+            LEFT JOIN users u ON sr.user_id = u.id
+            WHERE sr.status = 'pending'
+            ORDER BY sr.created_at DESC
+        ");
+
+        foreach ($pendingRequests as &$pr) {
+            $pr['members'] = !empty($pr['members_data']) ? (json_decode($pr['members_data'], true) ?: []) : [];
+        }
+        unset($pr);
+
+        echo view('admin/societies-pending', [
+            'basePath' => '/',
+            'user' => $user,
+            'pendingRequests' => $pendingRequests,
+            'pendingRequestsCount' => count($pendingRequests),
+            'csrfToken' => generateCSRFToken(),
+            'profile' => getUserProfile(),
+            'flash' => Session::getFlash(),
+            'currentRoute' => '/admin/societies/pending',
+        ]);
+    }
+
+    /**
      * Create New Society
      */
     public function createSociety()
@@ -329,19 +362,82 @@ class AdminController
             'is_active' => 1,
         ]);
 
-        // Link requester as initial committee chairman
-        if (!empty($req['user_id']) && $societyId) {
-            Database::insert('society_members', [
-                'society_id' => $societyId,
-                'user_id' => $req['user_id'],
-                'role' => 'chairman',
-                'status' => 'active',
-                'ownership_type' => 'owner',
-            ]);
-            Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$req['user_id']]);
+        // Auto-create filled Flats & link mentioned committee members
+        $members = [];
+        if (!empty($req['members_data'])) {
+            $decoded = json_decode($req['members_data'], true);
+            if (is_array($decoded)) {
+                $members = $decoded;
+            }
+        }
+
+        if (!empty($members) && $societyId) {
+            foreach ($members as $m) {
+                $wing = !empty($m['wing']) ? trim($m['wing']) : 'A';
+                $floor = !empty($m['floor']) ? trim($m['floor']) : null;
+                $flatNo = !empty($m['flat_no']) ? trim($m['flat_no']) : '101';
+                $area = !empty($m['area_sqft']) ? (float)$m['area_sqft'] : 0.00;
+                $type = !empty($m['flat_type']) ? trim($m['flat_type']) : '2 BHK';
+                $mUserId = !empty($m['user_id']) ? (int)$m['user_id'] : null;
+
+                // Check or insert flat
+                $flat = Database::fetchOne("SELECT id FROM flats WHERE society_id = ? AND wing = ? AND flat_no = ?", [$societyId, $wing, $flatNo]);
+                if (!$flat) {
+                    $flatId = Database::insert('flats', [
+                        'society_id' => $societyId,
+                        'flat_no' => $flatNo,
+                        'wing' => $wing,
+                        'floor' => $floor,
+                        'area_sqft' => $area,
+                        'flat_type' => $type,
+                        'occupancy_status' => 'self_occupied',
+                    ]);
+                } else {
+                    $flatId = (int)$flat['id'];
+                }
+
+                if ($mUserId) {
+                    $isPrimary = !empty($m['is_primary']) || ($mUserId === (int)$req['user_id']);
+                    $existingMember = Database::fetchOne("SELECT id FROM society_members WHERE society_id = ? AND user_id = ?", [$societyId, $mUserId]);
+                    if (!$existingMember) {
+                        Database::insert('society_members', [
+                            'society_id' => $societyId,
+                            'flat_id' => $flatId,
+                            'user_id' => $mUserId,
+                            'role' => $isPrimary ? 'chairman' : 'committee',
+                            'status' => 'active',
+                            'ownership_type' => 'owner',
+                        ]);
+                    }
+                    Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$mUserId]);
+                }
+            }
+        } else {
+            // Fallback: Link requester as chairman
+            if (!empty($req['user_id']) && $societyId) {
+                Database::insert('society_members', [
+                    'society_id' => $societyId,
+                    'user_id' => $req['user_id'],
+                    'role' => 'chairman',
+                    'status' => 'active',
+                    'ownership_type' => 'owner',
+                ]);
+                Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$req['user_id']]);
+            }
         }
 
         // Mark request as approved
+        // Notify proposer
+        if (!empty($req['user_id'])) {
+            Database::insert('notifications', [
+                'user_id' => (int)$req['user_id'],
+                'title' => 'Society Proposal Approved!',
+                'message' => "Congratulations! Your society proposal for '{$req['society_name']}' has been approved and registered with Society Code {$code}.",
+                'type' => 'success',
+                'action_url' => '/resident',
+            ]);
+        }
+
         Database::update('society_requests', ['status' => 'approved'], 'id = ?', [$requestId]);
 
         Database::insert('activity_logs', [
@@ -351,7 +447,7 @@ class AdminController
         ]);
 
         Session::flash('success', "Society '{$req['society_name']}' approved & registered with code {$code}!");
-        redirect('/admin/societies');
+        redirect('/admin/societies/pending');
     }
 
     /**
@@ -362,25 +458,41 @@ class AdminController
         requireAdmin();
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid security token.');
-            redirect('/admin/societies');
+            redirect('/admin/societies/pending');
         }
 
         $req = Database::fetchOne("SELECT * FROM society_requests WHERE id = ? AND status = 'pending'", [$requestId]);
         if (!$req) {
             Session::flash('error', 'Pending society proposal not found.');
-            redirect('/admin/societies');
+            redirect('/admin/societies/pending');
         }
 
-        Database::update('society_requests', ['status' => 'rejected'], 'id = ?', [$requestId]);
+        $reason = trim($_POST['rejection_reason'] ?? $_POST['remark'] ?? '');
+
+        Database::update('society_requests', [
+            'status' => 'rejected',
+            'rejection_reason' => $reason ?: 'Proposal rejected by platform administrator.'
+        ], 'id = ?', [$requestId]);
+
+        // Send notification to the user who proposed the society
+        if (!empty($req['user_id'])) {
+            Database::insert('notifications', [
+                'user_id' => (int)$req['user_id'],
+                'title' => 'Society Proposal Rejected',
+                'message' => "Your society contribution proposal for '{$req['society_name']}' was rejected." . ($reason ? " Reason: {$reason}" : ""),
+                'type' => 'error',
+                'action_url' => '/society/contribute',
+            ]);
+        }
 
         Database::insert('activity_logs', [
             'user_id' => Session::get('user_id'),
             'action' => 'society_request_rejected',
-            'description' => "Rejected society proposal: {$req['society_name']}",
+            'description' => "Rejected society proposal: {$req['society_name']}" . ($reason ? " Reason: {$reason}" : ''),
         ]);
 
         Session::flash('success', "Society proposal '{$req['society_name']}' rejected.");
-        redirect('/admin/societies');
+        redirect('/admin/societies/pending');
     }
 
     public function users()
@@ -785,10 +897,10 @@ class AdminController
             'prerequisites' => $prerequisites,
             'activeTab' => $activeTab,
             'dbConfig' => [
-                'host' => DB_HOST,
-                'port' => DB_PORT,
-                'name' => DB_NAME,
-                'user' => DB_USER,
+                'host' => getSetting('db_host', getenv('DB_HOST') ?: 'db'),
+                'port' => getSetting('db_port', getenv('DB_PORT') ?: '3306'),
+                'name' => getSetting('db_name', getenv('DB_NAME') ?: 'db'),
+                'user' => getSetting('db_user', getenv('DB_USER') ?: 'db'),
             ],
         ]);
     }
@@ -843,6 +955,20 @@ class AdminController
         }
         if (isset($_POST['default_theme'])) {
             setSetting('default_theme', trim($_POST['default_theme']), 'ui');
+        }
+        if (isset($_POST['session_lifetime'])) {
+            $sessLifetime = trim($_POST['session_lifetime']);
+            setSetting('session_lifetime', $sessLifetime, 'security');
+            $envPath = ROOT_PATH . '/.env';
+            if (file_exists($envPath)) {
+                $envContent = file_get_contents($envPath);
+                if (preg_match('/^SESSION_LIFETIME=.*$/m', $envContent)) {
+                    $envContent = preg_replace('/^SESSION_LIFETIME=.*$/m', 'SESSION_LIFETIME=' . $sessLifetime, $envContent);
+                } else {
+                    $envContent .= "\nSESSION_LIFETIME=" . $sessLifetime . "\n";
+                }
+                file_put_contents($envPath, $envContent);
+            }
         }
 
         // 3. Email Settings

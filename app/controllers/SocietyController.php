@@ -354,6 +354,20 @@ class SocietyController
             ORDER BY name ASC
         ");
 
+        // Pending join requests count for alert banner
+        $pendingRequests = Database::fetchAll("
+            SELECT sm.id FROM society_members sm 
+            WHERE sm.society_id = ? AND sm.status = 'pending'
+        ", [$societyId]);
+        $pendingRequestsCount = count($pendingRequests);
+
+        // All flats for assignment / reassignment
+        $allFlats = Database::fetchAll("
+            SELECT * FROM flats 
+            WHERE society_id = ? 
+            ORDER BY wing ASC, flat_no ASC
+        ", [$societyId]);
+
         echo view('committee/members', [
             'basePath' => '/',
             'user' => $auth['user'],
@@ -361,6 +375,8 @@ class SocietyController
             'members' => $members,
             'vacantFlats' => $vacantFlats,
             'availableUsers' => $availableUsers,
+            'allFlats' => $allFlats,
+            'pendingRequestsCount' => $pendingRequestsCount,
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
         ]);
@@ -559,9 +575,13 @@ class SocietyController
             }
         }
 
-        Database::update('society_members', [
-            'role' => $newRole,
-        ], 'id = ?', [$id]);
+        $updates = ['role' => $newRole];
+        if (isset($_POST['flat_id'])) {
+            $rawFlatId = trim($_POST['flat_id']);
+            $updates['flat_id'] = ($rawFlatId !== '' && $rawFlatId !== '0') ? (int)$rawFlatId : null;
+        }
+
+        Database::update('society_members', $updates, 'id = ?', [$id]);
 
         // Sync users table role
         if (in_array($newRole, ['chairman', 'secretary', 'treasurer', 'committee'])) {
@@ -638,11 +658,46 @@ class SocietyController
         $auth = $this->requireCommittee();
         $societyId = (int)$auth['society']['id'];
 
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            Session::flash('error', 'Invalid security token.');
+            redirect('/comitee/requests');
+        }
+
+        $remark = trim($_POST['remark'] ?? $_POST['rejection_reason'] ?? '');
+        if (empty($remark)) {
+            Session::flash('error', 'Rejection remark / reason is strictly required.');
+            redirect('/comitee/requests');
+        }
+
+        $memberReq = Database::fetchOne("
+            SELECT sm.*, f.flat_number, f.wing 
+            FROM society_members sm 
+            LEFT JOIN flats f ON sm.flat_id = f.id 
+            WHERE sm.id = ? AND sm.society_id = ?
+        ", [$id, $societyId]);
+
+        if (!$memberReq) {
+            Session::flash('error', 'Request not found.');
+            redirect('/comitee/requests');
+        }
+
         Database::update('society_members', [
-            'status' => 'rejected'
+            'status' => 'rejected',
+            'notes' => $remark,
+            'rejection_reason' => $remark,
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
-        Session::flash('success', 'Join request rejected.');
+        // Notify user about rejection with remark
+        $flatStr = !empty($memberReq['flat_number']) ? (($memberReq['wing'] ? $memberReq['wing'] . '-' : '') . $memberReq['flat_number']) : 'Unit';
+        Database::insert('notifications', [
+            'user_id' => (int)$memberReq['user_id'],
+            'title' => 'Flat Linking Request Rejected',
+            'message' => "Your request to link {$flatStr} in {$auth['society']['name']} was rejected by the managing committee. Remark: {$remark}",
+            'type' => 'error',
+            'action_url' => '/resident',
+        ]);
+
+        Session::flash('success', 'Join request rejected with remark recorded.');
         redirect('/comitee/requests');
     }
 
@@ -744,12 +799,57 @@ class SocietyController
         requireLogin();
         $user = getUser();
 
+        $myProposals = Database::fetchAll("
+            SELECT id, society_name, city, state, pincode, address, status, created_at 
+            FROM society_requests 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC
+        ", [$user['id']]);
+
         echo view('pages/contribute', [
             'basePath' => '/',
             'user' => $user,
             'csrfToken' => generateCSRFToken(),
             'flash' => Session::getFlash(),
+            'myProposals' => $myProposals,
         ]);
+    }
+
+    public function searchUserForContribution()
+    {
+        requireLogin();
+        header('Content-Type: application/json');
+        $q = trim($_GET['q'] ?? '');
+        if (empty($q) || strlen($q) < 3) {
+            echo json_encode(['success' => false, 'error' => 'Please enter at least 3 characters to search.']);
+            exit;
+        }
+
+        $cleanPhone = preg_replace('/[^\d]/', '', $q);
+        $user = Database::fetchOne("
+            SELECT id, name, email, phone 
+            FROM users 
+            WHERE (email = ? OR phone = ? OR phone LIKE ?) AND is_active = 1 
+            LIMIT 1
+        ", [$q, $q, '%' . $cleanPhone]);
+
+        if ($user) {
+            echo json_encode([
+                'success' => true,
+                'user' => [
+                    'id' => (int)$user['id'],
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'phone' => $user['phone'] ?? '',
+                ]
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'error' => 'No registered user found matching this email or phone number.'
+            ]);
+        }
+        exit;
     }
 
     /**
@@ -758,7 +858,8 @@ class SocietyController
     public function handleContribute()
     {
         requireLogin();
-        $userId = Session::get('user_id');
+        $user = getUser();
+        $userId = (int)$user['id'];
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             Session::flash('error', 'Invalid request token.');
@@ -774,6 +875,30 @@ class SocietyController
             redirect('/society/contribute');
         }
 
+        $membersDataRaw = $_POST['members_data_json'] ?? '';
+        $membersData = [];
+        if (!empty($membersDataRaw)) {
+            $decoded = json_decode($membersDataRaw, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                $membersData = $decoded;
+            }
+        }
+
+        if (empty($membersData)) {
+            $membersData[] = [
+                'user_id' => $userId,
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'phone' => $user['phone'],
+                'wing' => trim($_POST['c1_wing'] ?? 'A'),
+                'floor' => trim($_POST['c1_floor'] ?? '1'),
+                'flat_no' => trim($_POST['c1_flat'] ?? '101'),
+                'area_sqft' => trim($_POST['c1_area'] ?? '850.00'),
+                'flat_type' => trim($_POST['c1_type'] ?? '2 BHK'),
+                'is_primary' => true,
+            ];
+        }
+
         Database::insert('society_requests', [
             'user_id' => $userId,
             'society_name' => $name,
@@ -781,23 +906,15 @@ class SocietyController
             'state' => trim($_POST['state'] ?? 'Maharashtra'),
             'pincode' => trim($_POST['pincode'] ?? ''),
             'address' => $address,
-            'contact1_name' => trim($_POST['c1_name'] ?? ''),
-            'contact1_phone' => trim($_POST['c1_phone'] ?? ''),
-            'contact1_flat' => trim($_POST['c1_flat'] ?? ''),
-            'contact2_name' => trim($_POST['c2_name'] ?? ''),
-            'contact2_phone' => trim($_POST['c2_phone'] ?? ''),
-            'contact2_flat' => trim($_POST['c2_flat'] ?? ''),
-            'contact3_name' => trim($_POST['c3_name'] ?? ''),
-            'contact3_phone' => trim($_POST['c3_phone'] ?? ''),
-            'contact3_flat' => trim($_POST['c3_flat'] ?? ''),
-            'contact4_name' => trim($_POST['c4_name'] ?? ''),
-            'contact4_phone' => trim($_POST['c4_phone'] ?? ''),
-            'contact4_flat' => trim($_POST['c4_flat'] ?? ''),
+            'members_data' => json_encode($membersData),
+            'contact1_name' => $membersData[0]['name'] ?? $user['name'],
+            'contact1_phone' => $membersData[0]['phone'] ?? $user['phone'],
+            'contact1_flat' => ($membersData[0]['wing'] ?? 'A') . '-' . ($membersData[0]['flat_no'] ?? '101'),
             'status' => 'pending',
         ]);
 
-        Session::flash('success', 'Society proposal submitted successfully! Our team and committee will review your submission.');
-        redirect('/resident');
+        Session::flash('success', 'Society proposal submitted successfully! Our committee and admin team will review it.');
+        redirect('/society/contribute');
     }
 
     /**
@@ -810,17 +927,6 @@ class SocietyController
         $societyId = (int)$society['id'];
 
         $statusFilter = trim($_GET['status'] ?? '');
-        $where = ['b.society_id = ?'];
-        $params = [$societyId];
-
-        if ($statusFilter === 'rejected') {
-            $where[] = "(b.status = 'rejected' OR EXISTS (SELECT 1 FROM transactions t WHERE t.bill_id = b.id AND t.status = 'rejected'))";
-        } elseif ($statusFilter !== '') {
-            $where[] = 'b.status = ?';
-            $params[] = $statusFilter;
-        }
-
-        $whereClause = 'WHERE ' . implode(' AND ', $where);
 
         $bills = Database::fetchAll("
             SELECT b.*, 
@@ -830,33 +936,48 @@ class SocietyController
                    f.wing, 
                    f.flat_no,
                    f.area_sqft,
-                   f.flat_type
+                   f.flat_type,
+                   t.status as latest_txn_status,
+                   t.id as latest_txn_id
             FROM maintenance_bills b
             LEFT JOIN users u ON b.user_id = u.id
             LEFT JOIN flats f ON b.flat_id = f.id
-            {$whereClause}
+            LEFT JOIN transactions t ON t.bill_id = b.id AND t.id = (
+                SELECT MAX(t2.id) FROM transactions t2 WHERE t2.bill_id = b.id
+            )
+            WHERE b.society_id = ?
             ORDER BY b.created_at DESC
-        ", $params);
-
-        $stats = Database::fetchOne("
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paidCount,
-                SUM(CASE WHEN status IN ('pending', 'overdue') THEN 1 ELSE 0 END) as pendingCount,
-                COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as paidAmount,
-                COALESCE(SUM(CASE WHEN status IN ('pending', 'overdue') THEN amount ELSE 0 END), 0) as pendingAmount,
-                COALESCE(SUM(amount), 0) as totalAmount
-            FROM maintenance_bills
-            WHERE society_id = ?
         ", [$societyId]);
 
-        $rejectedCount = (int)(Database::fetchOne("
-            SELECT COUNT(DISTINCT b.id) as c 
-            FROM maintenance_bills b
-            LEFT JOIN transactions t ON t.bill_id = b.id
-            WHERE b.society_id = ? AND (b.status = 'rejected' OR t.status = 'rejected')
-        ", [$societyId])['c'] ?? 0);
-        $stats['rejectedCount'] = $rejectedCount;
+        $paidCount = 0;
+        $unpaidCount = 0;
+        $confirmationCount = 0;
+        $rejectedCount = 0;
+
+        foreach ($bills as &$bill) {
+            if ($bill['status'] === 'paid') {
+                $bill['computed_category'] = 'paid';
+                $paidCount++;
+            } elseif ($bill['latest_txn_status'] === 'pending') {
+                $bill['computed_category'] = 'confirmation';
+                $confirmationCount++;
+            } elseif ($bill['status'] === 'rejected' || $bill['latest_txn_status'] === 'rejected') {
+                $bill['computed_category'] = 'rejected';
+                $rejectedCount++;
+            } else {
+                $bill['computed_category'] = 'unpaid';
+                $unpaidCount++;
+            }
+        }
+        unset($bill);
+
+        $stats = [
+            'total' => count($bills),
+            'paidCount' => $paidCount,
+            'unpaidCount' => $unpaidCount,
+            'confirmationCount' => $confirmationCount,
+            'rejectedCount' => $rejectedCount,
+        ];
 
         // Occupied flats for bill creation
         $occupiedFlats = Database::fetchAll("
@@ -955,7 +1076,7 @@ class SocietyController
             }
             $amount = $amount > 0 ? $amount : round($area * $ratePerSqft, 2);
             if (empty($particulars)) {
-                $particulars = "Maintenance: {$area} sq.ft @ ₹{$ratePerSqft}/sq.ft";
+                $particulars = "{$title}: {$area} sq.ft @ ₹{$ratePerSqft}/sq.ft";
             }
         } else {
             if ($amount <= 0) {
@@ -974,7 +1095,7 @@ class SocietyController
             'user_id' => $userId,
             'bill_number' => $billNumber,
             'title' => $title ?: 'Monthly Maintenance',
-            'particulars' => $particulars ?: "Maintenance dues for {$member['wing']}-{$member['flat_no']}",
+            'particulars' => $particulars ?: ($title ?: "Maintenance dues for {$member['wing']}-{$member['flat_no']}"),
             'amount' => $amount,
             'month' => $month,
             'due_date' => $dueDate,
@@ -1203,7 +1324,7 @@ class SocietyController
         }
 
         $upiId = trim($_POST['upi_id'] ?? '');
-        $payeeName = trim($_POST['payee_name'] ?? '');
+        $payeeName = trim($_POST['payee_name'] ?? $_POST['upi_payee_name'] ?? '');
 
         Database::update('societies', [
             'upi_id' => $upiId ?: null,

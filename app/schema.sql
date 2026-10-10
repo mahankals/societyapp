@@ -140,7 +140,9 @@ CREATE TABLE IF NOT EXISTS society_requests (
     contact4_name VARCHAR(100) NULL,
     contact4_phone VARCHAR(20) NULL,
     contact4_flat VARCHAR(50) NULL,
+    members_data JSON NULL,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    rejection_reason TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
