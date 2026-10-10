@@ -118,3 +118,33 @@ Every tabular data view across Admin, Committee, and Resident portals must provi
 - **Empty State**: Render a friendly "No matching records found" row or banner when active search/filter queries yield 0 results.
 - **Theming & Accessibility**: Filter controls must adhere to WCAG AA contrast standards in both dark and light modes with proper focus ring styling.
 
+---
+
+## 8. Field-Level Contextual Validation Feedback
+
+### Decision
+On form submission or live field validation, validation error messages must be positioned directly below the respective input field rather than solely relying on distant top-of-page alert banners or modal popups.
+
+### Rationale
+- Contextual error placement allows users to instantly identify which specific field requires correction without scanning across the entire page.
+- Dramatically improves user experience on mobile screens where top alerts may scroll completely out of view.
+- Provides accessible, granular feedback that can be tied to assistive technologies.
+
+### Implementation Pattern
+1. **Error Message Container**: Place a dedicated message element immediately beneath the field container:
+   ```html
+   <div class="space-y-1">
+       <label for="society_name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Society Name</label>
+       <input type="text" id="society_name" name="society_name" class="input-glass w-full text-sm" aria-describedby="society_name_error">
+       <p id="society_name_error" class="field-error text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1 hidden">
+           <i data-lucide="alert-circle" class="w-3 h-3 shrink-0"></i>
+           <span>Please enter a valid society name.</span>
+       </p>
+   </div>
+   ```
+2. **Visual Input Error State**:
+   - Apply `border-rose-500 focus:ring-rose-500/30` and `aria-invalid="true"` to the failing input.
+3. **Dynamic Error Clearing**:
+   - Attach an `input` or `change` listener to each field that automatically removes the error state, hides the helper error message, and restores normal border styling as soon as the user interacts with the input.
+4. **Form Submit Integration**:
+   - On failed client-side or AJAX submission, scroll smoothly (`scrollIntoView({ behavior: 'smooth', block: 'center' })`) and focus the first invalid field.

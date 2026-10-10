@@ -241,37 +241,79 @@ class SetupController
 
         $host = trim($_POST['mail_host'] ?? '');
         $port = (int)($_POST['mail_port'] ?? 1025);
-        $timeout = 5;
+        $user = trim($_POST['mail_username'] ?? '');
+        $pass = $_POST['mail_password'] ?? '';
+        if ($pass === '') {
+            $pass = getSetting('mail_password', '');
+        }
+        $fromAddress = trim($_POST['mail_from_address'] ?? '');
+        if (empty($fromAddress)) {
+            $fromAddress = getSetting('mail_from_address', 'no-reply@societyapp.ddev.site');
+        }
+        $fromName = trim($_POST['mail_from_name'] ?? '');
+        if (empty($fromName)) {
+            $fromName = getSetting('mail_from_name', 'Society App Setup');
+        }
+
+        $recipient = trim($_POST['test_recipient_email'] ?? '');
+        if (empty($recipient)) {
+            $recipient = $fromAddress;
+        }
 
         if (empty($host)) {
             echo json_encode(['success' => false, 'error' => 'Please provide an SMTP Host.']);
             exit;
         }
 
-        $errno = 0;
-        $errstr = '';
-        $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
-
-        if (!$socket) {
-            echo json_encode([
-                'success' => false,
-                'error' => "Cannot connect to SMTP server at {$host}:{$port} ({$errstr} [{$errno}]).",
-            ]);
+        if (empty($recipient) || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'error' => 'Please provide a valid recipient email address to send the test message.']);
             exit;
         }
 
-        // Read server greeting banner
-        $greeting = @fgets($socket, 512);
-        @fputs($socket, "EHLO " . ($_SERVER['SERVER_NAME'] ?? 'localhost') . "\r\n");
-        $ehlo = @fgets($socket, 512);
-        @fputs($socket, "QUIT\r\n");
-        @fclose($socket);
+        $customConfig = [
+            'mail_host' => $host,
+            'mail_port' => $port,
+            'mail_username' => $user,
+            'mail_password' => $pass,
+            'mail_from_address' => $fromAddress,
+            'mail_from_name' => $fromName,
+        ];
 
-        $greetingText = trim($greeting ?: 'Connected');
-        echo json_encode([
-            'success' => true,
-            'message' => "✓ SMTP connection successful! Server responded: {$greetingText}",
-        ]);
+        $appName = getSetting('app_name', 'Society App');
+        $time = date('Y-m-d H:i:s T');
+        $subject = "{$appName} — Setup Verification Test Email";
+        $body = "
+        <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;\">
+            <div style=\"border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 20px;\">
+                <h2 style=\"color: #0f172a; margin: 0;\">✓ SMTP Test Message</h2>
+                <p style=\"color: #64748b; font-size: 13px; margin: 4px 0 0;\">Society App Outgoing Email Verification</p>
+            </div>
+            <p style=\"color: #334155; font-size: 14px; line-height: 1.6;\">
+                Congratulations! Your mail server connection and outgoing message dispatch are working properly.
+            </p>
+            <div style=\"background: #f8fafc; border-radius: 12px; padding: 14px 18px; margin: 20px 0; border: 1px solid #e2e8f0; font-size: 13px;\">
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>SMTP Server:</strong> " . htmlspecialchars($host) . ":" . htmlspecialchars((string)$port) . "</p>
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>From:</strong> " . htmlspecialchars($fromName) . " &lt;" . htmlspecialchars($fromAddress) . "&gt;</p>
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>Recipient:</strong> " . htmlspecialchars($recipient) . "</p>
+                <p style=\"margin: 4px 0; color: #475569;\"><strong>Sent At:</strong> {$time}</p>
+            </div>
+            <p style=\"color: #94a3b8; font-size: 12px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;\">
+                This is an automated test message dispatched during setup.
+            </p>
+        </div>";
+
+        $res = sendEmail($recipient, $subject, $body, $customConfig);
+        if ($res['success']) {
+            echo json_encode([
+                'success' => true,
+                'message' => "✓ Test email sent successfully to {$recipient}!",
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'error' => $res['message'] ?? 'Failed to send test email.',
+            ]);
+        }
         exit;
     }
 

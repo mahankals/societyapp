@@ -169,47 +169,6 @@
                 </div>
             </div>
 
-            <!-- Primary Member Unit Configuration (for Logged User) -->
-            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2">
-                <span class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-brand-500"></i>
-                    <span>Your Flat Allocation (Person 1 - Primary)</span>
-                </span>
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    <div class="relative">
-                        <input type="text" id="primaryWing" value="A" placeholder=" " oninput="syncPrimaryMember()"
-                            class="peer block w-full px-3 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
-                        <label class="absolute text-[10px] text-slate-500 dark:text-slate-400 top-1 start-3">Wing</label>
-                    </div>
-                    <div class="relative">
-                        <input type="text" id="primaryFloor" value="1" placeholder=" " oninput="syncPrimaryMember()"
-                            class="peer block w-full px-3 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
-                        <label class="absolute text-[10px] text-slate-500 dark:text-slate-400 top-1 start-3">Floor</label>
-                    </div>
-                    <div class="relative">
-                        <input type="text" id="primaryFlat" value="101" placeholder=" " oninput="syncPrimaryMember()"
-                            class="peer block w-full px-3 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
-                        <label class="absolute text-[10px] text-slate-500 dark:text-slate-400 top-1 start-3">Flat Number</label>
-                    </div>
-                    <div class="relative">
-                        <input type="number" step="0.01" id="primaryArea" value="850.00" placeholder=" " oninput="syncPrimaryMember()"
-                            class="peer block w-full px-3 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
-                        <label class="absolute text-[10px] text-slate-500 dark:text-slate-400 top-1 start-3">Area (sq. ft.)</label>
-                    </div>
-                    <div class="relative col-span-2 sm:col-span-1">
-                        <select id="primaryType" onchange="syncPrimaryMember()" class="block w-full px-3 pt-4 pb-1.5 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
-                            <option value="1 RK">1 RK</option>
-                            <option value="1 BHK">1 BHK</option>
-                            <option value="2 BHK" selected>2 BHK</option>
-                            <option value="3 BHK">3 BHK</option>
-                            <option value="4+ BHK">4+ BHK</option>
-                            <option value="Shop/Commercial">Shop/Commercial</option>
-                        </select>
-                        <label class="absolute text-[10px] text-slate-500 dark:text-slate-400 top-1 start-3">Flat Type</label>
-                    </div>
-                </div>
-            </div>
-
             <!-- Committee Members List Table -->
             <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                 <table class="w-full text-left text-xs">
@@ -297,28 +256,90 @@
 
 </div>
 
-<script>
-let committeeMembers = [
-    {
-        user_id: {{ user.id }},
-        name: '{{ user.name|e('js') }}',
-        email: '{{ user.email|e('js') }}',
-        phone: '{{ user.phone|e('js') }}',
-        wing: 'A',
-        floor: '1',
-        flat_no: '101',
-        area_sqft: '850.00',
-        flat_type: '2 BHK',
-        is_primary: true
-    }
-];
+<!-- Edit Member Modal -->
+<div id="editMemberModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Edit Member Allocation</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Update flat location and specifications</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditMemberModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <form id="editMemberForm" onsubmit="saveEditedMember(event)" class="p-4 space-y-3 overflow-y-auto flex-1">
+            <input type="hidden" id="editMemberIndex" value="">
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Member</label>
+                <input type="text" id="editMemberName" readonly class="block w-full px-3 py-2 text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Wing</label>
+                    <input type="text" id="editMemberWing" required class="block w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Floor</label>
+                    <input type="text" id="editMemberFloor" required class="block w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Flat Number</label>
+                    <input type="text" id="editMemberFlat" required class="block w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Area (sq. ft.)</label>
+                    <input type="number" step="0.01" id="editMemberArea" required class="block w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Flat Type</label>
+                <select id="editMemberType" class="block w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    <option value="1 RK">1 RK</option>
+                    <option value="1 BHK">1 BHK</option>
+                    <option value="2 BHK">2 BHK</option>
+                    <option value="3 BHK">3 BHK</option>
+                    <option value="4+ BHK">4+ BHK</option>
+                    <option value="Shop/Commercial">Shop/Commercial</option>
+                </select>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onclick="closeEditMemberModal()" class="px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-lg shadow-sm">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 
+<script>
+let committeeMembers = [];
 let pendingFoundUser = null;
 
 function renderMembersTable() {
     const tbody = document.getElementById('membersTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
+
+    if (committeeMembers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                    <i data-lucide="users" class="w-6 h-6 mx-auto mb-2 text-slate-300 dark:text-slate-600"></i>
+                    No committee members added yet. Search a registered user above to add them to this proposal.
+                </td>
+            </tr>
+        `;
+        document.getElementById('membersDataJson').value = JSON.stringify(committeeMembers);
+        if (window.lucide) { lucide.createIcons(); }
+        return;
+    }
 
     committeeMembers.forEach((m, idx) => {
         const tr = document.createElement('tr');
@@ -328,14 +349,16 @@ function renderMembersTable() {
         const flatLoc = (m.wing ? (m.wing + ' wing - ') : '') + 'Floor ' + (m.floor || '1') + '<br><span class="font-semibold text-slate-900 dark:text-white">Flat ' + (m.flat_no || '101') + '</span>';
         const spec = (m.flat_type || '2 BHK') + '<br><span class="text-slate-400 text-[11px] font-mono">' + (m.area_sqft || '850.00') + ' sq. ft</span>';
 
-        let actionHtml = '';
-        if (m.is_primary) {
-            actionHtml = '<span class="text-[11px] font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 border border-brand-200 dark:border-brand-800/50 px-2 py-0.5 rounded">Primary</span>';
-        } else {
-            actionHtml = `<button type="button" onclick="removeMember(${idx})" class="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>`;
-        }
+        const actionHtml = `
+            <div class="flex items-center justify-end gap-1.5">
+                <button type="button" onclick="editMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors" title="Edit Member Allocation">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="removeMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove Member">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
 
         tr.innerHTML = `
             <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">${m.name}</td>
@@ -354,13 +377,47 @@ function renderMembersTable() {
     if (window.lucide) { lucide.createIcons(); }
 }
 
-function syncPrimaryMember() {
-    if (committeeMembers.length > 0 && committeeMembers[0].is_primary) {
-        committeeMembers[0].wing = document.getElementById('primaryWing').value || 'A';
-        committeeMembers[0].floor = document.getElementById('primaryFloor').value || '1';
-        committeeMembers[0].flat_no = document.getElementById('primaryFlat').value || '101';
-        committeeMembers[0].area_sqft = document.getElementById('primaryArea').value || '850.00';
-        committeeMembers[0].flat_type = document.getElementById('primaryType').value || '2 BHK';
+function editMember(idx) {
+    const m = committeeMembers[idx];
+    if (!m) return;
+    document.getElementById('editMemberIndex').value = idx;
+    document.getElementById('editMemberName').value = m.name + (m.email ? ' (' + m.email + ')' : '');
+    document.getElementById('editMemberWing').value = m.wing || '';
+    document.getElementById('editMemberFloor').value = m.floor || '';
+    document.getElementById('editMemberFlat').value = m.flat_no || '';
+    document.getElementById('editMemberArea').value = m.area_sqft || '';
+    document.getElementById('editMemberType').value = m.flat_type || '2 BHK';
+    document.getElementById('editMemberModal').classList.remove('hidden');
+    if (window.lucide) { lucide.createIcons(); }
+}
+
+function closeEditMemberModal() {
+    document.getElementById('editMemberModal').classList.add('hidden');
+}
+
+function saveEditedMember(e) {
+    e.preventDefault();
+    const idx = parseInt(document.getElementById('editMemberIndex').value, 10);
+    if (isNaN(idx) || !committeeMembers[idx]) return;
+
+    committeeMembers[idx].wing = (document.getElementById('editMemberWing').value || '').trim();
+    committeeMembers[idx].floor = (document.getElementById('editMemberFloor').value || '').trim();
+    committeeMembers[idx].flat_no = (document.getElementById('editMemberFlat').value || '').trim();
+    committeeMembers[idx].area_sqft = (document.getElementById('editMemberArea').value || '').trim();
+    committeeMembers[idx].flat_type = document.getElementById('editMemberType').value;
+
+    closeEditMemberModal();
+    renderMembersTable();
+}
+
+function removeMember(idx) {
+    if (window.appConfirm) {
+        window.appConfirm('Are you sure you want to remove this member from the committee proposal?', 'Remove Member', function() {
+            committeeMembers.splice(idx, 1);
+            renderMembersTable();
+        });
+    } else {
+        committeeMembers.splice(idx, 1);
         renderMembersTable();
     }
 }
@@ -410,6 +467,10 @@ async function searchPlatformUser() {
                 document.getElementById('targetMemberFloor').value = lastMember.floor || '1';
                 const nextFlat = (parseInt(lastMember.flat_no, 10) || 100) + 1;
                 document.getElementById('targetMemberFlat').value = nextFlat;
+            } else {
+                document.getElementById('targetMemberWing').value = 'A';
+                document.getElementById('targetMemberFloor').value = '1';
+                document.getElementById('targetMemberFlat').value = '101';
             }
 
             feedback.className = 'text-xs text-emerald-500 font-medium';
@@ -448,7 +509,7 @@ function confirmAddMember() {
         flat_no: flatNo,
         area_sqft: area,
         flat_type: type,
-        is_primary: false
+        is_primary: committeeMembers.length === 0
     });
 
     // Reset search state
@@ -457,12 +518,6 @@ function confirmAddMember() {
     document.getElementById('addMemberUnitCard').classList.add('hidden');
     pendingFoundUser = null;
 
-    renderMembersTable();
-}
-
-function removeMember(idx) {
-    if (idx === 0) return; // Cannot delete primary logged-in user
-    committeeMembers.splice(idx, 1);
     renderMembersTable();
 }
 

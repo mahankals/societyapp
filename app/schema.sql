@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS society_members (
     status ENUM('active', 'pending', 'rejected', 'unlinked') DEFAULT 'active',
     ownership_type ENUM('owner', 'tenant', 'family') DEFAULT 'owner',
     notes TEXT NULL,
+    rejection_reason TEXT NULL,
     approved_by INT UNSIGNED NULL,
     approved_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
