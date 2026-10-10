@@ -286,8 +286,6 @@
                         <p class="text-xs text-slate-500 dark:text-surface-200/60 mt-0.5">Outgoing mail transfer agent for billing notices, OTPs, and resident communications</p>
                     </div>
 
-                    <div id="smtpTestResult" class="hidden p-3.5 rounded-xl text-xs font-medium"></div>
-
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="relative">
                             <input type="text" id="mail_host" name="mail_host" value="{{ settings.mail_host|default('localhost') }}" required placeholder=" "
@@ -338,20 +336,43 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <input type="email" id="test_recipient_email" placeholder="recipient@example.com" value="{{ user.email }}"
-                                class="px-3 py-2 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                    <!-- Email Test Connection Section (Below connection settings) -->
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                                <h3 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">SMTP Server Connection</h3>
+                                <p class="text-xs text-slate-500 dark:text-surface-200/60">Verify socket handshake and authentication without sending an email.</p>
+                            </div>
                             <button type="button" id="testConnBtn" onclick="testSmtpSocketConnection()" class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all">
                                 <i data-lucide="activity" class="w-3.5 h-3.5"></i>
                                 <span>Test Connection</span>
                             </button>
-                            <button type="button" id="testSmtpBtn" onclick="testSmtpConnection()" disabled class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        </div>
+                        <!-- Connection test message directly below connection setting -->
+                        <div id="smtpConnResult" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+                    </div>
+
+                    <!-- Send Test Email Section (Sent test mail error below input & button) -->
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 space-y-3">
+                        <div>
+                            <h3 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider">Send Live Test Email</h3>
+                            <p class="text-xs text-slate-500 dark:text-surface-200/60">Dispatch a live test email to verify mailbox deliverability.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <div class="w-full sm:flex-1">
+                                <input type="email" id="test_recipient_email" placeholder="recipient@example.com (required to send test email)" value="{{ user.email }}"
+                                    class="w-full px-3 py-2 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
+                            </div>
+                            <button type="button" id="testSmtpBtn" onclick="testSmtpConnection()" disabled class="w-full sm:w-auto px-4 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i data-lucide="send" class="w-3.5 h-3.5"></i>
                                 <span>Send Test Email</span>
                             </button>
                         </div>
+                        <!-- Sent test mail error / result below input & button -->
+                        <div id="smtpSendResult" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+                    </div>
 
+                    <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
                         <button type="submit" id="saveEmailBtn" disabled class="btn-primary !px-6 !py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                             Save Email Settings
                         </button>
@@ -542,7 +563,7 @@ function testDatabaseConnection() {
 
 function testSmtpSocketConnection() {
     const btn = document.getElementById('testConnBtn');
-    const resultBox = document.getElementById('smtpTestResult');
+    const resultBox = document.getElementById('smtpConnResult');
 
     btn.disabled = true;
     btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Connecting...';
@@ -560,17 +581,17 @@ function testSmtpSocketConnection() {
     .then(data => {
         resultBox.classList.remove('hidden');
         if (data.success) {
-            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
+            resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
             resultBox.textContent = '✓ ' + (data.message || 'SMTP connection and handshake verified successfully!');
         } else {
-            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-            resultBox.textContent = 'SMTP connection failed: ' + (data.error || data.message || 'Unable to connect to SMTP server.');
+            resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+            resultBox.textContent = '✗ SMTP connection failed: ' + (data.error || data.message || 'Unable to connect to SMTP server.');
         }
     })
     .catch(err => {
         resultBox.classList.remove('hidden');
-        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-        resultBox.textContent = 'Network error testing SMTP connection: ' + err.message;
+        resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = '✗ Network error testing SMTP connection: ' + err.message;
     })
     .finally(() => {
         btn.disabled = false;
@@ -590,18 +611,18 @@ function updateTestSmtpBtnState() {
 
 function testSmtpConnection() {
     const btn = document.getElementById('testSmtpBtn');
-    const resultBox = document.getElementById('smtpTestResult');
+    const resultBox = document.getElementById('smtpSendResult');
     const recipient = document.getElementById('test_recipient_email').value.trim();
 
     if (!recipient) {
         resultBox.classList.remove('hidden');
-        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-        resultBox.textContent = 'Please provide a valid recipient email address.';
+        resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = '✗ Please provide a valid recipient email address.';
         return;
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Testing...';
+    btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Sending...';
     resultBox.classList.add('hidden');
 
     const form = document.getElementById('emailForm');
@@ -617,17 +638,17 @@ function testSmtpConnection() {
     .then(data => {
         resultBox.classList.remove('hidden');
         if (data.success) {
-            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
-            resultBox.textContent = '✓ Test email dispatched successfully to ' + recipient;
+            resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
+            resultBox.textContent = '✓ ' + (data.message || ('Test email dispatched successfully to ' + recipient));
         } else {
-            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-            resultBox.textContent = 'SMTP test failed: ' + (data.message || data.error || 'Unable to dispatch test email.');
+            resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+            resultBox.textContent = '✗ SMTP test failed: ' + (data.message || data.error || 'Unable to dispatch test email.');
         }
     })
     .catch(err => {
         resultBox.classList.remove('hidden');
-        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-        resultBox.textContent = 'Network error testing SMTP delivery.';
+        resultBox.className = 'p-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = '✗ Network error testing SMTP delivery: ' + err.message;
     })
     .finally(() => {
         btn.disabled = false;

@@ -248,6 +248,49 @@
         [data-theme="light"] div.breadcrumb-bar a {
             color: #475569 !important;
         }
+
+        /* Sidebar Collapse for Desktop + Tablet */
+        @media (min-width: 768px) {
+            #desktop-sidebar {
+                transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            #main-header {
+                transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            #main-content {
+                transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            body.sidebar-collapsed #desktop-sidebar {
+                width: 5rem !important;
+            }
+            body.sidebar-collapsed #main-header {
+                left: 5rem !important;
+            }
+            body.sidebar-collapsed #main-content {
+                padding-left: 5rem !important;
+            }
+            body.sidebar-collapsed #desktop-sidebar .sidebar-label,
+            body.sidebar-collapsed #desktop-sidebar .sidebar-badge,
+            body.sidebar-collapsed #desktop-sidebar .sidebar-brand-text {
+                display: none !important;
+            }
+            body.sidebar-collapsed #desktop-sidebar .sidebar-item {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            body.sidebar-collapsed #desktop-sidebar .sidebar-brand-container {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            body.sidebar-collapsed #desktop-sidebar .sidebar-footer-link {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
     </style>
     {% block styles %}{% endblock %}
 <body class="min-h-screen flex flex-col bg-surface-950">
@@ -258,115 +301,122 @@
 
     <!-- Desktop Sidebar Navigation -->
     {% if user %}
-    <aside class="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-surface-950/95 backdrop-blur-xl border-r border-white/10 z-[110]">
+    <aside id="desktop-sidebar" class="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-surface-950/95 backdrop-blur-xl border-r border-white/10 z-[110]">
         <!-- Brand / Logo Area -->
-        <div class="h-16 flex items-center gap-3 px-5 border-b border-white/10 shrink-0">
+        <div class="sidebar-brand-container h-16 flex items-center gap-3 px-5 border-b border-white/10 shrink-0">
             <a href="{{ isAdminView ? '/admin' : (isCommitteeView ? '/comitee' : '/resident') }}" class="flex items-center gap-2.5 group">
-                <img src="{{ appLogo|default('/assets/icons/logo.svg') }}" alt="{{ appName|default('SocietyApp') }}" class="w-8 h-8 rounded-lg object-contain">
-                <span class="text-base font-bold text-white tracking-tight">{{ appName|default('SocietyApp') }}</span>
+                <img src="{{ appLogo|default('/assets/icons/logo.svg') }}" alt="{{ appName|default('SocietyApp') }}" class="w-8 h-8 rounded-lg object-contain shrink-0">
+                <span class="sidebar-brand-text text-base font-bold text-white tracking-tight">{{ appName|default('SocietyApp') }}</span>
             </a>
             {% if isAdminView %}
-            <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">Admin</span>
+            <span class="sidebar-badge ml-auto inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">Admin</span>
             {% elseif isCommitteeView %}
-            <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">Committee</span>
+            <span class="sidebar-badge ml-auto inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">Committee</span>
             {% endif %}
         </div>
 
         <!-- Sidebar Navigation Menu Links -->
         <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
             {% if isAdminView %}
-                <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/admin' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400"></i>
-                    <span>Dashboard</span>
+                <a href="/admin" title="Dashboard" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/admin' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Dashboard</span>
                 </a>
-                <a href="/admin/societies" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/societies' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="building-2" class="w-4 h-4 text-brand-400"></i>
-                    <span>Societies</span>
+                <a href="/admin/societies" title="Societies" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/societies' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="building-2" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Societies</span>
                 </a>
-                <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/users' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="users" class="w-4 h-4 text-brand-400"></i>
-                    <span>Users</span>
+                <a href="/admin/users" title="Users" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/users' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="users" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Users</span>
                 </a>
-                <a href="/admin/invitations" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/invitations' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="mail-plus" class="w-4 h-4 text-brand-400"></i>
-                    <span>Invitations</span>
+                <a href="/admin/invitations" title="Invitations" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/invitations' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="mail-plus" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Invitations</span>
                 </a>
-                <a href="/admin/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/settings' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="settings" class="w-4 h-4 text-brand-400"></i>
-                    <span>Settings</span>
+                <a href="/admin/settings" title="Settings" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/admin/settings' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="settings" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Settings</span>
                 </a>
             {% elseif isCommitteeView %}
-                <a href="/comitee" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/comitee' or currentRoute == '/committee' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10' }}">
-                    <i data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
-                    <span>Dashboard</span>
+                <a href="/comitee" title="Dashboard" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/comitee' or currentRoute == '/committee' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10' }}">
+                    <i data-lucide="shield" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Dashboard</span>
                 </a>
-                <a href="/comitee/flats" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/flats' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="building" class="w-4 h-4 text-amber-400"></i>
-                    <span>Flats</span>
+                <a href="/comitee/flats" title="Flats" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/flats' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="building" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Flats</span>
                 </a>
-                <a href="/comitee/members" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/members' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="users" class="w-4 h-4 text-amber-400"></i>
-                    <span>Members</span>
+                <a href="/comitee/members" title="Members" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/members' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="users" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Members</span>
                 </a>
-                <a href="/comitee/bills" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/bills' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
-                    <span>Bills</span>
+                <a href="/comitee/bills" title="Bills" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/bills' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="receipt" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Bills</span>
                 </a>
-                <a href="/comitee/expenses" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/expenses' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="credit-card" class="w-4 h-4 text-amber-400"></i>
-                    <span>Expenses</span>
+                <a href="/comitee/expenses" title="Expenses" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/expenses' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="credit-card" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Expenses</span>
                 </a>
-                <a href="/comitee/accounting" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/accounting' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="landmark" class="w-4 h-4 text-amber-400"></i>
-                    <span>Accounting</span>
+                <a href="/comitee/accounting" title="Accounting" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/accounting' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="landmark" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Accounting</span>
                 </a>
-                <a href="/comitee/broadcast" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/broadcast' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="megaphone" class="w-4 h-4 text-amber-400"></i>
-                    <span>Broadcast</span>
+                <a href="/comitee/broadcast" title="Broadcast" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/broadcast' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="megaphone" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Broadcast</span>
                 </a>
-                <a href="/comitee/requests" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/requests' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="message-square" class="w-4 h-4 text-amber-400"></i>
-                    <span>Requests</span>
+                <a href="/comitee/requests" title="Requests" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/comitee/requests' ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="message-square" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                    <span class="sidebar-label">Requests</span>
                 </a>
             {% else %}
-                <a href="/resident" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/resident' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400"></i>
-                    <span>Dashboard</span>
+                <a href="/resident" title="Dashboard" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute == '/resident' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Dashboard</span>
                 </a>
                 {% if not (user.user_type == 'tenant' or userCaps.isTenant) %}
-                <a href="/resident/bills" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/bills' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="receipt" class="w-4 h-4 text-brand-400"></i>
-                    <span>Bills &amp; Dues</span>
+                <a href="/resident/bills" title="Bills & Dues" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/bills' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="receipt" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Bills &amp; Dues</span>
                 </a>
-                <a href="/resident/receipts" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/receipts' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="file-check-2" class="w-4 h-4 text-brand-400"></i>
-                    <span>Receipts</span>
+                <a href="/resident/receipts" title="Receipts" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/receipts' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="file-check-2" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Receipts</span>
                 </a>
                 {% endif %}
-                <a href="/resident/members" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/members' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
-                    <i data-lucide="users" class="w-4 h-4 text-brand-400"></i>
-                    <span>Members</span>
+                <a href="/resident/members" title="Members" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {{ currentRoute starts with '/resident/members' ? 'bg-brand-500/15 text-brand-300 font-semibold' : 'text-surface-200/70 hover:text-white hover:bg-white/5' }}">
+                    <i data-lucide="users" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                    <span class="sidebar-label">Members</span>
                 </a>
             {% endif %}
         </div>
 
         <!-- Sidebar Footer Quick Links -->
         <div class="p-3 border-t border-white/10 shrink-0 space-y-1">
-            <a href="/society/contribute" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all">
-                <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
-                <span>Contribute Society</span>
+            <a href="/society/contribute" title="Contribute Society" class="sidebar-footer-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                <span class="sidebar-label">Contribute Society</span>
             </a>
-            <a href="/user/profile" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all">
-                <i data-lucide="user" class="w-4 h-4 text-brand-400"></i>
-                <span>My Profile</span>
+            <a href="/user/profile" title="My Profile" class="sidebar-footer-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all">
+                <i data-lucide="user" class="w-4 h-4 text-brand-400 shrink-0"></i>
+                <span class="sidebar-label">My Profile</span>
             </a>
         </div>
     </aside>
     {% endif %}
 
-    <header class="fixed top-0 left-0 {{ user ? 'md:left-64' : '' }} right-0 z-[100] bg-surface-950/95 backdrop-blur-md border-b border-white/10 shadow-lg" style="padding-top: env(safe-area-inset-top);">
+    <header id="main-header" class="fixed top-0 left-0 {{ user ? 'md:left-64' : '' }} right-0 z-[100] bg-surface-950/95 backdrop-blur-md border-b border-white/10 shadow-lg" style="padding-top: env(safe-area-inset-top);">
         <nav class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                {% if user %}
+                <!-- Desktop & Tablet Sidebar Toggler (Default visible to desktop+tablet, hidden on mobile) -->
+                <button type="button" id="sidebar-toggle-btn" class="hidden md:inline-flex items-center justify-center p-2 rounded-xl text-surface-200/70 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 transition-colors focus:outline-none" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+                    <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-5 h-5"></i>
+                </button>
+                {% endif %}
+
                 <!-- Mobile Only Brand Logo -->
                 <a href="{{ isAdminView ? '/admin' : (isCommitteeView ? '/comitee' : '/resident') }}" class="flex md:hidden items-center gap-2.5 group">
                     <img src="{{ appLogo|default('/assets/icons/logo.svg') }}" alt="{{ appName|default('SocietyApp') }}" class="w-8 h-8 rounded-lg object-contain">
@@ -646,7 +696,7 @@
         {% endif %}
     </header>
 
-    <main class="{{ user ? 'md:pl-64 pt-[90px]' : 'pt-20' }} pb-24 md:pb-8 flex-1">
+    <main id="main-content" class="{{ user ? 'md:pl-64 pt-[98px]' : 'pt-20' }} pb-24 md:pb-8 flex-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -866,6 +916,30 @@
             if (themeDropdown) themeDropdown.classList.add('hidden');
             if (socDropdown) socDropdown.classList.add('hidden');
         });
+
+        // Desktop & Tablet Sidebar Toggler (Collapse / Expand)
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+        if (sidebarToggleBtn) {
+            function updateSidebarToggleIcon(isCollapsed) {
+                const icon = document.getElementById('sidebar-toggle-icon');
+                if (icon) {
+                    icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+                    if (window.lucide) { lucide.createIcons(); }
+                }
+                sidebarToggleBtn.setAttribute('title', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+            }
+
+            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+                updateSidebarToggleIcon(true);
+            }
+
+            sidebarToggleBtn.addEventListener('click', () => {
+                const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                updateSidebarToggleIcon(isCollapsed);
+            });
+        }
 
         if ('serviceWorker' in navigator) {
             if ('caches' in window) {
