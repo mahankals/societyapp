@@ -242,10 +242,18 @@ async function captureAll() {
                 document.documentElement.classList.remove('dark');
                 document.documentElement.classList.add('light');
                 document.documentElement.setAttribute('data-theme', 'light');
+                const emoji = document.getElementById('themeEmoji');
+                const label = document.getElementById('themeLabel');
+                if (emoji) emoji.textContent = '☀️';
+                if (label) label.textContent = 'Light';
             } else {
                 document.documentElement.classList.remove('light');
                 document.documentElement.classList.add('dark');
                 document.documentElement.setAttribute('data-theme', 'dark');
+                const emoji = document.getElementById('themeEmoji');
+                const label = document.getElementById('themeLabel');
+                if (emoji) emoji.textContent = '🌙';
+                if (label) label.textContent = 'Dark';
             }
 
             // Role
@@ -283,6 +291,11 @@ async function captureAll() {
             // Ensure Lucide icons render
             if (window.lucide) {
                 window.lucide.createIcons();
+            }
+
+            // Ensure all dropdown menus are closed for clean screenshot
+            if (typeof closeAllDropdowns === 'function') {
+                closeAllDropdowns();
             }
         }, screen);
 

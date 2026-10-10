@@ -115,16 +115,34 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: #090d16;
-            border-bottom: 1px solid var(--proto-border);
+            background: #090d16 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
             padding: 8px 16px;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             gap: 10px 14px;
             font-size: 13px;
-            color: #e2e8f0;
+            color: #e2e8f0 !important;
         }
+
+        /* Line 2 of Prototype Toolbar: Screen-specific options */
+        .proto-sub-bar {
+            position: sticky;
+            top: 45px;
+            z-index: 999;
+            background: #0b1118 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            padding: 6px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            font-size: 12px;
+            color: #cbd5e1 !important;
+        }
+
+        /* Prototype Toolbar Components */
         .proto-brand {
             display: flex;
             align-items: center;
@@ -184,10 +202,10 @@
             border-radius: 12px;
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
             padding: 6px;
-            display: none;
+            display: none !important;
         }
         .proto-dropdown.show {
-            display: block;
+            display: block !important;
         }
         .proto-dropdown-header {
             font-size: 10.5px;
@@ -222,6 +240,64 @@
             font-weight: 600;
         }
 
+        /* Prototype bar must NEVER change with mode */
+        html.light .proto-bar,
+        html.light .proto-sub-bar,
+        html.light .proto-dropdown,
+        html.light .proto-chip {
+            background-color: #090d16 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            color: #e2e8f0 !important;
+        }
+        html.light .proto-sub-bar {
+            background-color: #0b1118 !important;
+        }
+        html.light .proto-dropdown {
+            background-color: #0f172a !important;
+        }
+        html.light .proto-dropdown-item {
+            color: #cbd5e1 !important;
+        }
+        html.light .proto-dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+        }
+        html.light .proto-chip {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            color: #f1f5f9 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+        }
+        html.light .proto-chip:hover {
+            background-color: rgba(255, 255, 255, 0.12) !important;
+        }
+        html.light .proto-chip.active-screen {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        html.light .proto-bar .text-white,
+        html.light .proto-sub-bar .text-white,
+        html.light .proto-dropdown .text-white {
+            color: #ffffff !important;
+        }
+        html.light .proto-bar .text-slate-400,
+        html.light .proto-sub-bar .text-slate-400,
+        html.light .proto-dropdown .text-slate-400 {
+            color: #94a3b8 !important;
+        }
+        html.light .proto-bar .text-slate-300,
+        html.light .proto-sub-bar .text-slate-300,
+        html.light .proto-dropdown .text-slate-300 {
+            color: #cbd5e1 !important;
+        }
+        html.light .proto-bar .text-indigo-400,
+        html.light .proto-sub-bar .text-indigo-400 {
+            color: #818cf8 !important;
+        }
+        html.light .proto-bar .text-indigo-200,
+        html.light .proto-sub-bar .text-indigo-200 {
+            color: #c7d2fe !important;
+        }
+
         /* Browser Bezel Frame */
         .browser-bezel {
             width: 100%;
@@ -229,7 +305,7 @@
             transition: max-width 0.3s ease;
             display: flex;
             flex-direction: column;
-            min-height: calc(100vh - 48px);
+            min-height: calc(100vh - 80px);
         }
         .browser-bezel[data-device="desktop"] { max-width: 100%; }
         .browser-bezel[data-device="tablet"] { max-width: 820px; border-inline: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
@@ -378,16 +454,16 @@
 <body>
 
 <!-- ==========================================================================
-     1. Prototype Toolbar (Top Bar)
+     1. Prototype Toolbar Line 1: Common Controls (Screen, Device, Mode)
      ========================================================================== -->
 <header class="proto-bar">
     <div class="proto-brand">
         <i data-lucide="building-2" class="w-5 h-5 text-indigo-400"></i>
         <span>SOCIETYAPP</span>
-        <span class="proto-brand-tag">v3.8 Interactive</span>
+        <span class="proto-brand-tag">Prototype</span>
     </div>
 
-    <!-- Screen Switcher Dropdown -->
+    <!-- Common: Screen Switcher Dropdown -->
     <div class="proto-menu">
         <button class="proto-chip active-screen" onclick="toggleDropdown('screenMenu')">
             <span class="text-indigo-200">Screen:</span>
@@ -400,7 +476,7 @@
             <button class="proto-dropdown-item" onclick="switchScreen('admin-societies', 'Housing Societies (/admin/societies)', '/admin/societies')">2. Housing Societies</button>
             <button class="proto-dropdown-item" onclick="switchScreen('admin-pending', 'Pending Society Proposals', '/admin/societies/pending')">3. Pending Proposals</button>
             <button class="proto-dropdown-item" onclick="switchScreen('admin-users', 'Platform Users (/admin/users)', '/admin/users')">4. Platform Users</button>
-            <button class="proto-dropdown-item" onclick="switchScreen('admin-settings', 'System Settings & SMTP', '/admin/settings')">5. Settings & SMTP Live</button>
+            <button class="proto-dropdown-item" onclick="switchScreen('admin-settings', 'System Settings & SMTP', '/admin/settings')">5. Settings & SMTP</button>
 
             <div class="proto-dropdown-header">Resident Portal</div>
             <button class="proto-dropdown-item" onclick="switchScreen('resident-dash', 'Resident Dashboard (/resident)', '/resident')">6. Resident Dashboard</button>
@@ -429,37 +505,14 @@
         </div>
     </div>
 
-    <!-- Contextual Simulation Chips -->
-    <div id="protoSimChips" class="flex items-center gap-2">
-        <button class="proto-chip" onclick="openModal('modalOccupancy')">⚡ Open Occupancy Modal</button>
-        <button class="proto-chip" onclick="openModal('modalBulkUpi')">⚡ Test UPI QR Modal</button>
-        <button class="proto-chip" onclick="openModal('modalRejectRemark')">⚡ Reject Reason Modal</button>
-        <button class="proto-chip" onclick="simulateSmtpTest()">⚡ Test SMTP Live</button>
-        <button class="proto-chip" onclick="triggerAdrErrors()">⚡ Trigger ADR Errors</button>
-    </div>
-
-    <!-- Right Controls: Role, Device, Theme -->
+    <!-- Right Controls: Common Device & Mode ONLY -->
     <div class="ml-auto flex items-center gap-2">
-        <!-- Persona Role Switcher -->
-        <div class="proto-menu">
-            <button class="proto-chip" onclick="toggleDropdown('roleMenu')">
-                <span class="text-slate-400">Role:</span>
-                <span class="font-bold text-white" id="currentRoleLabel">Admin</span>
-                <i data-lucide="chevron-down" class="w-3 h-3 opacity-60"></i>
-            </button>
-            <div class="proto-dropdown" id="roleMenu" style="right:0; left:auto;">
-                <button class="proto-dropdown-item" onclick="setRole('admin', 'Admin')">System Admin</button>
-                <button class="proto-dropdown-item" onclick="setRole('committee', 'Committee')">Committee Chairman</button>
-                <button class="proto-dropdown-item" onclick="setRole('resident', 'Resident')">Flat Resident / Owner</button>
-                <button class="proto-dropdown-item" onclick="setRole('tenant', 'Tenant')">Verified Tenant</button>
-            </div>
-        </div>
-
-        <!-- Viewport Device Switcher -->
+        <!-- Common: Device Switcher -->
         <div class="proto-menu">
             <button class="proto-chip" onclick="toggleDropdown('deviceMenu')">
                 <i data-lucide="monitor" class="w-3.5 h-3.5 text-slate-300"></i>
-                <span id="currentDeviceLabel">Desktop</span>
+                <span class="text-slate-400">Device:</span>
+                <span class="font-bold text-white" id="currentDeviceLabel">Desktop</span>
                 <i data-lucide="chevron-down" class="w-3 h-3 opacity-60"></i>
             </button>
             <div class="proto-dropdown" id="deviceMenu" style="right:0; left:auto;">
@@ -469,13 +522,27 @@
             </div>
         </div>
 
-        <!-- Theme Toggle -->
+        <!-- Common: Mode Toggle -->
         <button class="proto-chip" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <span class="text-slate-400">Mode:</span>
             <span id="themeEmoji">🌙</span>
-            <span id="themeLabel">Dark</span>
+            <span class="font-bold text-white" id="themeLabel">Dark</span>
         </button>
     </div>
 </header>
+
+<!-- ==========================================================================
+     2. Prototype Toolbar Line 2: Additional Screen-Based Options (Changes per screen)
+     ========================================================================== -->
+<div class="proto-sub-bar" id="protoSecondLine">
+    <div class="text-[11px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 shrink-0">
+        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+        <span>Screen Options:</span>
+    </div>
+    <div class="flex items-center flex-wrap gap-2" id="protoScreenOptions">
+        <!-- Screen-specific controls rendered dynamically by updateSecondLineOptions() -->
+    </div>
+</div>
 
 <!-- ==========================================================================
      2. Browser Shell with Live URL bar
@@ -1729,7 +1796,131 @@ function switchScreen(screenId, label, url) {
         btn.classList.toggle('active', btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(screenId));
     });
 
+    // Update screen-based options on Line 2
+    updateSecondLineOptions(screenId);
+
     closeAllDropdowns();
+    lucide.createIcons();
+}
+
+// Function to update Line 2 screen-based options dynamically per active screen
+function updateSecondLineOptions(screenId) {
+    const container = document.getElementById('protoScreenOptions');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (screenId === 'admin-dash') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Active Role: Administrator</span>
+            <button class="proto-chip" onclick="switchScreen('admin-societies', 'Housing Societies', '/admin/societies')">⚡ Manage Societies (1)</button>
+            <button class="proto-chip" onclick="switchScreen('admin-users', 'Platform Users', '/admin/users')">⚡ Manage Users (1)</button>
+        `;
+    } else if (screenId === 'admin-societies') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Role: Administrator</span>
+            <button class="proto-chip text-amber-300 border-amber-500/40 bg-amber-500/10" onclick="switchScreen('admin-pending', 'Pending Society Proposals', '/admin/societies/pending')"><i data-lucide="clock" class="w-3.5 h-3.5"></i> View Pending Requests (3)</button>
+        `;
+    } else if (screenId === 'admin-pending') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Role: Administrator</span>
+            <button class="proto-chip text-rose-300 border-rose-500/40 bg-rose-500/10" onclick="openModal('modalRejectRemark')"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Open Reject Reason Modal</button>
+        `;
+    } else if (screenId === 'admin-users') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Role: Super Administrator</span>
+            <span class="text-xs text-slate-400">Total accounts: 1 active</span>
+        `;
+    } else if (screenId === 'admin-settings') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Role: Administrator</span>
+            <span class="text-xs text-slate-400">SMTP live test button is located inside the screen card below.</span>
+        `;
+    } else if (screenId === 'resident-dash') {
+        container.innerHTML = `
+            <div class="proto-menu">
+                <button class="proto-chip" onclick="toggleDropdown('residentRoleDropdown')">
+                    <span class="text-slate-400">Role:</span>
+                    <span class="font-bold text-white" id="residentRoleCurrent">${currentRole === 'tenant' ? 'Tenant' : 'Resident'}</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 opacity-60"></i>
+                </button>
+                <div class="proto-dropdown" id="residentRoleDropdown">
+                    <button class="proto-dropdown-item" onclick="setRole('resident', 'Resident'); updateSecondLineOptions('resident-dash');">Owner / Resident</button>
+                    <button class="proto-dropdown-item" onclick="setRole('tenant', 'Tenant'); updateSecondLineOptions('resident-dash');">Verified Tenant (Hidden Dues)</button>
+                </div>
+            </div>
+            <button class="proto-chip" onclick="openModal('modalOccupancy')">⚡ Open Occupancy Modal</button>
+            <button class="proto-chip" onclick="openModal('modalLinkFlat')">⚡ Open Link Flat Modal</button>
+        `;
+    } else if (screenId === 'resident-bills') {
+        container.innerHTML = `
+            <div class="proto-menu">
+                <button class="proto-chip" onclick="toggleDropdown('billsRoleDropdown')">
+                    <span class="text-slate-400">Role:</span>
+                    <span class="font-bold text-white">${currentRole === 'tenant' ? 'Tenant' : 'Resident'}</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 opacity-60"></i>
+                </button>
+                <div class="proto-dropdown" id="billsRoleDropdown">
+                    <button class="proto-dropdown-item" onclick="setRole('resident', 'Resident'); updateSecondLineOptions('resident-bills');">Owner / Resident</button>
+                    <button class="proto-dropdown-item" onclick="setRole('tenant', 'Tenant'); updateSecondLineOptions('resident-bills');">Tenant</button>
+                </div>
+            </div>
+            <button class="proto-chip" onclick="openModal('modalBulkUpi')">⚡ Open Bulk UPI QR Modal</button>
+            <button class="proto-chip" onclick="openModal('modalOfflineProof')">⚡ Open Submit Proof Modal</button>
+        `;
+    } else if (screenId === 'resident-receipts') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-semibold">Ledger: Verified &amp; Pending</span>
+            <button class="proto-chip" onclick="showToast('Exporting receipt statements...')"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export PDF</button>
+        `;
+    } else if (screenId === 'committee-flats') {
+        container.innerHTML = `
+            <div class="proto-menu">
+                <button class="proto-chip" onclick="toggleDropdown('commRoleDropdown')">
+                    <span class="text-slate-400">Role:</span>
+                    <span class="font-bold text-white">Committee Chairman</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 opacity-60"></i>
+                </button>
+                <div class="proto-dropdown" id="commRoleDropdown">
+                    <button class="proto-dropdown-item" onclick="setRole('committee', 'Chairman')">Chairman</button>
+                    <button class="proto-dropdown-item" onclick="setRole('committee', 'Secretary')">Secretary</button>
+                </div>
+            </div>
+            <button class="proto-chip" onclick="openModal('modalOccupancy')">⚡ Edit Unit Occupancy Modal</button>
+        `;
+    } else if (screenId === 'committee-bills') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Role: Committee Treasurer</span>
+            <button class="proto-chip" onclick="showToast('Triggering monthly billing ledger generation')">⚡ Generate Monthly Dues</button>
+        `;
+    } else if (screenId === 'committee-requests') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-semibold">Role: Committee</span>
+            <button class="proto-chip text-rose-300 border-rose-500/40 bg-rose-500/10" onclick="openModal('modalRejectRemark')"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Open Reject Reason Modal</button>
+        `;
+    } else if (screenId === 'setup-wizard') {
+        container.innerHTML = `
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold">Setup Steps:</span>
+            <button class="proto-chip" onclick="showToast('Step 1: System requirements checked')">1. Requirements</button>
+            <button class="proto-chip" onclick="showToast('Step 2: Database configured')">2. Database</button>
+            <button class="proto-chip" onclick="showToast('Step 3: Super admin created')">3. Admin</button>
+            <button class="proto-chip active-screen" onclick="showToast('Step 4: SMTP configuration active')">4. SMTP (Active)</button>
+            <button class="proto-chip" onclick="showToast('Step 5: Setup complete')">5. Done</button>
+            <span class="text-xs text-slate-400 ml-auto">Note: [Test Live SMTP] button is inside the screen card below.</span>
+        `;
+    } else if (screenId === 'society-contribute') {
+        container.innerHTML = `
+            <button class="proto-chip text-amber-300 border-amber-500/40 bg-amber-500/10" onclick="addCommitteeMemberPrompt()">+ Add Founding Committee Member</button>
+        `;
+    } else if (screenId === 'error-adr-validation') {
+        container.innerHTML = `
+            <button class="proto-chip text-rose-300 border-rose-500/40 bg-rose-500/10" onclick="triggerAdrErrors()"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Trigger ADR Errors</button>
+            <button class="proto-chip" onclick="clearAllAdrErrors()"><i data-lucide="check" class="w-3.5 h-3.5"></i> Clear Errors</button>
+        `;
+    } else {
+        container.innerHTML = `
+            <span class="text-xs text-slate-400">Route: <code class="text-indigo-300 font-mono">${document.getElementById('liveRouteUrl').textContent}</code></span>
+        `;
+    }
     lucide.createIcons();
 }
 
@@ -1762,8 +1953,10 @@ function setDevice(device, label) {
 // Role Persona Switcher
 function setRole(role, label) {
     currentRole = role;
-    document.getElementById('currentRoleLabel').textContent = label;
-    document.getElementById('sidebarRoleBadge').textContent = label;
+    const rLabel = document.getElementById('currentRoleLabel');
+    if (rLabel) rLabel.textContent = label;
+    const sBadge = document.getElementById('sidebarRoleBadge');
+    if (sBadge) sBadge.textContent = label;
 
     // Toggle Nav groups
     document.getElementById('navGroupAdmin').classList.toggle('hidden', role !== 'admin');
@@ -1943,8 +2136,9 @@ function addCommitteeMemberPrompt() {
     showToast('Committee member added');
 }
 
-// Initial icon rendering
+// Initial rendering
 document.addEventListener('DOMContentLoaded', () => {
+    updateSecondLineOptions('admin-dash');
     lucide.createIcons();
 });
 </script>
