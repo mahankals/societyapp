@@ -311,6 +311,20 @@
         .browser-bezel[data-device="tablet"] { max-width: 820px; border-inline: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .browser-bezel[data-device="mobile"] { max-width: 420px; border-inline: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
 
+        /* Default tablet view: sidebar menu title is hidden */
+        .browser-bezel[data-device="tablet"] #appSidebar:not(.sidebar-expanded) {
+            width: 5rem !important;
+        }
+        .browser-bezel[data-device="tablet"] #appSidebar:not(.sidebar-expanded) span {
+            display: none !important;
+        }
+        .browser-bezel[data-device="tablet"] #appSidebar:not(.sidebar-expanded) .nav-item-link,
+        .browser-bezel[data-device="tablet"] #appSidebar:not(.sidebar-expanded) a {
+            justify-content: center !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
         .browser-chrome {
             background: #090d16;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2003,6 +2017,16 @@ function setDevice(device, label) {
     frame.setAttribute('data-device', device);
     document.getElementById('currentDeviceLabel').textContent = label;
     closeAllDropdowns();
+
+    const sidebar = document.getElementById('appSidebar');
+    const icon = document.getElementById('protoSidebarToggleIcon');
+    if (sidebar) {
+        sidebar.classList.remove('sidebar-expanded');
+        if (icon) {
+            icon.setAttribute('data-lucide', device === 'tablet' ? 'panel-left-open' : 'panel-left-close');
+            if (window.lucide) { lucide.createIcons(); }
+        }
+    }
 }
 
 // Role Persona Switcher
@@ -2072,18 +2096,29 @@ function showToast(msg) {
 function toggleProtoSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const icon = document.getElementById('protoSidebarToggleIcon');
+    const frame = document.getElementById('browserFrame');
+    const device = frame ? frame.getAttribute('data-device') : 'desktop';
     if (!sidebar) return;
-    const isCollapsed = sidebar.classList.toggle('w-20');
-    sidebar.classList.toggle('w-64');
-    
-    // Toggle menu labels inside sidebar
-    document.querySelectorAll('#appSidebar span').forEach(el => {
-        el.classList.toggle('hidden', isCollapsed);
-    });
 
-    if (icon) {
-        icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
-        if (window.lucide) { lucide.createIcons(); }
+    if (device === 'tablet') {
+        const isExpanded = sidebar.classList.toggle('sidebar-expanded');
+        if (icon) {
+            icon.setAttribute('data-lucide', isExpanded ? 'panel-left-close' : 'panel-left-open');
+            if (window.lucide) { lucide.createIcons(); }
+        }
+    } else {
+        const isCollapsed = sidebar.classList.toggle('w-20');
+        sidebar.classList.toggle('w-64');
+        
+        // Toggle menu labels inside sidebar
+        document.querySelectorAll('#appSidebar span').forEach(el => {
+            el.classList.toggle('hidden', isCollapsed);
+        });
+
+        if (icon) {
+            icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+            if (window.lucide) { lucide.createIcons(); }
+        }
     }
 }
 

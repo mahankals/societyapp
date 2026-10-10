@@ -249,7 +249,7 @@
             color: #475569 !important;
         }
 
-        /* Sidebar Collapse for Desktop + Tablet */
+        /* Sidebar Transitions for Desktop + Tablet */
         @media (min-width: 768px) {
             #desktop-sidebar {
                 transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -260,7 +260,35 @@
             #main-content {
                 transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
+        }
 
+        /* Tablet View (768px to 1023px): Default sidebar menu title is hidden */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            body:not(.sidebar-expanded) #desktop-sidebar {
+                width: 5rem !important;
+            }
+            body:not(.sidebar-expanded) #main-header {
+                left: 5rem !important;
+            }
+            body:not(.sidebar-expanded) #main-content {
+                padding-left: 5rem !important;
+            }
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-label,
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-badge,
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-brand-text {
+                display: none !important;
+            }
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-item,
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-brand-container,
+            body:not(.sidebar-expanded) #desktop-sidebar .sidebar-footer-link {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
+
+        /* Desktop View (1024px+): Menu titles visible by default, hidden when .sidebar-collapsed */
+        @media (min-width: 1024px) {
             body.sidebar-collapsed #desktop-sidebar {
                 width: 5rem !important;
             }
@@ -275,16 +303,8 @@
             body.sidebar-collapsed #desktop-sidebar .sidebar-brand-text {
                 display: none !important;
             }
-            body.sidebar-collapsed #desktop-sidebar .sidebar-item {
-                justify-content: center !important;
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
-            body.sidebar-collapsed #desktop-sidebar .sidebar-brand-container {
-                justify-content: center !important;
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
+            body.sidebar-collapsed #desktop-sidebar .sidebar-item,
+            body.sidebar-collapsed #desktop-sidebar .sidebar-brand-container,
             body.sidebar-collapsed #desktop-sidebar .sidebar-footer-link {
                 justify-content: center !important;
                 padding-left: 0.5rem !important;
@@ -696,7 +716,7 @@
         {% endif %}
     </header>
 
-    <main id="main-content" class="{{ user ? 'md:pl-64 pt-[98px]' : 'pt-20' }} pb-24 md:pb-8 flex-1">
+    <main id="main-content" class="{{ user ? 'md:pl-64 pt-[90px] mt-4' : 'pt-20' }} pb-24 md:pb-8 flex-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -920,24 +940,49 @@
         // Desktop & Tablet Sidebar Toggler (Collapse / Expand)
         const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
         if (sidebarToggleBtn) {
-            function updateSidebarToggleIcon(isCollapsed) {
+            function isTablet() {
+                return window.innerWidth >= 768 && window.innerWidth < 1024;
+            }
+
+            function isCollapsed() {
+                if (isTablet()) {
+                    return !document.body.classList.contains('sidebar-expanded');
+                }
+                return document.body.classList.contains('sidebar-collapsed');
+            }
+
+            function updateSidebarToggleIcon() {
+                const collapsed = isCollapsed();
                 const icon = document.getElementById('sidebar-toggle-icon');
                 if (icon) {
-                    icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+                    icon.setAttribute('data-lucide', collapsed ? 'panel-left-open' : 'panel-left-close');
                     if (window.lucide) { lucide.createIcons(); }
                 }
-                sidebarToggleBtn.setAttribute('title', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+                sidebarToggleBtn.setAttribute('title', collapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
             }
 
-            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+            // Restore explicit user preference if present
+            const savedState = localStorage.getItem('sidebar_state');
+            if (savedState === 'expanded' && isTablet()) {
+                document.body.classList.add('sidebar-expanded');
+            } else if (savedState === 'collapsed' && !isTablet()) {
                 document.body.classList.add('sidebar-collapsed');
-                updateSidebarToggleIcon(true);
             }
+            updateSidebarToggleIcon();
 
             sidebarToggleBtn.addEventListener('click', () => {
-                const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
-                localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
-                updateSidebarToggleIcon(isCollapsed);
+                if (isTablet()) {
+                    const expanded = document.body.classList.toggle('sidebar-expanded');
+                    localStorage.setItem('sidebar_state', expanded ? 'expanded' : 'collapsed');
+                } else {
+                    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+                    localStorage.setItem('sidebar_state', collapsed ? 'collapsed' : 'expanded');
+                }
+                updateSidebarToggleIcon();
+            });
+
+            window.addEventListener('resize', () => {
+                updateSidebarToggleIcon();
             });
         }
 
