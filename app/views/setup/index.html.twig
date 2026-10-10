@@ -437,14 +437,18 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
                                     <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-0.5">SMTP Connectivity & Test Email</h3>
-                                    <p class="text-xs text-surface-200/50" id="emailTestStatus">Send a live test email to verify mail delivery and enable the continue button.</p>
+                                    <p class="text-xs text-surface-200/50" id="emailTestStatus">Verify your connection or dispatch a live test email to enable the continue button.</p>
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-white/5">
                                 <div class="w-full sm:flex-1">
-                                    <input type="email" id="test_recipient_email" name="test_recipient_email" class="input-glass w-full text-xs font-mono" placeholder="Test recipient (defaults to From Address)">
+                                    <input type="email" id="test_recipient_email" name="test_recipient_email" class="input-glass w-full text-xs font-mono" placeholder="recipient@example.com (required to send test email)">
                                 </div>
-                                <button type="button" id="testEmailBtn" onclick="testEmailConnection()" class="btn-secondary text-xs !px-4 !py-2.5 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto">
+                                <button type="button" id="testConnBtn" onclick="testSmtpConnection()" class="btn-secondary text-xs !px-4 !py-2.5 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto">
+                                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                    <span>Test Connection</span>
+                                </button>
+                                <button type="button" id="testEmailBtn" onclick="testEmailConnection()" disabled class="btn-secondary text-xs !px-4 !py-2.5 flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i data-lucide="send" class="w-3.5 h-3.5"></i>
                                     <span>Send Test Email</span>
                                 </button>
@@ -1213,7 +1217,47 @@
             }
         }
 
-        // 2. SMTP Email Connection Test
+        // 2a. SMTP Socket Connection & Handshake Test
+        async function testSmtpConnection() {
+            const btn = document.getElementById('testConnBtn');
+            const status = document.getElementById('emailTestStatus');
+            const nextBtn = document.getElementById('emailNextBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Connecting…</span>';
+            lucide.createIcons();
+
+            const formData = new FormData();
+            formData.append('csrf_token', document.getElementById('csrf_token').value);
+            formData.append('mail_host', document.getElementById('mail_host').value);
+            formData.append('mail_port', document.getElementById('mail_port').value);
+            formData.append('mail_username', document.getElementById('mail_username').value);
+            formData.append('mail_password', document.getElementById('mail_password').value);
+
+            try {
+                const res = await fetch('/setup/test-connection', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    emailTestPassed = true;
+                    status.innerHTML = `<span class="text-emerald-400 font-semibold">✓ ${data.message}</span>`;
+                    nextBtn.disabled = false;
+                } else {
+                    emailTestPassed = false;
+                    status.innerHTML = `<span class="text-rose-400 font-semibold">✗ ${data.error || 'Connection failed.'}</span>`;
+                    nextBtn.disabled = true;
+                }
+            } catch (err) {
+                emailTestPassed = false;
+                status.innerHTML = `<span class="text-rose-400 font-semibold">✗ Connection error: ${err.message}</span>`;
+                nextBtn.disabled = true;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="activity" class="w-3.5 h-3.5"></i><span>Test Connection</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // 2b. SMTP Live Test Email Dispatch
         async function testEmailConnection() {
             const btn = document.getElementById('testEmailBtn');
             const status = document.getElementById('emailTestStatus');
@@ -1733,6 +1777,16 @@
                 });
             }
         });
+
+        const testRecipientInput = document.getElementById('test_recipient_email');
+        const testEmailBtn = document.getElementById('testEmailBtn');
+        const emailValidationRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (testRecipientInput && testEmailBtn) {
+            testRecipientInput.addEventListener('input', () => {
+                const val = testRecipientInput.value.trim();
+                testEmailBtn.disabled = !emailValidationRegex.test(val);
+            });
+        }
 
         ['google_client_id', 'google_client_secret'].forEach(id => {
             const el = document.getElementById(id);

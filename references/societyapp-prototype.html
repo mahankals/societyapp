@@ -1001,11 +1001,18 @@
                                     <input type="text" value="1025" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white">
                                 </div>
                             </div>
-                            <div class="pt-4 border-t border-white/5 flex items-center justify-between">
-                                <button onclick="simulateSmtpTest()" class="px-4 py-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center gap-2">
-                                    <i data-lucide="send" class="w-4 h-4"></i>
-                                    <span>Send Live Test Mail</span>
-                                </button>
+                            <div class="pt-4 border-t border-white/5 flex items-center justify-between flex-wrap gap-3">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <input type="email" id="proto_test_recipient_admin" oninput="document.getElementById('protoSendMailAdminBtn').disabled = !this.value.includes('@')" placeholder="recipient@example.com" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white font-mono">
+                                    <button onclick="simulateSmtpConnection()" class="px-3.5 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center gap-1.5">
+                                        <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                        <span>Test Connection</span>
+                                    </button>
+                                    <button id="protoSendMailAdminBtn" disabled onclick="simulateSmtpTest()" class="px-3.5 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                        <span>Send Live Test Mail</span>
+                                    </button>
+                                </div>
                                 <button onclick="showToast('Settings saved successfully!')" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Save Changes</button>
                             </div>
                         </div>
@@ -1432,11 +1439,21 @@
                             <p class="text-xs text-slate-400">Step 4 of 5: System SMTP &amp; Communication Configuration</p>
                         </div>
                         <div class="p-6 rounded-2xl border border-white/10 bg-white/[0.03] space-y-4">
-                            <div class="flex items-center justify-between pb-4 border-b border-white/5">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
                                 <span class="text-xs font-bold text-indigo-400 uppercase">SMTP Testing Mode</span>
-                                <button onclick="simulateSmtpTest()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold">⚡ Send Test Mail</button>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <input type="email" id="proto_test_recipient_setup" oninput="document.getElementById('protoSendMailSetupBtn').disabled = !this.value.includes('@')" placeholder="recipient@example.com" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white font-mono">
+                                    <button onclick="simulateSmtpConnection()" class="px-3.5 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center gap-1.5">
+                                        <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                        <span>Test Connection</span>
+                                    </button>
+                                    <button id="protoSendMailSetupBtn" disabled onclick="simulateSmtpTest()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                        <span>Send Test Mail</span>
+                                    </button>
+                                </div>
                             </div>
-                            <p class="text-xs text-slate-300">Mailpit service is active at <code class="text-indigo-400">127.0.0.1:1025</code>. Click above to verify real-time email dispatch.</p>
+                            <p class="text-xs text-slate-300">Mailpit service is active at <code class="text-indigo-400">127.0.0.1:1025</code>. Use "Test Connection" to check socket handshake, or enter recipient email to dispatch live email.</p>
                         </div>
                     </div>
                 </div>
@@ -2014,6 +2031,13 @@ function showToast(msg) {
 }
 
 // Simulation Actions
+function simulateSmtpConnection() {
+    showToast('⚡ Connecting to SMTP socket at 127.0.0.1:1025...');
+    setTimeout(() => {
+        showToast('✓ SMTP socket connection & handshake verified! (Status: 220 OK)');
+    }, 700);
+}
+
 function simulateSmtpTest() {
     showToast('⚡ Dispatching test email to Mailpit...');
     setTimeout(() => {

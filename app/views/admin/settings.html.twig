@@ -339,10 +339,14 @@
                     </div>
 
                     <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <input type="email" id="test_recipient_email" placeholder="recipient@example.com" value="{{ user.email }}"
                                 class="px-3 py-2 text-xs text-slate-900 dark:text-white bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl font-mono">
-                            <button type="button" id="testSmtpBtn" onclick="testSmtpConnection()" class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                            <button type="button" id="testConnBtn" onclick="testSmtpSocketConnection()" class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                <span>Test Connection</span>
+                            </button>
+                            <button type="button" id="testSmtpBtn" onclick="testSmtpConnection()" disabled class="px-3.5 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i data-lucide="send" class="w-3.5 h-3.5"></i>
                                 <span>Send Test Email</span>
                             </button>
@@ -536,10 +540,65 @@ function testDatabaseConnection() {
     });
 }
 
+function testSmtpSocketConnection() {
+    const btn = document.getElementById('testConnBtn');
+    const resultBox = document.getElementById('smtpTestResult');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Connecting...';
+    resultBox.classList.add('hidden');
+
+    const form = document.getElementById('emailForm');
+    const formData = new FormData(form);
+
+    fetch('/admin/settings/test-connection', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        resultBox.classList.remove('hidden');
+        if (data.success) {
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300';
+            resultBox.textContent = '✓ ' + (data.message || 'SMTP connection and handshake verified successfully!');
+        } else {
+            resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+            resultBox.textContent = 'SMTP connection failed: ' + (data.error || data.message || 'Unable to connect to SMTP server.');
+        }
+    })
+    .catch(err => {
+        resultBox.classList.remove('hidden');
+        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = 'Network error testing SMTP connection: ' + err.message;
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="activity" class="w-3.5 h-3.5"></i><span>Test Connection</span>';
+        if (window.lucide) { lucide.createIcons(); }
+    });
+}
+
+function updateTestSmtpBtnState() {
+    const recipientInput = document.getElementById('test_recipient_email');
+    const testSmtpBtn = document.getElementById('testSmtpBtn');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!testSmtpBtn || !recipientInput) return;
+    const val = recipientInput.value.trim();
+    testSmtpBtn.disabled = !emailRegex.test(val);
+}
+
 function testSmtpConnection() {
     const btn = document.getElementById('testSmtpBtn');
     const resultBox = document.getElementById('smtpTestResult');
-    const recipient = document.getElementById('test_recipient_email').value;
+    const recipient = document.getElementById('test_recipient_email').value.trim();
+
+    if (!recipient) {
+        resultBox.classList.remove('hidden');
+        resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
+        resultBox.textContent = 'Please provide a valid recipient email address.';
+        return;
+    }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> Testing...';
@@ -562,7 +621,7 @@ function testSmtpConnection() {
             resultBox.textContent = '✓ Test email dispatched successfully to ' + recipient;
         } else {
             resultBox.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300';
-            resultBox.textContent = 'SMTP test failed: ' + (data.message || 'Unable to dispatch test email.');
+            resultBox.textContent = 'SMTP test failed: ' + (data.message || data.error || 'Unable to dispatch test email.');
         }
     })
     .catch(err => {
@@ -574,6 +633,7 @@ function testSmtpConnection() {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Send Test Email</span>';
         if (window.lucide) { lucide.createIcons(); }
+        updateTestSmtpBtnState();
     });
 }
 
@@ -586,6 +646,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     const initialTab = params.get('tab') || '{{ activeTab|default("prerequisites") }}';
     switchSettingsTab(initialTab);
+
+    const recipientInput = document.getElementById('test_recipient_email');
+    if (recipientInput) {
+        recipientInput.addEventListener('input', updateTestSmtpBtnState);
+        updateTestSmtpBtnState();
+    }
 
     if (window.lucide) { lucide.createIcons(); }
 });

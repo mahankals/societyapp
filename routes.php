@@ -640,6 +640,7 @@ $router->get('/setup', [$setup, 'index']);
 $router->post('/setup/verify-key', [$setup, 'verifyKey']);
 $router->get('/setup/csrf-token', [$setup, 'getCsrfToken']);
 $router->post('/setup/test-db', [$setup, 'testDb']);
+$router->post('/setup/test-connection', [$setup, 'testConnection']);
 $router->post('/setup/test-email', [$setup, 'testEmail']);
 $router->post('/setup/test-google-sso', [$setup, 'testGoogleSso']);
 $router->post('/setup/save-step', [$setup, 'saveStep']);
@@ -774,6 +775,7 @@ $router->post('/admin/invitations', [$admin, 'sendInvitation'], ['auth', 'admin'
 $router->get('/admin/settings', [$admin, 'settings'], ['auth', 'admin']);
 $router->post('/admin/settings', [$admin, 'updateSettings'], ['auth', 'admin']);
 $router->post('/admin/settings/toggle-maintenance', [$admin, 'toggleMaintenance'], ['auth', 'admin']);
+$router->post('/admin/settings/test-connection', [$admin, 'testConnection'], ['auth', 'admin']);
 $router->post('/admin/settings/test-email', [$admin, 'testEmail'], ['auth', 'admin']);
 $router->post('/admin/settings/test-db', [$admin, 'testDb'], ['auth', 'admin']);
 

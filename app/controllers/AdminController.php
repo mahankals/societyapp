@@ -1049,6 +1049,40 @@ class AdminController
     }
 
     /**
+     * Test SMTP socket connection and authentication without sending email
+     */
+    public function testConnection()
+    {
+        requireAdmin();
+        header('Content-Type: application/json');
+
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            echo json_encode(['success' => false, 'message' => '', 'error' => 'Invalid security token.']);
+            exit;
+        }
+
+        $customConfig = [
+            'mail_host' => trim($_POST['mail_host'] ?? ''),
+            'mail_port' => (int)trim($_POST['mail_port'] ?? '1025'),
+            'mail_username' => trim($_POST['mail_username'] ?? ''),
+            'mail_password' => trim($_POST['mail_password'] ?? ''),
+        ];
+
+        if (empty($customConfig['mail_password'])) {
+            $customConfig['mail_password'] = getSetting('mail_password', '');
+        }
+
+        if (empty($customConfig['mail_host'])) {
+            echo json_encode(['success' => false, 'message' => '', 'error' => 'Please provide an SMTP Host.']);
+            exit;
+        }
+
+        $res = testSmtpConnection($customConfig);
+        echo json_encode($res);
+        exit;
+    }
+
+    /**
      * Send live test email to verify SMTP configuration
      */
     public function testEmail()
@@ -1060,9 +1094,10 @@ class AdminController
         }
 
         $recipient = trim($_POST['test_recipient_email'] ?? '');
-        if (empty($recipient)) {
-            $user = getUser();
-            $recipient = $user['email'] ?? '';
+        if (empty($recipient) || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Please provide a valid recipient email address to send the test message.']);
+            exit;
         }
 
         $customConfig = [

@@ -842,3 +842,143 @@ function sendEmail(string $to, string $subject, string $htmlBody, array $customC
         'message' => "Failed to deliver email body: {$sendRes}",
     ];
 }
+
+/**
+ * Test SMTP connection and socket handshake/authentication without dispatching email
+ *
+ * @param array $customConfig Optional custom SMTP settings
+ * @return array ['success' => bool, 'message' => string, 'error' => string]
+ */
+function testSmtpConnection(array $customConfig = []): array {
+    $mailHost = $customConfig['mail_host'] ?? $customConfig['host'] ?? getSetting('mail_host', '127.0.0.1');
+    $mailPort = (int)($customConfig['mail_port'] ?? $customConfig['port'] ?? getSetting('mail_port', '1025'));
+    $mailUsername = $customConfig['mail_username'] ?? $customConfig['username'] ?? getSetting('mail_username', '');
+    $mailPassword = $customConfig['mail_password'] ?? $customConfig['password'] ?? getSetting('mail_password', '');
+
+    if (empty($mailHost)) {
+        return [
+            'success' => false,
+            'message' => '',
+            'error' => 'SMTP Host is not configured.',
+        ];
+    }
+
+    $timeout = 8;
+    $errno = 0;
+    $errstr = '';
+
+    // Handle SSL on 465
+    $connectionHost = $mailHost;
+    if ($mailPort === 465) {
+        $connectionHost = 'ssl://' . $mailHost;
+    }
+
+    $socket = @fsockopen($connectionHost, $mailPort, $errno, $errstr, $timeout);
+    if (!$socket) {
+        return [
+            'success' => false,
+            'message' => '',
+            'error' => "Cannot connect to SMTP server at {$mailHost}:{$mailPort}. {$errstr} ({$errno})",
+        ];
+    }
+
+    stream_set_timeout($socket, $timeout);
+
+    $readResponse = function($sock) {
+        $data = '';
+        while ($str = @fgets($sock, 515)) {
+            $data .= $str;
+            if (strlen($str) >= 4 && substr($str, 3, 1) === ' ') {
+                break;
+            }
+        }
+        return $data;
+    };
+
+    $sendCommand = function($sock, $cmd, $expectedCode = 250) use ($readResponse) {
+        @fputs($sock, $cmd . "\r\n");
+        $res = $readResponse($sock);
+        $code = (int)substr($res, 0, 3);
+        if ($expectedCode && $code !== $expectedCode) {
+            return [false, $res];
+        }
+        return [true, $res];
+    };
+
+    // 1. Initial Greeting
+    $banner = $readResponse($socket);
+    if ((int)substr($banner, 0, 3) !== 220) {
+        @fputs($socket, "QUIT\r\n");
+        @fclose($socket);
+        return [
+            'success' => false,
+            'message' => '',
+            'error' => "Invalid greeting from SMTP server: " . trim($banner),
+        ];
+    }
+
+    // 2. EHLO
+    $heloDomain = $_SERVER['SERVER_NAME'] ?? 'localhost';
+    [$ok, $ehloRes] = $sendCommand($socket, "EHLO {$heloDomain}", 250);
+    if (!$ok) {
+        [$ok, $ehloRes] = $sendCommand($socket, "HELO {$heloDomain}", 250);
+        if (!$ok) {
+            @fputs($socket, "QUIT\r\n");
+            @fclose($socket);
+            return [
+                'success' => false,
+                'message' => '',
+                'error' => "EHLO/HELO rejected by server: " . trim($ehloRes),
+            ];
+        }
+    }
+
+    // 3. STARTTLS if port 587 and server supports STARTTLS
+    if ($mailPort === 587 && stripos($ehloRes, 'STARTTLS') !== false) {
+        [$tlsOk, $tlsRes] = $sendCommand($socket, "STARTTLS", 220);
+        if ($tlsOk) {
+            $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT);
+            if ($cryptoOk) {
+                // Re-send EHLO over TLS
+                $sendCommand($socket, "EHLO {$heloDomain}", 250);
+            }
+        }
+    }
+
+    // 4. AUTH LOGIN if credentials provided
+    if (!empty($mailUsername) && !empty($mailPassword)) {
+        [$authOk, $authRes] = $sendCommand($socket, "AUTH LOGIN", 334);
+        if ($authOk) {
+            [$uOk, $uRes] = $sendCommand($socket, base64_encode($mailUsername), 334);
+            if (!$uOk) {
+                @fputs($socket, "QUIT\r\n");
+                @fclose($socket);
+                return [
+                    'success' => false,
+                    'message' => '',
+                    'error' => "SMTP Username rejected: " . trim($uRes),
+                ];
+            }
+            [$pOk, $pRes] = $sendCommand($socket, base64_encode($mailPassword), 235);
+            if (!$pOk) {
+                @fputs($socket, "QUIT\r\n");
+                @fclose($socket);
+                return [
+                    'success' => false,
+                    'message' => '',
+                    'error' => "SMTP Authentication failed (invalid credentials): " . trim($pRes),
+                ];
+            }
+        }
+    }
+
+    // 5. QUIT
+    @fputs($socket, "QUIT\r\n");
+    @fclose($socket);
+
+    return [
+        'success' => true,
+        'message' => "SMTP connection and handshake verified successfully! ({$mailHost}:{$mailPort})",
+        'error' => '',
+    ];
+}

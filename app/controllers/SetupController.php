@@ -239,6 +239,36 @@ class SetupController
         exit;
     }
 
+    public function testConnection()
+    {
+        header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
+
+        $host = trim($_POST['mail_host'] ?? '');
+        $port = (int)($_POST['mail_port'] ?? 1025);
+        $user = trim($_POST['mail_username'] ?? '');
+        $pass = $_POST['mail_password'] ?? '';
+        if ($pass === '') {
+            $pass = getSetting('mail_password', '');
+        }
+
+        if (empty($host)) {
+            echo json_encode(['success' => false, 'message' => '', 'error' => 'Please provide an SMTP Host.']);
+            exit;
+        }
+
+        $customConfig = [
+            'mail_host' => $host,
+            'mail_port' => $port,
+            'mail_username' => $user,
+            'mail_password' => $pass,
+        ];
+
+        $res = testSmtpConnection($customConfig);
+        echo json_encode($res);
+        exit;
+    }
+
     public function testEmail()
     {
         header('Content-Type: application/json');
@@ -261,9 +291,6 @@ class SetupController
         }
 
         $recipient = trim($_POST['test_recipient_email'] ?? '');
-        if (empty($recipient)) {
-            $recipient = $fromAddress;
-        }
 
         if (empty($host)) {
             echo json_encode(['success' => false, 'error' => 'Please provide an SMTP Host.']);
