@@ -1028,14 +1028,13 @@ class SetupController
             $saveSetting->execute(['setup_step', '7', 'system']);
             $saveSetting->execute(['setup_completed', '1', 'system']);
 
-            // Update .env ONLY with database connection parameters and setup completion marker
+            // Update .env ONLY with database connection parameters
             $this->updateEnvFile([
                 'DB_HOST' => $dbHost,
                 'DB_PORT' => $dbPort,
                 'DB_NAME' => $dbName,
                 'DB_USER' => $dbUser,
                 'DB_PASS' => $dbPass,
-                'SETUP_COMPLETED' => 'true',
             ]);
 
             // Login Super Admin
@@ -1206,9 +1205,6 @@ class SetupController
             '',
             '# --- Session ---',
             'SESSION_LIFETIME=' . $data['SESSION_LIFETIME'],
-            '',
-            '# --- Deployment Status ---',
-            'SETUP_COMPLETED=' . $data['SETUP_COMPLETED'],
         ];
 
         file_put_contents(ROOT_PATH . '/.env', implode("\n", $lines) . "\n");
