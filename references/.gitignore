@@ -1,2 +1,7 @@
 *
 !.gitignore
+!changes.md
+!societyapp-prototype.html
+!capture-screenshots.js
+!Screenshots/
+!Screenshots/**

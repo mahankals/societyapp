@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocietyApp — Interactive Full Application Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   1. Theme Variables & Base Styles
+   ========================================================================== */
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Prototype Shell Colors */
+  --proto-bg: #090d16;
+  --proto-border: rgba(255, 255, 255, 0.1);
+  --proto-text: #f1f5f9;
+  --proto-muted: #94a3b8;
+  --proto-accent: #10b981;
+
+  /* App Canvas - Dark Mode (Default) */
+  --bg-base: #0b0f17;
+  --bg-surface: #111827;
+  --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-card-hover: rgba(31, 41, 55, 0.8);
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #10b981;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Semantic Colors */
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-soft: rgba(16, 185, 129, 0.15);
+  --amber-500: #f59e0b;
+  --amber-soft: rgba(245, 158, 11, 0.15);
+  --rose-500: #f43f5e;
+  --rose-soft: rgba(244, 63, 94, 0.15);
+  --blue-500: #3b82f6;
+  --blue-soft: rgba(59, 130, 246, 0.15);
+  --cyan-500: #06b6d4;
+  --cyan-soft: rgba(6, 182, 212, 0.15);
+}
+
+html[data-theme="light"] {
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-subtle: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --border-focus: #10b981;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background-color: var(--proto-bg);
+  color: var(--proto-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   2. Prototype Toolbar (Top Bar)
+   ========================================================================== */
+.proto-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(9, 13, 22, 0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--proto-border);
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  font-size: 13px;
+}
+.proto-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  font-size: 13px;
+}
+.proto-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Dropdown Chips in Proto Bar */
+.p-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.p-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.p-chip.active, .p-chip.primary {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  font-weight: 600;
+}
+.p-menu {
+  position: relative;
+}
+.p-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #0d131f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 250px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  z-index: 1050;
+  display: none;
+}
+.p-menu-list.show {
+  display: block;
+}
+.p-menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--proto-muted);
+  padding: 8px 10px 4px;
+}
+.p-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: all 0.12s;
+}
+.p-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+.p-menu-item.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  font-weight: 600;
+}
+.p-sims {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.p-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   3. Device Container & Simulated Browser Frame
+   ========================================================================== */
+.proto-canvas {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px;
+  background: #05080f;
+  overflow-y: auto;
+}
+.browser-frame {
+  width: 100%;
+  max-width: 1280px;
+  background: var(--bg-base);
+  border: 1px solid var(--proto-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.browser-frame[data-device="tablet"] {
+  max-width: 768px;
+}
+.browser-frame[data-device="mobile"] {
+  max-width: 412px;
+  border-radius: 36px;
+  border-width: 8px;
+  border-color: #1e293b;
+}
+
+/* Browser Window Header */
+.b-header {
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+.b-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.b-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.b-dot.red { background: #ff5f56; }
+.b-dot.yellow { background: #ffbd2e; }
+.b-dot.green { background: #27c93f; }
+
+.b-urlbar {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #94a3b8;
+}
+.b-urlbar svg {
+  width: 13px;
+  height: 13px;
+  color: #10b981;
+}
+.b-url-host { color: #f1f5f9; font-weight: 500; }
+.b-url-path { color: #64748b; }
+
+.b-body {
+  background: var(--bg-base);
+  color: var(--text-main);
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Screen container */
+.screen {
+  display: none;
+  width: 100%;
+}
+.screen.active {
+  display: block;
+}
+
+/* ==========================================================================
+   4. SocietyApp UI Components (Tailwind Equivs)
+   ========================================================================== */
+.app-header {
+  background: rgba(11, 15, 23, 0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+.app-logo-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: grid;
+  place-items: center;
+  color: #10b981;
+}
+
+/* Integrated Breadcrumb Bar */
+.app-breadcrumb-bar {
+  border-top: 1px solid var(--border-subtle);
+  padding: 6px 20px;
+  background: rgba(11, 15, 23, 0.6);
+  font-size: 12px;
+}
+.app-breadcrumb-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+}
+.app-breadcrumb-inner a {
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.app-breadcrumb-inner a:hover { color: #fff; }
+.app-breadcrumb-inner .active { color: #fff; font-weight: 600; }
+
+/* Main Content Area */
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  width: 100%;
+}
+
+/* Glass Panels & Cards */
+.card-glass {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+.card-glass:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge-green { background: var(--brand-soft); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-amber { background: var(--amber-soft); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-rose { background: var(--rose-soft); color: #f87171; border: 1px solid rgba(244, 63, 94, 0.3); }
+.badge-blue { background: var(--blue-soft); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+  user-select: none;
+  text-decoration: none;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.btn-danger {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: #f87171;
+}
+.btn-danger:hover {
+  background: rgba(244, 63, 94, 0.25);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Forms & Inputs */
+.form-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+}
+.form-control {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 13.5px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+.form-control.is-invalid {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2) !important;
+}
+.field-error-msg {
+  display: none;
+  font-size: 11.5px;
+  color: #f87171;
+  font-weight: 500;
+  margin-top: 4px;
+  align-items: center;
+  gap: 4px;
+}
+.field-error-msg.visible {
+  display: flex;
+}
+
+/* Data Tables */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+.table th {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+/* Interactive Modals */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  place-items: center;
+  padding: 16px;
+}
+.modal-backdrop.open {
+  display: grid;
+}
+.modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+.modal-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-head h3 { font-size: 16px; font-weight: 700; color: #fff; }
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-foot {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Toast Notifications */
+.toast-box {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn 0.25s ease forwards;
+  pointer-events: auto;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- ==========================================================================
+     PROTOTYPE TOOLBAR (TOP SWITCHER BAR)
+     ========================================================================== -->
+<div class="proto-bar">
+  <div class="proto-brand">
+    <span>SOCIETYAPP</span>
+    <span class="proto-badge">v3.8 PROTOTYPE</span>
+  </div>
+
+  <!-- Screen Switcher Menu -->
+  <div class="p-menu">
+    <button type="button" class="p-chip primary" id="screenMenuBtn" onclick="toggleMenu('screenMenuList')">
+      <span>Screen:</span>
+      <b id="activeScreenLabel">1. Setup Wizard</b>
+      <span>▾</span>
+    </button>
+    <div class="p-menu-list" id="screenMenuList">
+      <div class="p-menu-header">1. Onboarding &amp; Setup</div>
+      <button class="p-menu-item active" onclick="switchScreen('setup')">1. Setup Wizard (/setup)</button>
+      <button class="p-menu-item" onclick="switchScreen('setup-auth')">2. Setup Security Key (/setup/auth)</button>
+      <button class="p-menu-item" onclick="switchScreen('login')">3. Login / Auth (/auth/login)</button>
+      <button class="p-menu-item" onclick="switchScreen('contribute')">4. Contribute Society (/society/contribute)</button>
+
+      <div class="p-menu-header">2. Resident Portal</div>
+      <button class="p-menu-item" onclick="switchScreen('resident-dash')">5. Resident Dashboard (/resident)</button>
+      <button class="p-menu-item" onclick="switchScreen('resident-bills')">6. Bills &amp; Bulk UPI Pay (/resident/bills)</button>
+      <button class="p-menu-item" onclick="switchScreen('resident-receipts')">7. Payment Receipts (/resident/receipts)</button>
+      <button class="p-menu-item" onclick="switchScreen('resident-members')">8. Society Directory (/resident/members)</button>
+      <button class="p-menu-item" onclick="switchScreen('resident-link-flat')">9. Link Unit / Flat (/resident/link-flat)</button>
+
+      <div class="p-menu-header">3. Committee Portal</div>
+      <button class="p-menu-item" onclick="switchScreen('comitee-dash')">10. Committee Dashboard (/comitee)</button>
+      <button class="p-menu-item" onclick="switchScreen('comitee-flats')">11. Flats &amp; Rent Status (/comitee/flats)</button>
+      <button class="p-menu-item" onclick="switchScreen('comitee-members')">12. Member Approvals (/comitee/members)</button>
+      <button class="p-menu-item" onclick="switchScreen('comitee-bills')">13. Bills &amp; Confirmations (/comitee/bills)</button>
+      <button class="p-menu-item" onclick="switchScreen('comitee-expenses')">14. Expenses &amp; Ledger (/comitee/expenses)</button>
+      <button class="p-menu-item" onclick="switchScreen('comitee-broadcast')">15. Broadcast Notices (/comitee/broadcast)</button>
+
+      <div class="p-menu-header">4. Admin Portal</div>
+      <button class="p-menu-item" onclick="switchScreen('admin-dash')">16. Admin Dashboard (/admin)</button>
+      <button class="p-menu-item" onclick="switchScreen('admin-societies')">17. Housing Societies (/admin/societies)</button>
+      <button class="p-menu-item" onclick="switchScreen('admin-pending')">18. Pending Societies (/admin/societies/pending)</button>
+      <button class="p-menu-item" onclick="switchScreen('admin-users')">19. Platform Users (/admin/users)</button>
+      <button class="p-menu-item" onclick="switchScreen('admin-settings')">20. System Settings (/admin/settings)</button>
+
+      <div class="p-menu-header">5. Error States &amp; ADR Validations</div>
+      <button class="p-menu-item" onclick="switchScreen('error-validation')">21. ADR Section 8: Field Errors</button>
+      <button class="p-menu-item" onclick="switchScreen('error-404')">22. 404 Page Not Found</button>
+      <button class="p-menu-item" onclick="switchScreen('error-500')">23. 500 System Error</button>
+    </div>
+  </div>
+
+  <!-- Contextual Simulation Chips -->
+  <div class="p-sims" id="protoSims">
+    <!-- Populated dynamically via JS -->
+  </div>
+
+  <div class="p-right">
+    <!-- Role Switcher -->
+    <div class="p-menu">
+      <button type="button" class="p-chip" id="roleBtn" onclick="toggleMenu('roleMenuList')">
+        <span>Role:</span>
+        <b id="activeRoleLabel">Admin</b>
+        <span>▾</span>
+      </button>
+      <div class="p-menu-list" id="roleMenuList" style="right:0;left:auto;min-width:160px;">
+        <button class="p-menu-item active" onclick="setRole('admin')">Super Admin</button>
+        <button class="p-menu-item" onclick="setRole('committee')">Committee Member</button>
+        <button class="p-menu-item" onclick="setRole('resident')">Flat Owner</button>
+        <button class="p-menu-item" onclick="setRole('tenant')">Tenant</button>
+      </div>
+    </div>
+
+    <!-- Device Frame Switcher -->
+    <div class="p-menu">
+      <button type="button" class="p-chip" id="deviceBtn" onclick="toggleMenu('deviceMenuList')">
+        <span>Device:</span>
+        <b id="activeDeviceLabel">Desktop</b>
+        <span>▾</span>
+      </button>
+      <div class="p-menu-list" id="deviceMenuList" style="right:0;left:auto;min-width:140px;">
+        <button class="p-menu-item active" onclick="setDevice('desktop')">Desktop (1280px)</button>
+        <button class="p-menu-item" onclick="setDevice('tablet')">Tablet (768px)</button>
+        <button class="p-menu-item" onclick="setDevice('mobile')">Mobile (390px)</button>
+      </div>
+    </div>
+
+    <!-- Theme Mode Toggle -->
+    <button type="button" class="p-chip" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+      <span id="themeIcon">🌙</span>
+      <span id="themeLabel">Dark</span>
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     PROTOTYPE BROWSER CONTAINER
+     ========================================================================== -->
+<div class="proto-canvas">
+  <div class="browser-frame" id="browserFrame" data-device="desktop">
+    
+    <!-- Browser Window Header Bar -->
+    <div class="b-header">
+      <div class="b-dots">
+        <span class="b-dot red"></span>
+        <span class="b-dot yellow"></span>
+        <span class="b-dot green"></span>
+      </div>
+      <div class="b-urlbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span class="b-url-host">societyapp.ddev.site</span>
+        <span class="b-url-path" id="urlPathDisplay">/setup</span>
+      </div>
+    </div>
+
+    <!-- Browser Body Container -->
+    <div class="b-body">
+
+      <!-- ====================================================================
+           SCREEN 1: SETUP WIZARD (/setup)
+           ==================================================================== -->
+      <section class="screen active" id="screen-setup">
+        <div style="background:#0b0f17; min-height:680px; padding:32px 20px; color:#f1f5f9;">
+          <div style="max-width:900px; margin:0 auto;">
+            
+            <!-- Wizard Header -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="app-logo-box" style="width:40px; height:40px;">🏢</div>
+                <div>
+                  <h1 style="font-size:18px; font-weight:700; color:#fff;">Society App Setup &amp; Deployment Wizard</h1>
+                  <p style="font-size:12px; color:#94a3b8;">Automated initialization and deployment configuration</p>
+                </div>
+              </div>
+              <span class="badge badge-green">Production Ready</span>
+            </div>
+
+            <!-- 7-Step Navigation Strip -->
+            <div style="display:flex; gap:8px; overflow-x:auto; margin-bottom:24px; padding-bottom:4px;">
+              <button class="btn btn-sm btn-primary" onclick="setSetupStep(1)" id="stepTab-1">1. Database</button>
+              <button class="btn btn-sm btn-secondary" onclick="setSetupStep(2)" id="stepTab-2">2. Branding</button>
+              <button class="btn btn-sm btn-secondary" onclick="setSetupStep(3)" id="stepTab-3">3. Email &amp; SMTP</button>
+              <button class="btn btn-sm btn-secondary" onclick="setSetupStep(4)" id="stepTab-4">4. Google Sign-In</button>
+              <button class="btn btn-sm btn-secondary" onclick="setSetupStep(5)" id="stepTab-5">5. Super Admin</button>
+              <button class="btn btn-sm btn-secondary" onclick="setSetupStep(6)" id="stepTab-6">6. Complete</button>
+            </div>
+
+            <!-- Setup Step 1: Database -->
+            <div class="card-glass" id="setupStep-1">
+              <h2 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;">Step 1: MariaDB / MySQL Database Connection</h2>
+              <p style="font-size:12.5px; color:#94a3b8; margin-bottom:20px;">Provide connectivity credentials for platform data and multi-tenant tables.</p>
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Database Host</label>
+                  <input type="text" class="form-control" value="ddev-societyapp-db" id="dbHost">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Database Port</label>
+                  <input type="text" class="form-control" value="3306" id="dbPort">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Database Name</label>
+                  <input type="text" class="form-control" value="db" id="dbName">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Database Username</label>
+                  <input type="text" class="form-control" value="db" id="dbUser">
+                </div>
+              </div>
+
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+                <div>
+                  <b style="font-size:12px; color:#fff;">Database Connectivity Test</b>
+                  <p style="font-size:11px; color:#94a3b8;" id="dbTestStatus">Verify database credentials before applying migrations.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="simulateDbTest()">Test DB Connection</button>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button type="button" class="btn btn-primary" onclick="setSetupStep(2)">Save &amp; Continue &rarr;</button>
+              </div>
+            </div>
+
+            <!-- Setup Step 3: SMTP Email with Live Dispatch -->
+            <div class="card-glass" id="setupStep-3" style="display:none;">
+              <h2 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;">Step 3: Outgoing Email &amp; SMTP Configuration</h2>
+              <p style="font-size:12.5px; color:#94a3b8; margin-bottom:20px;">Set up transactional mail for OTP sign-ins, billing reminders, and receipts.</p>
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">SMTP Host</label>
+                  <input type="text" class="form-control" value="127.0.0.1" id="smtpHost">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SMTP Port</label>
+                  <input type="text" class="form-control" value="1025" id="smtpPort">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">From Address</label>
+                  <input type="text" class="form-control" value="no-reply@societyapp.ddev.site" id="smtpFrom">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">From Name</label>
+                  <input type="text" class="form-control" value="SocietyApp Notifications" id="smtpFromName">
+                </div>
+              </div>
+
+              <!-- Live Email Test Box (Requested Feature) -->
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <div>
+                    <b style="font-size:12px; color:#fff;">SMTP Connectivity &amp; Live Test Email</b>
+                    <p style="font-size:11px; color:#94a3b8;" id="smtpTestStatus">Send a live test email to verify mail delivery before continuing.</p>
+                  </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <input type="email" class="form-control" placeholder="Recipient email address (e.g. admin@societyapp.com)" value="atulmahankal@gmail.com" id="testEmailRecipient" style="font-size:12px;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="simulateSendTestEmail()" id="btnSendTestEmail" style="white-space:nowrap;">
+                    <span>✉️ Send Test Email</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                <button type="button" class="btn btn-secondary" onclick="setSetupStep(2)">&larr; Back</button>
+                <button type="button" class="btn btn-primary" onclick="setSetupStep(4)">Save &amp; Continue &rarr;</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 4: RESIDENT DASHBOARD (/resident)
+           ==================================================================== -->
+      <section class="screen" id="screen-resident-dash">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-green" style="font-size:10px;">Resident</span>
+            </div>
+            <!-- Multi-Society Switcher Dropdown -->
+            <div class="p-chip" onclick="showToast('Society: Green Acres Co-op (Unit A-101)')">
+              <span>🏛️ Green Acres Co-op</span>
+              <span>▾</span>
+            </div>
+            <!-- Profile Dropdown -->
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:12px; color:#94a3b8;">Atul Mahankal</span>
+              <div style="width:30px; height:30px; border-radius:8px; background:#10b981; color:#fff; display:grid; place-items:center; font-weight:700; font-size:12px;">A</div>
+            </div>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)">🏠 Home</a>
+              <span>/</span>
+              <span class="active">Resident Dashboard</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <!-- Welcome Banner & Quick Flat Status -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h1 style="font-size:22px; font-weight:800; color:#fff;">Welcome Home, Atul</h1>
+              <p style="font-size:12.5px; color:#94a3b8;">Here is the active status for your registered apartment.</p>
+            </div>
+            <a href="javascript:void(0)" onclick="switchScreen('resident-bills')" class="btn btn-primary btn-sm">
+              <span>💳 Pay Maintenance Bills</span>
+            </a>
+          </div>
+
+          <!-- My Unit Allocation Card with 3-State Occupancy Switcher -->
+          <div class="card-glass" style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                  <h2 style="font-size:18px; font-weight:700; color:#fff;">Flat A-101 (2 BHK, 850 sq.ft)</h2>
+                  <span class="badge badge-green" id="dashOccupancyBadge">Self Occupied</span>
+                </div>
+                <p style="font-size:12px; color:#94a3b8;">Wing A · 1st Floor · Primary Resident Allocation</p>
+              </div>
+
+              <!-- 1-Click Status Modal Trigger -->
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('occupancyModal')">
+                <span>🔄 Change Occupancy Status</span>
+              </button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08);">
+              <div>
+                <span style="font-size:11px; color:#94a3b8; display:block;">Current Status</span>
+                <b style="font-size:13px; color:#fff;" id="occupancyTextVal">Self Occupied</b>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; display:block;">Expected Rent</span>
+                <b style="font-size:13px; color:#fff;" id="dashRentVal">—</b>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; display:block;">Tenant Name</span>
+                <b style="font-size:13px; color:#fff;" id="dashTenantVal">—</b>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; display:block;">Outstanding Dues</span>
+                <b style="font-size:13px; color:#f87171;">₹3,450.00</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Tiles -->
+          <div class="stats-grid">
+            <div class="card-glass" style="cursor:pointer;" onclick="switchScreen('resident-bills')">
+              <span style="font-size:11px; color:#94a3b8;">Pending Dues</span>
+              <h3 style="font-size:22px; font-weight:700; color:#f87171; margin:4px 0;">₹3,450</h3>
+              <span style="font-size:11px; color:#10b981;">Pay via UPI &rarr;</span>
+            </div>
+            <div class="card-glass" style="cursor:pointer;" onclick="switchScreen('resident-receipts')">
+              <span style="font-size:11px; color:#94a3b8;">Payment Receipts</span>
+              <h3 style="font-size:22px; font-weight:700; color:#fff; margin:4px 0;">12 Records</h3>
+              <span style="font-size:11px; color:#94a3b8;">View history &rarr;</span>
+            </div>
+            <div class="card-glass" style="cursor:pointer;" onclick="switchScreen('resident-members')">
+              <span style="font-size:11px; color:#94a3b8;">Society Members</span>
+              <h3 style="font-size:22px; font-weight:700; color:#fff; margin:4px 0;">48 Families</h3>
+              <span style="font-size:11px; color:#94a3b8;">Directory &rarr;</span>
+            </div>
+            <div class="card-glass" style="cursor:pointer;" onclick="switchScreen('resident-link-flat')">
+              <span style="font-size:11px; color:#94a3b8;">Link Flat</span>
+              <h3 style="font-size:22px; font-weight:700; color:#38bdf8; margin:4px 0;">+ New Unit</h3>
+              <span style="font-size:11px; color:#94a3b8;">Owner or Tenant &rarr;</span>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 5: RESIDENT BILLS & BULK PAY (/resident/bills)
+           ==================================================================== -->
+      <section class="screen" id="screen-resident-bills">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-green" style="font-size:10px;">Resident</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <!-- Bulk Pay Button (Requested Feature) -->
+              <button type="button" class="btn btn-primary btn-sm" onclick="openModal('bulkPayModal')">
+                <span>⚡ Bulk Pay with UPI</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="switchScreen('resident-receipts')">
+                <span>📄 Payment Receipts</span>
+              </button>
+            </div>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('resident-dash')">🏠 Resident</a>
+              <span>/</span>
+              <span class="active">Bills &amp; Dues</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:20px; font-weight:800; color:#fff;">Maintenance Bills &amp; Invoices</h1>
+              <p style="font-size:12px; color:#94a3b8;">All dues generated for Flat A-101 (Green Acres Co-op)</p>
+            </div>
+            <div class="badge badge-amber" style="font-size:12px; padding:6px 12px;">Total Unpaid: ₹3,450.00</div>
+          </div>
+
+          <!-- Bills Table -->
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Bill ID</th>
+                  <th>Billing Month</th>
+                  <th>Due Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>BILL-2026-10</b></td>
+                  <td>October 2026</td>
+                  <td style="color:#f87171;">15 Oct 2026</td>
+                  <td><b>₹2,200.00</b></td>
+                  <td><span class="badge badge-rose">Unpaid</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-primary btn-sm" onclick="openModal('bulkPayModal')">Pay via UPI</button>
+                    <!-- Send for Confirmation Button (Requested Title) -->
+                    <button class="btn btn-secondary btn-sm" onclick="openModal('offlinePayModal')" title="Submit offline payment proof">
+                      Send for confirmation
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><b>BILL-2026-09</b></td>
+                  <td>September 2026</td>
+                  <td>15 Sep 2026</td>
+                  <td><b>₹1,250.00</b></td>
+                  <td><span class="badge badge-rose">Unpaid</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-primary btn-sm" onclick="openModal('bulkPayModal')">Pay via UPI</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openModal('offlinePayModal')">
+                      Send for confirmation
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><b>BILL-2026-08</b></td>
+                  <td>August 2026</td>
+                  <td>15 Aug 2026</td>
+                  <td><b>₹2,200.00</b></td>
+                  <td><span class="badge badge-green">Paid</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-sm" onclick="switchScreen('resident-receipts')">View Receipt</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 6: RESIDENT RECEIPTS (/resident/receipts)
+           ==================================================================== -->
+      <section class="screen" id="screen-resident-receipts">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-green" style="font-size:10px;">Resident</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchScreen('resident-bills')">&larr; Back to Bills</button>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('resident-dash')">🏠 Resident</a>
+              <span>/</span>
+              <span class="active">Payment Receipts</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="margin-bottom:20px;">
+            <h1 style="font-size:20px; font-weight:800; color:#fff;">Payment Receipts &amp; Verification Status</h1>
+            <p style="font-size:12px; color:#94a3b8;">Review receipts confirmed by the committee and track offline submission approvals.</p>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Remark / Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>REC-2026-08-01</b></td>
+                  <td>12 Aug 2026</td>
+                  <td><b>₹2,200.00</b></td>
+                  <td>UPI Auto-Confirm</td>
+                  <td><span class="badge badge-green">✓ Verified &amp; Issued</span></td>
+                  <td style="color:#94a3b8; font-size:12px;">Instant UPI Settlement #UPI98371923</td>
+                </tr>
+                <tr>
+                  <td><b>REC-OFFLINE-104</b></td>
+                  <td>09 Oct 2026</td>
+                  <td><b>₹2,200.00</b></td>
+                  <td>NEFT Transfer</td>
+                  <td><span class="badge badge-amber">⏳ Pending Committee Confirmation</span></td>
+                  <td style="color:#fbbf24; font-size:12px;">Awaiting secretary bank reconciliation</td>
+                </tr>
+                <tr>
+                  <td><b>REC-OFFLINE-091</b></td>
+                  <td>02 Oct 2026</td>
+                  <td><b>₹1,250.00</b></td>
+                  <td>Cheque #401928</td>
+                  <td><span class="badge badge-rose">✗ Rejected</span></td>
+                  <td style="color:#f87171; font-size:12px;"><b>Remark:</b> Cheque returned due to signature mismatch. Please submit fresh payment.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 8: RESIDENT LINK FLAT (/resident/link-flat)
+           ==================================================================== -->
+      <section class="screen" id="screen-resident-link-flat">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-green" style="font-size:10px;">Resident</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchScreen('resident-dash')">&larr; Back to Dashboard</button>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('resident-dash')">🏠 Resident</a>
+              <span>/</span>
+              <span class="active">Link Unit / Flat</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="max-width:680px; margin:0 auto;">
+            <div class="card-glass">
+              <h1 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:4px;">Request to Link a Housing Unit</h1>
+              <p style="font-size:12.5px; color:#94a3b8; margin-bottom:20px;">Send a verification request to the society managing committee.</p>
+
+              <!-- Role Selector: Owner vs Tenant -->
+              <div class="form-group">
+                <label class="form-label">Your Relationship with the Flat</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <button type="button" class="btn btn-secondary" id="btnRoleOwner" onclick="setLinkingType('owner')">
+                    <span>👑 Flat Owner</span>
+                  </button>
+                  <button type="button" class="btn btn-primary" id="btnRoleTenant" onclick="setLinkingType('tenant')">
+                    <span>🔑 Tenant / Renter</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Updated Tenant Notice (Requested Feature) -->
+              <div id="tenantNoticeBox" style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.25); border-radius:12px; padding:14px; margin-bottom:20px;">
+                <b style="font-size:12px; color:#fbbf24; display:flex; align-items:center; gap:6px;">
+                  <span>⚠️ Important Notice for Tenants:</span>
+                </b>
+                <p style="font-size:12px; color:#cbd5e1; margin-top:4px; line-height:1.5;">
+                  Once submitted, your linking request will be reviewed by the managing committee. Upon approval, you will gain access to resident communication, announcements, guidelines, and visitor management. <strong>Maintenance bills and legal ownership remain the responsibility of the registered flat owner.</strong>
+                </p>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div class="form-group">
+                  <label class="form-label">Wing</label>
+                  <input type="text" class="form-control" value="B" placeholder="e.g. A, B, C">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Flat / Unit Number</label>
+                  <input type="text" class="form-control" value="304" placeholder="e.g. 101, 304">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Lease Agreement / ID Proof (Optional)</label>
+                <input type="file" class="form-control" style="font-size:12px;">
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button type="button" class="btn btn-secondary" onclick="switchScreen('resident-dash')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="showToast('Linking request sent to committee for verification!')">
+                  Submit Verification Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 17: ADMIN HOUSING SOCIETIES (/admin/societies)
+           ==================================================================== -->
+      <section class="screen" id="screen-admin-societies">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-blue" style="font-size:10px;">Admin</span>
+            </div>
+            <!-- Pending Requests Button with Count (Requested Feature) -->
+            <button type="button" class="btn btn-primary btn-sm" onclick="switchScreen('admin-pending')" style="background:linear-gradient(135deg, #f59e0b, #d97706);">
+              <span>⏳ Pending Onboarding Requests</span>
+              <span style="background:#fff; color:#b45309; padding:1px 6px; border-radius:999px; font-size:11px; font-weight:800;">3</span>
+            </button>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('admin-dash')">🏠 Admin</a>
+              <span>/</span>
+              <span class="active">Housing Societies</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:20px; font-weight:800; color:#fff;">Registered Housing Societies</h1>
+              <p style="font-size:12px; color:#94a3b8;">Manage active community instances and onboarding reviews.</p>
+            </div>
+            <a href="javascript:void(0)" onclick="switchScreen('contribute')" class="btn btn-secondary btn-sm">+ Propose Society</a>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Society Name</th>
+                  <th>Location</th>
+                  <th>Units</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>SOC-GRN1</code></td>
+                  <td><b>Green Acres Co-op Housing</b></td>
+                  <td>Mumbai, MH</td>
+                  <td>48 Flats</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-sm" onclick="showToast('Opened society management view')">Manage</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>SOC-PAL1</code></td>
+                  <td><b>Palm Grove Heights</b></td>
+                  <td>Pune, MH</td>
+                  <td>120 Flats</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-sm" onclick="showToast('Opened society management view')">Manage</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 18: ADMIN PENDING SOCIETIES (/admin/societies/pending)
+           ==================================================================== -->
+      <section class="screen" id="screen-admin-pending">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-blue" style="font-size:10px;">Admin</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchScreen('admin-societies')">&larr; Back to Societies</button>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('admin-dash')">🏠 Admin</a>
+              <span>/</span>
+              <a href="javascript:void(0)" onclick="switchScreen('admin-societies')">Societies</a>
+              <span>/</span>
+              <span class="active">Pending Requests (3)</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="margin-bottom:20px;">
+            <h1 style="font-size:20px; font-weight:800; color:#fff;">Pending Society Onboarding Proposals</h1>
+            <p style="font-size:12px; color:#94a3b8;">Review submissions received from the public contribute form.</p>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Society Name</th>
+                  <th>Submitted By</th>
+                  <th>Location</th>
+                  <th>Date</th>
+                  <th>Committee Members</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Shree Ganesh Residency</b></td>
+                  <td>Rohan Joshi (rohan@example.com)</td>
+                  <td>Thane, MH</td>
+                  <td>Today</td>
+                  <td>3 members attached</td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Proposal approved &amp; society instance provisioned!')">Approve</button>
+                    <button class="btn btn-danger btn-sm" onclick="openModal('rejectProposalModal')">Reject with Remark</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><b>Sunflower Heights CHS</b></td>
+                  <td>Pooja Patil (pooja@example.com)</td>
+                  <td>Navi Mumbai, MH</td>
+                  <td>Yesterday</td>
+                  <td>2 members attached</td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Proposal approved!')">Approve</button>
+                    <button class="btn btn-danger btn-sm" onclick="openModal('rejectProposalModal')">Reject with Remark</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 19: ADMIN PLATFORM USERS (/admin/users)
+           ==================================================================== -->
+      <section class="screen" id="screen-admin-users">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+              <span class="badge badge-blue" style="font-size:10px;">Admin</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('inviteAdminModal')">+ Invite Platform Admin</button>
+          </div>
+          <div class="app-breadcrumb-bar">
+            <div class="app-breadcrumb-inner">
+              <a href="javascript:void(0)" onclick="switchScreen('admin-dash')">🏠 Admin</a>
+              <span>/</span>
+              <span class="active">Platform Users</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <!-- User Type Filter Tabs (Requested: Admin Only in Users) -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h1 style="font-size:20px; font-weight:800; color:#fff;">Platform Administrators &amp; Operators</h1>
+              <p style="font-size:12px; color:#94a3b8;">System operators authorized for platform management (Residents and tenants reside in society directory).</p>
+            </div>
+            <div class="p-chip" style="font-size:12px;">
+              <span>Filtered by Type:</span>
+              <b>Admin Type Only</b>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>User Type</th>
+                  <th>Platform Role</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Atul Mahankal</b></td>
+                  <td>atulmahankal@gmail.com</td>
+                  <td><span class="badge badge-blue">Admin</span></td>
+                  <td>Super Administrator</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td style="text-align:right;">
+                    <span style="font-size:11px; color:#94a3b8;">Primary Root</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td><b>Platform Support Bot</b></td>
+                  <td>support@societyapp.ddev.site</td>
+                  <td><span class="badge badge-blue">Admin</span></td>
+                  <td>System Operator</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-sm">Edit Role</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 4 (CONTRIBUTE): CONTRIBUTE SOCIETY (/society/contribute)
+           ==================================================================== -->
+      <section class="screen" id="screen-contribute">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🏢</div>
+              <span>SocietyApp</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchScreen('resident-dash')">&larr; Back to App</button>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="max-width:880px; margin:0 auto;">
+            <div class="card-glass">
+              <h1 style="font-size:20px; font-weight:800; color:#fff; margin-bottom:4px;">Propose / Onboard a Housing Society</h1>
+              <p style="font-size:12px; color:#94a3b8; margin-bottom:24px;">Register a new society instance. You can search and add committee members dynamically.</p>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                <div class="form-group">
+                  <label class="form-label">Society Name *</label>
+                  <input type="text" class="form-control" value="Shivneri CHS" placeholder="e.g. Green Acres Co-op">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">City *</label>
+                  <input type="text" class="form-control" value="Pune" placeholder="e.g. Mumbai, Pune">
+                </div>
+              </div>
+
+              <!-- Committee Members Section (No Default Member, Dynamic Add/Edit/Remove) -->
+              <div style="margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; color:#fff;">Committee Members &amp; Unit Allocation</h3>
+                    <p style="font-size:11.5px; color:#94a3b8;">Search registered users to add them to this society proposal.</p>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('addContribMemberModal')">
+                    <span>+ Add Member</span>
+                  </button>
+                </div>
+
+                <!-- Table with Edit and Remove actions -->
+                <div class="table-wrap">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>Contact</th>
+                        <th>Flat Location</th>
+                        <th>Specification</th>
+                        <th style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="contribMembersTbody">
+                      <!-- Rendered by JS: Starts empty or with added members -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:24px;">
+                <button type="button" class="btn btn-secondary">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="showToast('Society proposal submitted successfully!')">
+                  Submit Society Proposal
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 21: ADR SECTION 8: FIELD-LEVEL VALIDATION ERRORS DEMO
+           ==================================================================== -->
+      <section class="screen" id="screen-error-validation">
+        <header class="app-header">
+          <div class="app-nav">
+            <div class="app-brand">
+              <div class="app-logo-box">🛡️</div>
+              <span>Architecture Compliance</span>
+              <span class="badge badge-amber">ADR Section 8</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchScreen('resident-dash')">&larr; Back to App</button>
+          </div>
+        </header>
+
+        <main class="app-main">
+          <div style="max-width:600px; margin:0 auto;">
+            <div class="card-glass">
+              <h1 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:4px;">Field-Level Contextual Validation Feedback</h1>
+              <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">
+                Per <code>docs/adr/ui-standards.md</code> Section 8: error messages must appear directly below the affected field with rose highlight, dynamic clearing on interaction, and accessibility attributes.
+              </p>
+
+              <form id="adrValidationForm" onsubmit="handleAdrFormSubmit(event)">
+                <div class="form-group">
+                  <label class="form-label" for="adrName">Full Name *</label>
+                  <input type="text" id="adrName" class="form-control" placeholder="e.g. Rahul Sharma" oninput="clearFieldError('adrName')">
+                  <div class="field-error-msg" id="adrNameError">
+                    <span>⚠️</span><span>Please enter your full legal name (minimum 3 characters).</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="adrEmail">Email Address *</label>
+                  <input type="email" id="adrEmail" class="form-control" placeholder="e.g. rahul@example.com" oninput="clearFieldError('adrEmail')">
+                  <div class="field-error-msg" id="adrEmailError">
+                    <span>⚠️</span><span>Please enter a valid email address for notifications.</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="adrPhone">10-Digit Mobile Number *</label>
+                  <input type="tel" id="adrPhone" class="form-control" placeholder="e.g. 9876543210" oninput="clearFieldError('adrPhone')">
+                  <div class="field-error-msg" id="adrPhoneError">
+                    <span>⚠️</span><span>Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.</span>
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="triggerSimulatedErrors()">
+                    Simulate Validation Errors
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    Submit Form
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- ====================================================================
+           SCREEN 22 & 23: ERROR 404 & 500 PAGES
+           ==================================================================== -->
+      <section class="screen" id="screen-error-404">
+        <div style="min-height:560px; display:grid; place-items:center; padding:40px 20px; text-align:center;">
+          <div style="max-width:440px;">
+            <div style="font-size:64px; font-weight:800; color:#38bdf8; font-family:var(--font-mono); margin-bottom:8px;">404</div>
+            <h2 style="font-size:20px; font-weight:700; color:#fff; margin-bottom:8px;">Page Not Found</h2>
+            <p style="font-size:13px; color:#94a3b8; margin-bottom:24px;">The URL you requested does not exist or has been moved to another location.</p>
+            <button class="btn btn-primary" onclick="switchScreen('resident-dash')">Return to Dashboard</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-error-500">
+        <div style="min-height:560px; display:grid; place-items:center; padding:40px 20px; text-align:center;">
+          <div style="max-width:440px;">
+            <div style="font-size:64px; font-weight:800; color:#f43f5e; font-family:var(--font-mono); margin-bottom:8px;">500</div>
+            <h2 style="font-size:20px; font-weight:700; color:#fff; margin-bottom:8px;">Internal Server Error</h2>
+            <p style="font-size:13px; color:#94a3b8; margin-bottom:24px;">An unexpected error occurred while processing your request. Diagnostics ID: <code>ERR-8921-DB</code></p>
+            <div style="display:flex; justify-content:center; gap:10px;">
+              <button class="btn btn-secondary" onclick="showToast('Diagnostics sent to platform administrator')">Report Issue</button>
+              <button class="btn btn-primary" onclick="switchScreen('resident-dash')">Return to Safety</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODALS
+     ========================================================================== -->
+
+<!-- 1. Occupancy Status Modal (Requested Feature: Self Occupied / Rent / Rented) -->
+<div class="modal-backdrop" id="occupancyModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Change Unit Occupancy Status</h3>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="closeModal('occupancyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Occupancy Status *</label>
+        <select class="form-control" id="occupancySelect" onchange="toggleRentFields()">
+          <option value="self_occupied">Self Occupied (Owner Living)</option>
+          <option value="available_for_rent">Available for Rent (Vacant / Looking for Tenant)</option>
+          <option value="rented">Rented / Tenanted (Tenant Currently Living)</option>
+        </select>
+      </div>
+
+      <div id="rentExtraFields" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Expected Rent (₹/month)</label>
+            <input type="number" class="form-control" id="modalRentAmount" value="25000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Security Deposit (₹)</label>
+            <input type="number" class="form-control" id="modalDeposit" value="75000">
+          </div>
+        </div>
+        <div class="form-group" id="tenantNameGroup">
+          <label class="form-label">Tenant Name (if currently rented)</label>
+          <input type="text" class="form-control" id="modalTenantName" placeholder="e.g. Vikas Sharma">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('occupancyModal')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveOccupancyStatus()">Save Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Bulk Pay with UPI Modal -->
+<div class="modal-backdrop" id="bulkPayModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>⚡ Instant UPI Payment (Bulk Dues)</h3>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="closeModal('bulkPayModal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:12.5px; color:#94a3b8; margin-bottom:12px;">Scan the dynamic QR code with GPay, PhonePe, Paytm, or BHIM.</p>
+      
+      <!-- Simulated Dynamic QR Code Box -->
+      <div style="width:180px; height:180px; margin:0 auto 16px; background:#fff; border-radius:14px; padding:12px; display:grid; place-items:center; border:2px solid #10b981;">
+        <div style="width:100%; height:100%; background:repeating-linear-gradient(0deg, #000, #000 4px, #fff 4px, #fff 8px); display:grid; place-items:center; color:#000; font-weight:800; font-size:12px;">
+          UPI QR CODE<br>₹3,450.00
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px; font-size:12px; margin-bottom:14px;">
+        <span style="color:#94a3b8;">Payee VPA:</span> <code>greenacres.society@okhdfcbank</code><br>
+        <span style="color:#94a3b8;">Total Payable:</span> <b style="color:#34d399; font-size:14px;">₹3,450.00</b>
+      </div>
+
+      <button type="button" class="btn btn-primary" style="width:100%;" onclick="simulateUpiSuccess()">
+        Simulate Successful UPI Payment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Offline Payment (Send for Confirmation) Modal -->
+<div class="modal-backdrop" id="offlinePayModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Submit Receipt for Confirmation</h3>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="closeModal('offlinePayModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:16px;">
+        Submit your bank transfer/cheque details. The managing committee will receive a notification to verify and confirm your receipt.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Payment Mode *</label>
+        <select class="form-control">
+          <option>NEFT / RTGS Transfer</option>
+          <option>Cheque Deposit</option>
+          <option>Cash Receipt</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Transaction / UTR / Cheque Number *</label>
+        <input type="text" class="form-control" placeholder="e.g. UTR98273615234">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Upload Counterfoil / Screenshot</label>
+        <input type="file" class="form-control" style="font-size:12px;">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('offlinePayModal')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="submitOfflineReceipt()">Send for Confirmation</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Reject Proposal Modal with Required Remark -->
+<div class="modal-backdrop" id="rejectProposalModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 style="color:#f87171;">Reject Onboarding Proposal</h3>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="closeModal('rejectProposalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px; color:#94a3b8; margin-bottom:14px;">
+        Please state the reason for rejection. This remark will be logged and emailed to the applicant.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Rejection Remark / Reason *</label>
+        <textarea class="form-control" rows="3" placeholder="e.g. Incomplete building occupancy certificate. Please upload registered bye-laws."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('rejectProposalModal')">Cancel</button>
+      <button type="button" class="btn btn-danger" onclick="confirmRejection()">Confirm Rejection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-box" id="toastContainer"></div>
+
+<!-- ==========================================================================
+     PROTOTYPE INTERACTIVE LOGIC SCRIPT
+     ========================================================================== -->
+<script>
+// State Management
+let currentScreen = 'setup';
+let currentRole = 'admin';
+let currentDevice = 'desktop';
+let currentTheme = 'dark';
+let contribMembers = [
+  { name: 'Rohan Sharma', email: 'rohan@example.com', phone: '9820192837', wing: 'A', floor: '2', flat: '201', type: '2 BHK', area: '850' }
+];
+
+// Screen switching function
+function switchScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('screen-' + screenId);
+  if (target) {
+    target.classList.add('active');
+    currentScreen = screenId;
+  }
+
+  // Update URL Display
+  const urlMap = {
+    'setup': '/setup',
+    'setup-auth': '/setup/auth',
+    'login': '/auth/login',
+    'contribute': '/society/contribute',
+    'resident-dash': '/resident',
+    'resident-bills': '/resident/bills',
+    'resident-receipts': '/resident/receipts',
+    'resident-members': '/resident/members',
+    'resident-link-flat': '/resident/link-flat',
+    'comitee-dash': '/comitee',
+    'comitee-flats': '/comitee/flats',
+    'comitee-members': '/comitee/members',
+    'comitee-bills': '/comitee/bills',
+    'comitee-expenses': '/comitee/expenses',
+    'comitee-broadcast': '/comitee/broadcast',
+    'admin-dash': '/admin',
+    'admin-societies': '/admin/societies',
+    'admin-pending': '/admin/societies/pending',
+    'admin-users': '/admin/users',
+    'admin-settings': '/admin/settings',
+    'error-validation': '/demo/field-validation',
+    'error-404': '/404',
+    'error-500': '/500'
+  };
+  document.getElementById('urlPathDisplay').textContent = urlMap[screenId] || '/' + screenId;
+
+  // Update Menu Active Indicator
+  document.querySelectorAll('#screenMenuList .p-menu-item').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick')?.includes("'" + screenId + "'"));
+  });
+  const activeBtn = document.querySelector('#screenMenuList .p-menu-item.active');
+  if (activeBtn) {
+    document.getElementById('activeScreenLabel').textContent = activeBtn.textContent;
+  }
+  closeAllMenus();
+  renderContribTable();
+  updateContextualSims();
+}
+
+// Setup Step Switcher
+function setSetupStep(stepNum) {
+  for (let i = 1; i <= 6; i++) {
+    const pane = document.getElementById('setupStep-' + i);
+    const tab = document.getElementById('stepTab-' + i);
+    if (pane) pane.style.display = (i === stepNum) ? 'block' : 'none';
+    if (tab) {
+      tab.className = (i === stepNum) ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-secondary';
+    }
+  }
+}
+
+// Live SMTP Test Simulation
+function simulateSendTestEmail() {
+  const btn = document.getElementById('btnSendTestEmail');
+  const status = document.getElementById('smtpTestStatus');
+  const recipient = document.getElementById('testEmailRecipient').value.trim();
+
+  if (!recipient || !recipient.includes('@')) {
+    status.innerHTML = '<span style="color:#f87171;">✗ Please provide a valid recipient email address.</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳ Sending test mail…</span>';
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✉️ Send Test Email</span>';
+    status.innerHTML = `<span style="color:#34d399; font-weight:600;">✓ Live test email dispatched successfully to ${recipient}!</span>`;
+    showToast(`Test email delivered to ${recipient}`);
+  }, 900);
+}
+
+// DB Connectivity Test Simulation
+function simulateDbTest() {
+  const status = document.getElementById('dbTestStatus');
+  status.textContent = 'Testing socket connection to database…';
+  setTimeout(() => {
+    status.innerHTML = '<span style="color:#34d399; font-weight:600;">✓ Database connected! MariaDB 10.11 InnoDB initialized.</span>';
+    showToast('Database connection verified');
+  }, 600);
+}
+
+// Occupancy Modal Logic (Self occupied | Available for rent | Rented)
+function toggleRentFields() {
+  const sel = document.getElementById('occupancySelect').value;
+  const extra = document.getElementById('rentExtraFields');
+  const tenantGroup = document.getElementById('tenantNameGroup');
+
+  if (sel === 'self_occupied') {
+    extra.style.display = 'none';
+  } else {
+    extra.style.display = 'block';
+    tenantGroup.style.display = (sel === 'rented') ? 'block' : 'none';
+  }
+}
+
+function saveOccupancyStatus() {
+  const sel = document.getElementById('occupancySelect').value;
+  const badge = document.getElementById('dashOccupancyBadge');
+  const textVal = document.getElementById('occupancyTextVal');
+  const rentVal = document.getElementById('dashRentVal');
+  const tenantVal = document.getElementById('dashTenantVal');
+
+  if (sel === 'self_occupied') {
+    badge.className = 'badge badge-green';
+    badge.textContent = 'Self Occupied';
+    textVal.textContent = 'Self Occupied';
+    rentVal.textContent = '—';
+    tenantVal.textContent = '—';
+  } else if (sel === 'available_for_rent') {
+    badge.className = 'badge badge-amber';
+    badge.textContent = 'Available for Rent';
+    textVal.textContent = 'Available for Rent';
+    rentVal.textContent = '₹' + document.getElementById('modalRentAmount').value + '/mo';
+    tenantVal.textContent = 'Looking for tenant';
+  } else if (sel === 'rented') {
+    badge.className = 'badge badge-blue';
+    badge.textContent = 'Rented';
+    textVal.textContent = 'Rented (Tenanted)';
+    rentVal.textContent = '₹' + document.getElementById('modalRentAmount').value + '/mo';
+    tenantVal.textContent = document.getElementById('modalTenantName').value || 'Tenant Registered';
+  }
+
+  closeModal('occupancyModal');
+  showToast('Occupancy status updated for Flat A-101');
+}
+
+// Instant UPI Simulation
+function simulateUpiSuccess() {
+  closeModal('bulkPayModal');
+  showToast('✓ UPI payment of ₹3,450 received! Receipt #REC-2026-10-88 generated.');
+  switchScreen('resident-receipts');
+}
+
+// Offline Receipt Submission
+function submitOfflineReceipt() {
+  closeModal('offlinePayModal');
+  showToast('Offline receipt submitted! Managing committee notified for confirmation.');
+  switchScreen('resident-receipts');
+}
+
+// Linking Type Toggle (Owner vs Tenant)
+function setLinkingType(type) {
+  const btnOwner = document.getElementById('btnRoleOwner');
+  const btnTenant = document.getElementById('btnRoleTenant');
+  const noticeBox = document.getElementById('tenantNoticeBox');
+
+  if (type === 'tenant') {
+    btnTenant.className = 'btn btn-primary';
+    btnOwner.className = 'btn btn-secondary';
+    noticeBox.style.display = 'block';
+  } else {
+    btnOwner.className = 'btn btn-primary';
+    btnTenant.className = 'btn btn-secondary';
+    noticeBox.style.display = 'none';
+  }
+}
+
+// Dynamic Contribute Members Table
+function renderContribTable() {
+  const tbody = document.getElementById('contribMembersTbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (contribMembers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">No members added yet. Click "+ Add Member" above.</td></tr>`;
+    return;
+  }
+
+  contribMembers.forEach((m, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${m.name}</b></td>
+      <td><div>${m.email}</div><small style="color:#94a3b8;">${m.phone}</small></td>
+      <td>Wing ${m.wing} · Flat ${m.flat}</td>
+      <td>${m.type} (${m.area} sq.ft)</td>
+      <td style="text-align:right;">
+        <button class="btn btn-secondary btn-sm" onclick="editContribMember(${idx})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="removeContribMember(${idx})">Remove</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function removeContribMember(idx) {
+  contribMembers.splice(idx, 1);
+  renderContribTable();
+  showToast('Member removed from proposal table');
+}
+
+function editContribMember(idx) {
+  const m = contribMembers[idx];
+  const newFlat = prompt('Edit Flat Number for ' + m.name + ':', m.flat);
+  if (newFlat !== null && newFlat.trim()) {
+    m.flat = newFlat.trim();
+    renderContribTable();
+    showToast('Updated flat for ' + m.name);
+  }
+}
+
+// Rejection Remark Logic
+function confirmRejection() {
+  closeModal('rejectProposalModal');
+  showToast('Proposal rejected with remark. Applicant notified.');
+}
+
+// ADR Section 8 Form Validation Logic
+function handleAdrFormSubmit(e) {
+  e.preventDefault();
+  triggerSimulatedErrors();
+}
+
+function triggerSimulatedErrors() {
+  const name = document.getElementById('adrName');
+  const email = document.getElementById('adrEmail');
+  const phone = document.getElementById('adrPhone');
+
+  name.classList.add('is-invalid');
+  document.getElementById('adrNameError').classList.add('visible');
+
+  email.classList.add('is-invalid');
+  document.getElementById('adrEmailError').classList.add('visible');
+
+  phone.classList.add('is-invalid');
+  document.getElementById('adrPhoneError').classList.add('visible');
+
+  showToast('Validation errors triggered per ADR Section 8');
+}
+
+function clearFieldError(id) {
+  const input = document.getElementById(id);
+  const errorMsg = document.getElementById(id + 'Error');
+  if (input) input.classList.remove('is-invalid');
+  if (errorMsg) errorMsg.classList.remove('visible');
+}
+
+// Device & Theme Switchers
+function setDevice(device) {
+  const frame = document.getElementById('browserFrame');
+  frame.setAttribute('data-device', device);
+  document.getElementById('activeDeviceLabel').textContent = device.charAt(0).toUpperCase() + device.slice(1);
+  closeAllMenus();
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.getElementById('activeRoleLabel').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+  closeAllMenus();
+  showToast('Switched persona to ' + role);
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  currentTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+  html.setAttribute('data-theme', currentTheme);
+  document.getElementById('themeIcon').textContent = (currentTheme === 'dark') ? '🌙' : '☀️';
+  document.getElementById('themeLabel').textContent = (currentTheme === 'dark') ? 'Dark' : 'Light';
+}
+
+// Menu Dropdown Handlers
+function toggleMenu(id) {
+  const el = document.getElementById(id);
+  const isShown = el.classList.contains('show');
+  closeAllMenus();
+  if (!isShown) el.classList.add('show');
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.p-menu-list').forEach(el => el.classList.remove('show'));
+}
+
+window.addEventListener('click', (e) => {
+  if (!e.target.closest('.p-menu')) {
+    closeAllMenus();
+  }
+});
+
+// Modal Handlers
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.add('open');
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('open');
+}
+
+// Toast Notifier
+function showToast(msg) {
+  const box = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>✓</span><span>${msg}</span>`;
+  box.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    setTimeout(() => t.remove(), 300);
+  }, 3200);
+}
+
+// Contextual Simulator Buttons in Proto Bar
+function updateContextualSims() {
+  const sims = document.getElementById('protoSims');
+  sims.innerHTML = '';
+
+  if (currentScreen === 'setup') {
+    sims.innerHTML = `
+      <button class="p-chip" onclick="simulateSendTestEmail()">⚡ Test Live SMTP</button>
+      <button class="p-chip" onclick="simulateDbTest()">⚡ Test Database</button>
+    `;
+  } else if (currentScreen === 'resident-dash') {
+    sims.innerHTML = `
+      <button class="p-chip" onclick="openModal('occupancyModal')">⚡ Toggle Rent Modal</button>
+      <button class="p-chip" onclick="switchScreen('resident-bills')">⚡ View Bills</button>
+    `;
+  } else if (currentScreen === 'resident-bills') {
+    sims.innerHTML = `
+      <button class="p-chip" onclick="openModal('bulkPayModal')">⚡ Bulk UPI QR</button>
+      <button class="p-chip" onclick="openModal('offlinePayModal')">⚡ Send for Confirmation</button>
+    `;
+  } else if (currentScreen === 'admin-societies' || currentScreen === 'admin-pending') {
+    sims.innerHTML = `
+      <button class="p-chip" onclick="switchScreen('admin-pending')">⚡ Pending Requests (3)</button>
+      <button class="p-chip" onclick="openModal('rejectProposalModal')">⚡ Rejection Remark</button>
+    `;
+  } else if (currentScreen === 'error-validation') {
+    sims.innerHTML = `
+      <button class="p-chip" onclick="triggerSimulatedErrors()">⚡ Trigger ADR Errors</button>
+    `;
+  }
+}
+
+// Initialization
+document.addEventListener('DOMContentLoaded', () => {
+  renderContribTable();
+  updateContextualSims();
+});
+</script>
+
+</body>
+</html>
