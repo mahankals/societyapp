@@ -10,12 +10,15 @@ class SetupController
     {
         // Once app is deployed/installed, /setup must be redirected to landing page
         if ($this->isSetupCompleted()) {
+            Session::forget('setup_key_hash');
+            Session::forget('setup_key_authenticated');
             redirect('/');
         }
 
-        // Setup security key verification
-        $setupKey = $this->getOrCreateSetupKey();
-        if (Session::get('setup_key_authenticated') !== true) {
+        // Setup security key verification - verify session against current .env key
+        if (!$this->isSetupKeyAuthenticated()) {
+            Session::forget('setup_key_hash');
+            Session::forget('setup_key_authenticated');
             echo view('setup/auth', [
                 'basePath' => '/',
                 'csrfToken' => generateCSRFToken(),
@@ -189,6 +192,7 @@ class SetupController
     public function testDb()
     {
         header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
         
         $host = trim($_POST['db_host'] ?? 'localhost');
         $port = (int)($_POST['db_port'] ?? 3306);
@@ -238,6 +242,7 @@ class SetupController
     public function testEmail()
     {
         header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
 
         $host = trim($_POST['mail_host'] ?? '');
         $port = (int)($_POST['mail_port'] ?? 1025);
@@ -320,6 +325,7 @@ class SetupController
     public function testGoogleSso()
     {
         header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
 
         $clientId = trim($_POST['google_client_id'] ?? '');
         $clientSecret = trim($_POST['google_client_secret'] ?? '');
@@ -417,6 +423,7 @@ class SetupController
     public function saveStep()
     {
         header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             echo json_encode([
@@ -765,6 +772,7 @@ class SetupController
     public function install()
     {
         header('Content-Type: application/json');
+        $this->requireSetupKeyAuth();
 
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             echo json_encode([
@@ -1037,6 +1045,10 @@ class SetupController
                 'DB_PASS' => $dbPass,
             ]);
 
+            // Clear setup security session authorization upon successful deployment
+            Session::forget('setup_key_hash');
+            Session::forget('setup_key_authenticated');
+
             // Login Super Admin
             loginUser($adminId, 'admin', $adminEmail);
 
@@ -1226,11 +1238,38 @@ class SetupController
         $validKey = $this->getOrCreateSetupKey();
 
         if (!empty($enteredKey) && hash_equals($validKey, $enteredKey)) {
+            Session::put('setup_key_hash', hash('sha256', $validKey));
             Session::put('setup_key_authenticated', true);
             redirect('/setup');
         } else {
+            Session::forget('setup_key_hash');
+            Session::forget('setup_key_authenticated');
             Session::flash('error', 'Invalid Setup Key. Please verify the SETUP_KEY in your .env file.');
             redirect('/setup');
+        }
+    }
+
+    private function isSetupKeyAuthenticated(): bool
+    {
+        $setupKey = $this->getOrCreateSetupKey();
+        $sessionHash = (string)(Session::get('setup_key_hash') ?? '');
+        if (empty($sessionHash) || empty($setupKey)) {
+            return false;
+        }
+        return hash_equals(hash('sha256', $setupKey), $sessionHash);
+    }
+
+    private function requireSetupKeyAuth(): void
+    {
+        if (!$this->isSetupKeyAuthenticated()) {
+            header('Content-Type: application/json');
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Setup session expired or invalid. Please re-enter the Setup Key.',
+                'requires_auth' => true,
+            ]);
+            exit;
         }
     }
 
