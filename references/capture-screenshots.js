@@ -6,109 +6,299 @@ const PROTOTYPE_PATH = 'file://' + path.resolve(__dirname, 'societyapp-prototype
 const SCREENSHOTS_DIR = path.resolve(__dirname, 'Screenshots');
 
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
-  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+    fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 }
 
-async function run() {
-  console.log('Launching headless Chrome to capture prototype screenshots...');
-  const browser = await puppeteer.launch({
-    executablePath: '/usr/bin/google-chrome',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--window-size=1440,960']
-  });
-
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1440, height: 960, deviceScaleFactor: 2 });
-  await page.goto(PROTOTYPE_PATH, { waitUntil: 'networkidle0' });
-
-  async function snap(filename, actions) {
-    if (actions) {
-      await page.evaluate(actions);
-      await new Promise(r => setTimeout(r, 400));
+const SCREENS = [
+    {
+        id: 'setup-key',
+        name: '01-setup-security-check.png',
+        title: 'Installation Security Check',
+        url: '/setup',
+        desc: 'Security key check before setup wizard'
+    },
+    {
+        id: 'setup-wizard',
+        name: '02-setup-wizard-smtp-test.png',
+        title: 'Setup Step Wizard & SMTP',
+        url: '/setup',
+        desc: 'Step 4 of 5 with SMTP live test mail dispatch'
+    },
+    {
+        id: 'auth-login',
+        name: '03-auth-login.png',
+        title: 'Sign In Screen',
+        url: '/auth/login',
+        desc: 'Authentication screen with email, password and Google SSO'
+    },
+    {
+        id: 'admin-dash',
+        name: '04-admin-dashboard-dark.png',
+        title: 'Admin Dashboard (Dark)',
+        url: '/admin',
+        desc: 'Application Administration dashboard with 4 stats and lists'
+    },
+    {
+        id: 'admin-dash',
+        name: '05-admin-dashboard-light.png',
+        title: 'Admin Dashboard (Light)',
+        url: '/admin',
+        theme: 'light',
+        desc: 'Admin dashboard rendered in light mode'
+    },
+    {
+        id: 'admin-societies',
+        name: '06-admin-housing-societies.png',
+        title: 'Housing Societies Management',
+        url: '/admin/societies',
+        desc: 'Societies list with Pending Requests button'
+    },
+    {
+        id: 'admin-pending',
+        name: '07-admin-pending-proposals.png',
+        title: 'Pending Society Proposals',
+        url: '/admin/societies/pending',
+        desc: 'Pending onboarding proposals queue'
+    },
+    {
+        id: 'admin-pending',
+        name: '08-admin-reject-proposal-remark-modal.png',
+        title: 'Reject Proposal Remark Modal',
+        url: '/admin/societies/pending',
+        modal: 'modalRejectRemark',
+        desc: 'Mandatory rejection remark modal per changes.md'
+    },
+    {
+        id: 'admin-users',
+        name: '09-admin-users.png',
+        title: 'Platform Users Management',
+        url: '/admin/users',
+        desc: 'Platform users directory for super administrator'
+    },
+    {
+        id: 'admin-settings',
+        name: '10-admin-settings-smtp.png',
+        title: 'System Settings & SMTP',
+        url: '/admin/settings',
+        desc: 'Global settings and SMTP configuration'
+    },
+    {
+        id: 'resident-dash',
+        name: '11-resident-dashboard-dark.png',
+        title: 'Resident Dashboard (Dark)',
+        url: '/resident',
+        role: 'resident',
+        desc: 'Resident dashboard with quick actions and flat cards'
+    },
+    {
+        id: 'resident-dash',
+        name: '12-resident-dashboard-light.png',
+        title: 'Resident Dashboard (Light)',
+        url: '/resident',
+        role: 'resident',
+        theme: 'light',
+        desc: 'Resident dashboard in crisp light theme'
+    },
+    {
+        id: 'resident-dash',
+        name: '13-resident-occupancy-modal.png',
+        title: 'Manage Flat Occupancy Modal',
+        url: '/resident',
+        role: 'resident',
+        modal: 'modalOccupancy',
+        desc: '3-button occupancy modal with tenant readonly rules'
+    },
+    {
+        id: 'resident-bills',
+        name: '14-resident-bills-and-dues.png',
+        title: 'Bills & Dues (Bulk Pay)',
+        url: '/resident/bills',
+        role: 'resident',
+        desc: 'Maintenance dues ledger with multi-select bulk pay'
+    },
+    {
+        id: 'resident-bills',
+        name: '15-resident-bulk-upi-qr-modal.png',
+        title: 'Bulk Pay UPI QR Code Modal',
+        url: '/resident/bills',
+        role: 'resident',
+        modal: 'modalBulkUpi',
+        desc: 'Instant UPI QR code modal with society VPA'
+    },
+    {
+        id: 'resident-receipts',
+        name: '16-resident-receipts-ledger.png',
+        title: 'Payment Receipts Ledger',
+        url: '/resident/receipts',
+        role: 'resident',
+        desc: 'Verified and pending payment receipts list'
+    },
+    {
+        id: 'resident-dash',
+        name: '17-resident-link-flat-tenant-notice.png',
+        title: 'Link Flat Modal with Tenant Notice',
+        url: '/resident',
+        role: 'resident',
+        modal: 'modalLinkFlat',
+        action: 'tenantNotice',
+        desc: 'Flat link modal with highlighted Tenant disclaimer alert'
+    },
+    {
+        id: 'user-profile',
+        name: '18-user-profile-connected-accounts.png',
+        title: 'Profile & Connected Accounts',
+        url: '/user/profile',
+        desc: 'Profile with Google SSO link/unlink toggle'
+    },
+    {
+        id: 'user-notifications',
+        name: '19-user-notifications.png',
+        title: 'User Notifications',
+        url: '/user/notification',
+        desc: 'Notification list with read/unread & view actions'
+    },
+    {
+        id: 'committee-flats',
+        name: '20-committee-flats-management.png',
+        title: 'Committee Flats Management',
+        url: '/comitee/flats',
+        role: 'committee',
+        desc: 'Flats & units directory with occupancy status'
+    },
+    {
+        id: 'committee-bills',
+        name: '21-committee-bills-upi-settings.png',
+        title: 'Committee Bills & UPI Settings',
+        url: '/comitee/bills',
+        role: 'committee',
+        desc: 'Bills management and Society UPI payment settings'
+    },
+    {
+        id: 'society-contribute',
+        name: '22-society-contribute-proposal.png',
+        title: 'Contribute Society Proposal',
+        url: '/society/contribute',
+        desc: 'Contribute society onboarding with committee table'
+    },
+    {
+        id: 'error-adr-validation',
+        name: '23-adr-section-8-field-errors.png',
+        title: 'ADR Section 8 Field Validation Errors',
+        url: '/auth/login?error=validation',
+        action: 'adrErrors',
+        desc: 'Validation errors displayed directly below input fields'
+    },
+    {
+        id: 'error-404',
+        name: '24-error-404-page.png',
+        title: '404 Page Not Found',
+        url: '/page-not-found',
+        desc: 'Branded 404 error page'
+    },
+    {
+        id: 'error-500',
+        name: '25-error-500-page.png',
+        title: '500 Server Error',
+        url: '/server-error',
+        desc: 'Branded 500 error page with correlation ID'
+    },
+    {
+        id: 'resident-dash',
+        name: '26-mobile-resident-dashboard.png',
+        title: 'Mobile Viewport Resident Dashboard',
+        url: '/resident',
+        role: 'resident',
+        device: 'mobile',
+        desc: 'Mobile responsive layout with collapsible navigation'
     }
-    const filePath = path.join(SCREENSHOTS_DIR, filename);
-    await page.screenshot({ path: filePath });
-    console.log(`✓ Captured: ${filename}`);
-  }
+];
 
-  // 1. Setup Wizard
-  await snap('01-setup-wizard.png', () => { switchScreen('setup'); setSetupStep(1); });
+async function captureAll() {
+    console.log('Launching Headless Chrome...');
+    const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome',
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
 
-  // 2. Setup Step 3 (SMTP Live Email Test)
-  await snap('02-setup-smtp-live-test.png', () => { switchScreen('setup'); setSetupStep(3); simulateSendTestEmail(); });
+    const page = await browser.newPage();
 
-  // 3. Login Screen
-  await snap('03-auth-login.png', () => { switchScreen('login'); });
+    for (const screen of SCREENS) {
+        console.log(`Capturing: ${screen.name} - ${screen.title}...`);
 
-  // 4. Resident Dashboard
-  await snap('04-resident-dashboard.png', () => { switchScreen('resident-dash'); closeModal('occupancyModal'); });
+        // Configure viewport
+        if (screen.device === 'mobile') {
+            await page.setViewport({ width: 420, height: 860, deviceScaleFactor: 2 });
+        } else {
+            await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
+        }
 
-  // 5. Resident Occupancy Modal (Self occupied | Available for rent | Rented)
-  await snap('05-resident-occupancy-status-modal.png', () => {
-    switchScreen('resident-dash');
-    document.getElementById('occupancySelect').value = 'available_for_rent';
-    toggleRentFields();
-    openModal('occupancyModal');
-  });
+        await page.goto(PROTOTYPE_PATH, { waitUntil: 'networkidle0' });
 
-  // 6. Resident Bills & Dues
-  await snap('06-resident-bills-and-dues.png', () => { closeModal('occupancyModal'); switchScreen('resident-bills'); });
+        // Apply screen state inside the page
+        await page.evaluate((s) => {
+            // Theme
+            if (s.theme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
 
-  // 7. Bulk Pay with UPI Modal
-  await snap('07-resident-bulk-pay-upi-modal.png', () => { switchScreen('resident-bills'); openModal('bulkPayModal'); });
+            // Role
+            if (s.role) {
+                setRole(s.role, s.role.charAt(0).toUpperCase() + s.role.slice(1));
+            } else {
+                setRole('admin', 'Admin');
+            }
 
-  // 8. Offline Payment (Send for Confirmation) Modal
-  await snap('08-resident-send-for-confirmation-modal.png', () => { closeModal('bulkPayModal'); switchScreen('resident-bills'); openModal('offlinePayModal'); });
+            // Device frame
+            if (s.device) {
+                setDevice(s.device, s.device.charAt(0).toUpperCase() + s.device.slice(1));
+            } else {
+                setDevice('desktop', 'Desktop');
+            }
 
-  // 9. Payment Receipts with Verified, Pending, and Rejected Statuses
-  await snap('09-resident-receipts-status.png', () => { closeModal('offlinePayModal'); switchScreen('resident-receipts'); });
+            // Switch Screen
+            switchScreen(s.id, s.title, s.url);
 
-  // 10. Link Flat with Tenant Notice
-  await snap('10-resident-link-flat-tenant-notice.png', () => { switchScreen('resident-link-flat'); setLinkingType('tenant'); });
+            // Special actions
+            if (s.action === 'tenantNotice') {
+                toggleLinkRole('tenant');
+            } else if (s.action === 'adrErrors') {
+                triggerAdrErrors();
+            }
 
-  // 11. Committee Flats
-  await snap('11-committee-flats-management.png', () => { switchScreen('comitee-flats'); });
+            // Open Modal if specified
+            if (s.modal) {
+                openModal(s.modal);
+                if (s.modal === 'modalOccupancy') {
+                    setOccupancyState('rented');
+                }
+            }
 
-  // 12. Committee Bills
-  await snap('12-committee-bills-management.png', () => { switchScreen('comitee-bills'); });
+            // Ensure Lucide icons render
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }, screen);
 
-  // 13. Admin Dashboard
-  await snap('13-admin-dashboard-fixed-layout.png', () => { switchScreen('admin-dash'); });
+        // Small pause for DOM/CSS paint
+        await new Promise(r => setTimeout(r, 400));
 
-  // 14. Admin Societies with Pending Requests Button (3)
-  await snap('14-admin-societies-pending-button.png', () => { switchScreen('admin-societies'); });
+        const targetFile = path.join(SCREENSHOTS_DIR, screen.name);
+        await page.screenshot({ path: targetFile, fullPage: false });
+        console.log(`Saved: ${targetFile}`);
+    }
 
-  // 15. Admin Pending Proposals with Reject Remark Modal
-  await snap('15-admin-pending-proposals.png', () => { switchScreen('admin-pending'); });
-
-  // 16. Admin Reject Proposal Remark Modal
-  await snap('16-admin-reject-proposal-remark-modal.png', () => { switchScreen('admin-pending'); openModal('rejectProposalModal'); });
-
-  // 17. Admin Users (Admin Only)
-  await snap('17-admin-users-admin-only.png', () => { closeModal('rejectProposalModal'); switchScreen('admin-users'); });
-
-  // 18. Contribute Society with Empty Members Table
-  await snap('18-contribute-society-empty-members.png', () => { switchScreen('contribute'); });
-
-  // 19. ADR Section 8: Field-Level Validation Errors Below Inputs
-  await snap('19-adr-section-8-field-level-errors.png', () => { switchScreen('error-validation'); triggerSimulatedErrors(); });
-
-  // 20. Error 404 Page
-  await snap('20-error-404-page.png', () => { switchScreen('error-404'); });
-
-  // 21. Error 500 Page
-  await snap('21-error-500-page.png', () => { switchScreen('error-500'); });
-
-  // 22. Mobile View
-  await snap('22-mobile-responsive-resident-dashboard.png', () => {
-    switchScreen('resident-dash');
-    setDevice('mobile');
-  });
-
-  await browser.close();
-  console.log('All screenshots captured successfully in references/Screenshots/!');
+    await browser.close();
+    console.log('✓ All 26 screenshots successfully generated in references/Screenshots/');
 }
 
-run().catch(err => {
-  console.error('Error capturing screenshots:', err);
-  process.exit(1);
+captureAll().catch(err => {
+    console.error('Capture failed:', err);
+    process.exit(1);
 });
