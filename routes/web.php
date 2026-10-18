@@ -298,6 +298,13 @@ return function (App $app) {
         redirect(getUserRoleDashboardUrl($user));
     }))->add($auth);
 
+    $app->get('/auth/google', SlimBridge::wrap(function () {
+        $clientId = getSetting('google_client_id', '');
+        $redirectUri = urlencode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/auth/google-callback');
+        $googleUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id={$clientId}&redirect_uri={$redirectUri}&response_type=code&scope=email%20profile&access_type=offline";
+        redirect($googleUrl);
+    }));
+
     $app->get('/auth/google-callback', SlimBridge::wrap(function () {
         $isSetupAdmin = (isset($_GET['state']) && $_GET['state'] === 'setup_admin');
 

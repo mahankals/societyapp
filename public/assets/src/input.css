@@ -281,9 +281,15 @@
 
   .grid-bg {
     background-image:
+      linear-gradient(oklch(0.20 0.02 270 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.20 0.02 270 / 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .dark .grid-bg {
+    background-image:
       linear-gradient(oklch(1 0 0 / 0.03) 1px, transparent 1px),
       linear-gradient(90deg, oklch(1 0 0 / 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
   }
 
   .hero-mockup-wrapper {

@@ -69,7 +69,7 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
   return (
     <header 
       id="main-header" 
-      className="fixed top-0 left-0 right-0 z-50 h-13 bg-surface-950/90 dark:bg-surface-950/90 backdrop-blur-md border-b border-white/10 shadow-sm transition-all duration-200"
+      className="fixed top-0 left-0 right-0 z-50 h-13 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md border-b border-surface-200/80 dark:border-white/10 shadow-sm transition-all duration-200"
       style={{ height: '52px' }}
     >
       <div className="h-full max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
@@ -79,14 +79,14 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="inline-flex items-center justify-center p-1.5 rounded-lg text-surface-200/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              className="inline-flex items-center justify-center p-1.5 rounded-lg text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/10 transition-colors focus:outline-none"
               title="Toggle Sidebar"
               aria-label="Toggle Sidebar"
             >
               {isSidebarCollapsed ? (
-                <PanelLeft className="w-4 h-4 text-surface-200" />
+                <PanelLeft className="w-4 h-4 text-surface-600 dark:text-surface-200" />
               ) : (
-                <PanelLeftClose className="w-4 h-4 text-surface-200" />
+                <PanelLeftClose className="w-4 h-4 text-surface-600 dark:text-surface-200" />
               )}
             </button>
           )}
@@ -98,7 +98,7 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               alt={appConfig.appName} 
               className="w-7 h-7 rounded-lg object-contain" 
             />
-            <span className="text-sm font-bold text-white tracking-tight hidden sm:inline">
+            <span className="text-sm font-bold text-surface-900 dark:text-white tracking-tight hidden sm:inline">
               {appConfig.appName}
             </span>
           </Link>
@@ -231,21 +231,21 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
             <button
               type="button"
               onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-              className="p-1.5 text-surface-200/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/10 rounded-lg transition-colors"
               title="Theme Mode"
               aria-label="Theme Mode"
             >
               {resolvedTheme === 'dark' ? (
                 <Moon className="w-4 h-4 text-blue-400" />
               ) : (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-4 h-4 text-amber-500" />
               )}
             </button>
 
             {themeMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-32 border border-white/20 bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50 py-1">
+              <div className="absolute right-0 mt-1.5 w-32 border border-surface-200 dark:border-white/20 bg-white/95 dark:bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50 py-1">
                 {[
-                  { value: 'light', label: 'Light', icon: Sun, color: 'text-amber-400' },
+                  { value: 'light', label: 'Light', icon: Sun, color: 'text-amber-500' },
                   { value: 'dark', label: 'Dark', icon: Moon, color: 'text-blue-400' },
                   { value: 'system', label: 'System', icon: Monitor, color: 'text-purple-400' },
                 ].map((item) => (
@@ -257,14 +257,16 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
                       setThemeMenuOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs transition-colors ${
-                      theme === item.value ? 'bg-white/10 text-white font-medium' : 'text-surface-200 hover:bg-white/5'
+                      theme === item.value 
+                        ? 'bg-surface-100 dark:bg-white/10 text-surface-900 dark:text-white font-medium' 
+                        : 'text-surface-600 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
                       <span>{item.label}</span>
                     </div>
-                    {theme === item.value && <Check className="w-3 h-3 text-brand-400" />}
+                    {theme === item.value && <Check className="w-3 h-3 text-brand-500 dark:text-brand-400" />}
                   </button>
                 ))}
               </div>
@@ -348,9 +350,9 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
           ) : (
             <Link
               to="/login"
-              className="px-3 py-1 rounded-lg bg-brand-500 text-white hover:bg-brand-600 text-xs font-semibold shadow-sm transition-all"
+              className="px-3 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold shadow-sm shadow-brand-500/20 transition-all active:scale-95"
             >
-              Sign In
+              Get Started
             </Link>
           )}
         </div>

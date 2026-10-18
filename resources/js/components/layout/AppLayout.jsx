@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
 import MobileNav from './MobileNav';
+import Footer from './Footer';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AppLayout() {
@@ -29,10 +30,11 @@ export default function AppLayout() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const isPublicPage = ['/', '/contact', '/login', '/register', '/reset-password'].includes(location.pathname);
+  const isPublicPage = ['/', '/contact', '/login', '/register', '/reset-password', '/society/contribute'].includes(location.pathname);
+  const isAuthPage = ['/login', '/register', '/reset-password'].includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-surface-950 text-surface-100 flex flex-col font-body selection:bg-brand-500/30 selection:text-white">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 flex flex-col font-body selection:bg-brand-500/30 selection:text-white transition-colors duration-200">
       {/* Compact Navbar (52px height) */}
       <Navbar onToggleSidebar={toggleSidebar} isSidebarCollapsed={isSidebarCollapsed} />
 
@@ -59,9 +61,12 @@ export default function AppLayout() {
         </div>
       ) : (
         /* Public Pages Layout */
-        <main id="main-content" className="flex-1 pt-[52px] max-w-7xl w-full mx-auto px-4">
-          <Outlet />
-        </main>
+        <>
+          <main id="main-content" className="flex-1 pt-[52px] w-full">
+            <Outlet />
+          </main>
+          {!isAuthPage && <Footer />}
+        </>
       )}
     </div>
   );
