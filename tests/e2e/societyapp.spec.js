@@ -22,7 +22,27 @@ test.describe('SocietyApp Full React SPA E2E & Video Suite', () => {
     expect(navBox.height).toBeLessThanOrEqual(58);
     expect(navBox.height).toBeGreaterThanOrEqual(48);
 
-    await page.waitForTimeout(1000);
+    // Verify Dual Device Mockups (Browser & Smartphone)
+    await expect(page.locator('text=societyapp.ddev.site/admin')).toBeVisible();
+    await expect(page.locator('text=Flat 402')).toBeVisible();
+    await expect(page.locator('text=₹3,500')).toBeVisible();
+    await page.waitForTimeout(1200);
+
+    // Scroll through Features Section
+    await page.locator('#features').scrollIntoViewIfNeeded();
+    await expect(page.locator('text=Instant Cloud Portal')).toBeVisible();
+    await expect(page.locator('text=Instant UPI Payments')).toBeVisible();
+    await page.waitForTimeout(1200);
+
+    // Scroll through Stats & Community Trust
+    await page.locator('#stats').scrollIntoViewIfNeeded();
+    await expect(page.locator('#stats').getByText('500+')).toBeVisible();
+    await expect(page.locator('#stats').getByText('50,000+')).toBeVisible();
+    await page.waitForTimeout(1200);
+
+    // Scroll back to top
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    await page.waitForTimeout(800);
 
     // -------------------------------------------------------------
     // 2. Public Contact Page
