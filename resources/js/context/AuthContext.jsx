@@ -48,8 +48,8 @@ export function AuthProvider({ children }) {
     fetchBootstrap();
   }, [fetchBootstrap]);
 
-  const login = async (loginId, password) => {
-    const data = await api.post('/api/auth/login', { login: loginId, password });
+  const login = async (loginId, password, remember = false) => {
+    const data = await api.post('/api/auth/login', { login: loginId, password, remember });
     await fetchBootstrap();
     return data;
   };

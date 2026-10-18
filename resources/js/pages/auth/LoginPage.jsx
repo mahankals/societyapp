@@ -55,58 +55,102 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
+    const clientId = appConfig?.googleClientId;
+    if (!clientId) {
+      alert('Google Sign-In is not configured yet on this platform.');
+      return;
+    }
+
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse?.access_token) {
+              setLoading(true);
+              try {
+                const res = await fetch('/auth/google-one-tap', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ credential: tokenResponse.access_token }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  window.location.href = data.redirect || (returnUrl || '/resident');
+                } else {
+                  setError(data.error || 'Google Sign-In failed.');
+                }
+              } catch (err) {
+                setError('An error occurred during Google authentication.');
+              } finally {
+                setLoading(false);
+              }
+            } else if (tokenResponse?.error) {
+              console.error('Google token error:', tokenResponse);
+            }
+          },
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (e) {
+        console.warn('Google OAuth client init error:', e);
+      }
+    }
+
+    // Fallback to OAuth redirect
     window.location.href = '/auth/google';
   };
 
   return (
     <div className="min-h-[calc(100vh-52px)] flex bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors">
       {/* Left Column: Brand Showcase (Desktop only, matches older approved design) */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative overflow-hidden bg-gradient-to-br from-brand-900/40 via-surface-950 to-surface-950 p-12 xl:p-16 flex-col justify-between border-r border-surface-200/50 dark:border-white/5">
+      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative overflow-hidden bg-gradient-to-br from-brand-50 via-surface-100 to-indigo-50/40 dark:from-brand-950/40 dark:via-surface-950 dark:to-surface-950 p-12 xl:p-16 flex-col justify-between border-r border-surface-200/90 dark:border-white/5">
         <div className="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
-        <div className="glow-orb w-[400px] h-[400px] bg-brand-600/15 -top-20 -left-20 animate-pulse-slow pointer-events-none"></div>
+        <div className="glow-orb w-[400px] h-[400px] bg-brand-500/10 dark:bg-brand-600/15 -top-20 -left-20 animate-pulse-slow pointer-events-none"></div>
 
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-3 group mb-12">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30 group-hover:shadow-brand-500/50 transition-all">
               <Building2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">{appConfig.appName}</span>
+            <span className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">{appConfig.appName}</span>
           </Link>
 
-          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight font-heading">
+          <h1 className="text-4xl xl:text-5xl font-bold text-surface-900 dark:text-white mb-6 leading-tight font-heading">
             Your digital<br />
-            <span className="bg-gradient-to-r from-brand-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 dark:from-brand-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
               community hub
             </span>
           </h1>
 
-          <p className="text-base text-surface-200/60 max-w-md leading-relaxed mb-10">
+          <p className="text-base text-surface-600 dark:text-surface-200/60 max-w-md leading-relaxed mb-10">
             Manage your society seamlessly with enterprise-grade tools for maintenance, automated UPI collections, and real-time community engagement.
           </p>
 
           <div className="space-y-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/25 dark:border-emerald-500/30 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <span className="text-sm text-surface-200/70 font-medium">Bank-grade security with end-to-end encryption</span>
+              <span className="text-sm text-surface-700 dark:text-surface-200/80 font-medium">Bank-grade security with end-to-end encryption</span>
             </div>
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center shrink-0">
-                <WifiOff className="w-5 h-5 text-brand-400" />
+              <div className="w-10 h-10 rounded-xl bg-brand-500/15 dark:bg-brand-500/20 border border-brand-500/25 dark:border-brand-500/30 flex items-center justify-center shrink-0">
+                <WifiOff className="w-5 h-5 text-brand-600 dark:text-brand-400" />
               </div>
-              <span className="text-sm text-surface-200/70 font-medium">Works offline with instant sync</span>
+              <span className="text-sm text-surface-700 dark:text-surface-200/80 font-medium">Works offline with instant sync</span>
             </div>
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
-                <Smartphone className="w-5 h-5 text-purple-400" />
+              <div className="w-10 h-10 rounded-xl bg-purple-500/15 dark:bg-purple-500/20 border border-purple-500/25 dark:border-purple-500/30 flex items-center justify-center shrink-0">
+                <Smartphone className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <span className="text-sm text-surface-200/70 font-medium">Modern responsive web app for any device</span>
+              <span className="text-sm text-surface-700 dark:text-surface-200/80 font-medium">Modern responsive web app for any device</span>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-xs text-surface-200/40 pt-8 border-t border-white/5">
+        <div className="relative z-10 flex items-center justify-between text-xs text-surface-500 dark:text-surface-200/40 pt-8 border-t border-surface-200/80 dark:border-white/5">
           <span>&copy; {new Date().getFullYear()} {appConfig.appName}</span>
           <span>All rights reserved</span>
         </div>

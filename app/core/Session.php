@@ -46,6 +46,12 @@ class Session {
 
         self::$started = true;
 
+        // Apply 30-day lifetime if remember_me is set
+        if (isset($_SESSION['remember_me']) && $_SESSION['remember_me'] === true) {
+            $lifetime = 30 * 86400; // 30 days
+            ini_set('session.gc_maxlifetime', (string)$lifetime);
+        }
+
         // Check if session has timed out based on previous activity
         if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $lifetime) {
             self::destroy();
@@ -73,9 +79,37 @@ class Session {
         }
     }
 
+    public static function setRememberMe(bool $remember = true): void {
+        if ($remember) {
+            $lifetime = 30 * 86400; // 30 days
+            $_SESSION['remember_me'] = true;
+            $_SESSION['remember_expires'] = time() + $lifetime;
+            ini_set('session.gc_maxlifetime', (string)$lifetime);
+
+            $config = require __DIR__ . '/../../config/session.php';
+            $isSecure = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+                || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+
+            if (!headers_sent()) {
+                setcookie($config['name'], session_id(), [
+                    'expires' => time() + $lifetime,
+                    'path' => '/',
+                    'domain' => '',
+                    'secure' => $isSecure,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
+            }
+        } else {
+            unset($_SESSION['remember_me'], $_SESSION['remember_expires']);
+        }
+    }
+
     public static function isExpired(?int $timeout = null): bool {
         $config = require __DIR__ . '/../../config/session.php';
-        $timeout = $timeout ?? (int)($config['lifetime'] ?? 3600);
+        $defaultLifetime = (int)($config['lifetime'] ?? 3600);
+        $timeout = $timeout ?? (isset($_SESSION['remember_me']) && $_SESSION['remember_me'] === true ? 30 * 86400 : $defaultLifetime);
         return isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout;
     }
 

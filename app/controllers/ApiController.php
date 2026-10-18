@@ -67,6 +67,7 @@ class ApiController
             'supportEmail' => getSetting('support_email', 'support@societyapp.ddev.site'),
             'maintenanceMode' => isMaintenanceModeActive(),
             'isSetupCompleted' => isAppSetupCompleted(),
+            'googleClientId' => getSetting('google_client_id', ''),
         ];
 
         self::json([
@@ -132,6 +133,8 @@ class ApiController
         }
 
         loginUser((int)$user['id'], $user['role'], $user['email']);
+        $remember = !empty($input['remember']);
+        \Session::setRememberMe($remember);
 
         self::json([
             'success' => true,
