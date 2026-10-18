@@ -4,6 +4,7 @@
 
 @source "../../../app";
 @source "../../../public";
+@source "../../../resources";
 @source "../../../routes.php";
 
 /* ===== Custom Design System ===== */

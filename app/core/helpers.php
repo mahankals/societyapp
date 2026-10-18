@@ -168,6 +168,28 @@ function getUserCapabilities(?int $userId = null): array {
     }
 }
 
+function getUserSocieties(int $userId): array {
+    try {
+        $societies = Database::fetchAll("
+            SELECT DISTINCT s.id, s.name, s.city, s.address, s.society_code, sm.role, sm.flat_no, sm.wing
+            FROM societies s
+            JOIN society_members sm ON s.id = sm.society_id
+            WHERE sm.user_id = ? AND sm.status = 'active'
+            ORDER BY s.name ASC
+        ", [$userId]);
+
+        if (empty($societies)) {
+            $user = Database::fetchOne("SELECT role FROM users WHERE id = ?", [$userId]);
+            if ($user && $user['role'] === 'admin') {
+                return Database::fetchAll("SELECT id, name, city, address, society_code, 'admin' as role, NULL as flat_no, NULL as wing FROM societies WHERE status = 'active' ORDER BY name ASC");
+            }
+        }
+        return $societies ?: [];
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
 function isCommitteeMember(?int $userId = null): bool {
     $caps = getUserCapabilities($userId);
     return $caps['isCommittee'];

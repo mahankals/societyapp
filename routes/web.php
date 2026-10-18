@@ -29,23 +29,22 @@ return function (App $app) {
     $adminAuth = new AdminMiddleware();
     $guest = new GuestMiddleware();
 
+    // ==================== React SPA Renderer ====================
+    $renderSpa = SlimBridge::wrap(function () {
+        echo view('spa', [
+            'appName' => getSetting('app_name', 'Society App') ?: 'Society App',
+            'appLogo' => getSetting('app_logo', '/assets/icons/logo.svg') ?: '/assets/icons/logo.svg',
+            'user' => getUser(),
+        ]);
+    });
+
     // ==================== Landing & Public Pages ====================
 
-    $app->get('/', SlimBridge::wrap(function () {
-        echo view('pages/index', [
-            'basePath' => '/',
-            'user' => getUser(),
-        ]);
-    }));
-
-    $app->get('/contact', SlimBridge::wrap(function () {
-        echo view('pages/contact', [
-            'basePath' => '/',
-            'csrfToken' => generateCSRFToken(),
-            'flash' => Session::getFlash(),
-            'user' => getUser(),
-        ]);
-    }));
+    $app->get('/', $renderSpa);
+    $app->get('/contact', $renderSpa);
+    $app->get('/login', $renderSpa);
+    $app->get('/register', $renderSpa);
+    $app->get('/reset-password', $renderSpa);
 
     $app->post('/contact', SlimBridge::wrap(function () {
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -535,25 +534,25 @@ return function (App $app) {
     $app->get('/join/{code}', SlimBridge::wrap([$society, 'publicJoin']));
     $app->post('/join/{code}', SlimBridge::wrap([$society, 'handleJoin']));
     $app->get('/society/contribute/search-user', SlimBridge::wrap([$society, 'searchUserForContribution']));
-    $app->get('/society/contribute', SlimBridge::wrap([$society, 'contribute']));
+    $app->get('/society/contribute', $renderSpa);
     $app->post('/society/contribute', SlimBridge::wrap([$society, 'handleContribute']));
 
     // ==================== Committee Routes ====================
 
     foreach (['/comitee', '/committee', '/committe'] as $cPrefix) {
-        $app->get($cPrefix, SlimBridge::wrap([$society, 'dashboard']))->add($auth);
-        $app->get($cPrefix . '/flats', SlimBridge::wrap([$society, 'flats']))->add($auth);
+        $app->get($cPrefix, $renderSpa)->add($auth);
+        $app->get($cPrefix . '/flats', $renderSpa)->add($auth);
         $app->post($cPrefix . '/flats', SlimBridge::wrap([$society, 'addFlat']))->add($auth);
         $app->post($cPrefix . '/flats/add', SlimBridge::wrap([$society, 'addFlat']))->add($auth);
         $app->post($cPrefix . '/flats/{id}/update', SlimBridge::wrap([$society, 'updateFlat']))->add($auth);
         $app->post($cPrefix . '/flats/{id}/edit', SlimBridge::wrap([$society, 'updateFlat']))->add($auth);
         $app->post($cPrefix . '/flats/{id}/toggle-rent', SlimBridge::wrap([$society, 'toggleFlatRent']))->add($auth);
         $app->post($cPrefix . '/flats/{id}/delete', SlimBridge::wrap([$society, 'deleteFlat']))->add($auth);
-        $app->get($cPrefix . '/members', SlimBridge::wrap([$society, 'members']))->add($auth);
+        $app->get($cPrefix . '/members', $renderSpa)->add($auth);
         $app->post($cPrefix . '/members/assign', SlimBridge::wrap([$society, 'assignMember']))->add($auth);
         $app->post($cPrefix . '/members/{id}/role', SlimBridge::wrap([$society, 'updateMemberRole']))->add($auth);
         $app->post($cPrefix . '/members/{id}/unlink', SlimBridge::wrap([$society, 'unlinkMember']))->add($auth);
-        $app->get($cPrefix . '/bills', SlimBridge::wrap([$society, 'bills']))->add($auth);
+        $app->get($cPrefix . '/bills', $renderSpa)->add($auth);
         $app->post($cPrefix . '/bills', SlimBridge::wrap([$society, 'createBill']))->add($auth);
         $app->post($cPrefix . '/bills/bulk-generate', SlimBridge::wrap([$society, 'bulkGenerateBills']))->add($auth);
         $app->post($cPrefix . '/bills/upi-settings', SlimBridge::wrap([$society, 'updateUpiSettings']))->add($auth);
@@ -589,8 +588,9 @@ return function (App $app) {
 
     // ==================== Resident & User Routes ====================
 
-    $app->get('/resident', SlimBridge::wrap([$resident, 'index']))->add($auth);
-    $app->get('/user/notification', SlimBridge::wrap([$resident, 'notifications']))->add($auth);
+    $app->get('/resident', $renderSpa)->add($auth);
+    $app->get('/user/notification', $renderSpa)->add($auth);
+    $app->get('/notifications', $renderSpa)->add($auth);
     $app->post('/user/notification/mark-read', SlimBridge::wrap([$resident, 'markNotificationsRead']))->add($auth);
     $app->post('/user/notification/{id}/read', SlimBridge::wrap([$resident, 'markSingleNotificationRead']))->add($auth);
     $app->post('/user/notification/{id}/toggle-read', SlimBridge::wrap([$resident, 'toggleNotificationRead']))->add($auth);
@@ -599,7 +599,7 @@ return function (App $app) {
     $app->post('/resident/notifications/{id}/read', SlimBridge::wrap([$resident, 'markSingleNotificationRead']))->add($auth);
     $app->get('/user/switch-society/{id}', SlimBridge::wrap([$resident, 'switchSociety']))->add($auth);
 
-    $app->get('/user/profile', SlimBridge::wrap([$resident, 'profile']))->add($auth);
+    $app->get('/user/profile', $renderSpa)->add($auth);
     $app->post('/user/profile', SlimBridge::wrap([$resident, 'updateProfile']))->add($auth);
     $app->post('/user/profile/password', SlimBridge::wrap([$resident, 'updatePassword']))->add($auth);
     $app->post('/user/profile/emergency', SlimBridge::wrap([$resident, 'updateEmergencyContact']))->add($auth);
@@ -612,14 +612,14 @@ return function (App $app) {
 
     $app->get('/resident/documents', SlimBridge::wrap([$resident, 'documents']))->add($auth);
     $app->post('/resident/documents/upload', SlimBridge::wrap([$resident, 'uploadDocument']))->add($auth);
-    $app->get('/resident/bills', SlimBridge::wrap([$resident, 'bills']))->add($auth);
+    $app->get('/resident/bills', $renderSpa)->add($auth);
     $app->post('/resident/bills/bulk-pay', SlimBridge::wrap([$resident, 'bulkRecordPayment']))->add($auth);
     $app->post('/resident/bills/{id}/pay', SlimBridge::wrap([$resident, 'recordPayment']))->add($auth);
-    $app->get('/resident/receipts', SlimBridge::wrap([$resident, 'receipts']))->add($auth);
+    $app->get('/resident/receipts', $renderSpa)->add($auth);
     $app->get('/resident/receipts/{id}', SlimBridge::wrap([$resident, 'viewReceipt']))->add($auth);
-    $app->get('/resident/members', SlimBridge::wrap([$resident, 'members']))->add($auth);
+    $app->get('/resident/members', $renderSpa)->add($auth);
     $app->get('/resident/directory', SlimBridge::wrap(function () { redirect('/resident/members'); }))->add($auth);
-    $app->get('/resident/link-flat', SlimBridge::wrap([$resident, 'linkFlat']))->add($auth);
+    $app->get('/resident/link-flat', $renderSpa)->add($auth);
     $app->post('/resident/link-flat', SlimBridge::wrap([$resident, 'handleLinkFlat']))->add($auth);
     $app->post('/resident/flats/{id}/toggle-rent', SlimBridge::wrap([$resident, 'toggleFlatRent']))->add($auth);
     $app->post('/resident/flats/{id}/occupancy', SlimBridge::wrap([$resident, 'updateFlatOccupancy']))->add($auth);
@@ -638,26 +638,26 @@ return function (App $app) {
         redirect(getUserRoleDashboardUrl($user));
     }))->add($auth);
     $app->any('/client/{path:.+}', SlimBridge::wrap(function ($path) { redirect('/resident/' . $path); }))->add($auth);
-    $app->get('/profile', SlimBridge::wrap(function () { redirect('/user/profile'); }))->add($auth);
-    $app->get('/admin/profile', SlimBridge::wrap(function () { redirect('/user/profile'); }))->add($auth);
+    $app->get('/profile', $renderSpa)->add($auth);
+    $app->get('/admin/profile', $renderSpa)->add($auth);
 
     // ==================== Super Admin Routes ====================
 
-    $app->get('/admin', SlimBridge::wrap([$admin, 'index']))->add($adminAuth);
-    $app->get('/admin/societies', SlimBridge::wrap([$admin, 'societies']))->add($adminAuth);
-    $app->get('/admin/societies/pending', SlimBridge::wrap([$admin, 'pendingSocieties']))->add($adminAuth);
+    $app->get('/admin', $renderSpa)->add($adminAuth);
+    $app->get('/admin/societies', $renderSpa)->add($adminAuth);
+    $app->get('/admin/societies/pending', $renderSpa)->add($adminAuth);
     $app->post('/admin/societies', SlimBridge::wrap([$admin, 'createSociety']))->add($adminAuth);
     $app->post('/admin/societies/{id}/toggle-status', SlimBridge::wrap([$admin, 'toggleSocietyStatus']))->add($adminAuth);
     $app->post('/admin/societies/{id}/update', SlimBridge::wrap([$admin, 'updateSociety']))->add($adminAuth);
     $app->post('/admin/societies/{id}/delete', SlimBridge::wrap([$admin, 'deleteSociety']))->add($adminAuth);
     $app->post('/admin/societies/requests/{id}/approve', SlimBridge::wrap([$admin, 'approveSocietyRequest']))->add($adminAuth);
     $app->post('/admin/societies/requests/{id}/reject', SlimBridge::wrap([$admin, 'rejectSocietyRequest']))->add($adminAuth);
-    $app->get('/admin/users', SlimBridge::wrap([$admin, 'users']))->add($adminAuth);
+    $app->get('/admin/users', $renderSpa)->add($adminAuth);
     $app->get('/admin/users/{id}', SlimBridge::wrap([$admin, 'editUser']))->add($adminAuth);
     $app->post('/admin/users/{id}', SlimBridge::wrap([$admin, 'updateUser']))->add($adminAuth);
-    $app->get('/admin/invitations', SlimBridge::wrap([$admin, 'invitations']))->add($adminAuth);
+    $app->get('/admin/invitations', $renderSpa)->add($adminAuth);
     $app->post('/admin/invitations', SlimBridge::wrap([$admin, 'sendInvitation']))->add($adminAuth);
-    $app->get('/admin/settings', SlimBridge::wrap([$admin, 'settings']))->add($adminAuth);
+    $app->get('/admin/settings', $renderSpa)->add($adminAuth);
     $app->post('/admin/settings', SlimBridge::wrap([$admin, 'updateSettings']))->add($adminAuth);
     $app->post('/admin/settings/toggle-maintenance', SlimBridge::wrap([$admin, 'toggleMaintenance']))->add($adminAuth);
     $app->post('/admin/settings/test-connection', SlimBridge::wrap([$admin, 'testConnection']))->add($adminAuth);

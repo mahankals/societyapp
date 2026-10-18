@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" class="dark scroll-smooth" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>{{ appName|default('SocietyApp — Modern Residential Living') }}</title>
+  <meta name="description" content="Next-generation society management platform for residential communities.">
+  <link rel="icon" href="{{ appFavicon|default('/assets/icons/logo.svg') }}">
+  <link rel="apple-touch-icon" href="{{ appLogo|default('/assets/icons/logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  {# Injects compiled React bundle or dev server HMR runtime #}
+  {{ vite_tags()|raw }}
+</head>
+<body class="min-h-screen bg-surface-950 text-surface-100 font-body antialiased selection:bg-brand-500/30 selection:text-white overflow-x-hidden">
+  <div id="root"></div>
+</body>
+</html>

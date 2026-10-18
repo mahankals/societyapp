@@ -1,0 +1,68 @@
+import React, { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+import Breadcrumbs from './Breadcrumbs';
+import MobileNav from './MobileNav';
+import { useAuth } from '../../context/AuthContext';
+
+export default function AppLayout() {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  // Desktop default open, tablet (768-1024) default collapsed
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return window.innerWidth >= 768 && window.innerWidth < 1024;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const isPublicPage = ['/', '/contact', '/login', '/register', '/reset-password'].includes(location.pathname);
+
+  return (
+    <div className="min-h-screen bg-surface-950 text-surface-100 flex flex-col font-body selection:bg-brand-500/30 selection:text-white">
+      {/* Compact Navbar (52px height) */}
+      <Navbar onToggleSidebar={toggleSidebar} isSidebarCollapsed={isSidebarCollapsed} />
+
+      {/* Authenticated Layout: Sidebar + Breadcrumbs + Content */}
+      {user && !isPublicPage ? (
+        <div className="flex-1 flex pt-[52px]">
+          {/* Sidebar */}
+          <Sidebar isCollapsed={isSidebarCollapsed} onCloseMobile={() => {}} />
+
+          {/* Main Content Area */}
+          <div
+            className={`flex-1 flex flex-col transition-all duration-200 ${
+              isSidebarCollapsed ? 'md:pl-16' : 'md:pl-60'
+            }`}
+          >
+            <Breadcrumbs />
+            <main id="main-content" className="flex-1 p-3.5 sm:p-6 pb-20 md:pb-8 max-w-7xl w-full mx-auto">
+              <Outlet />
+            </main>
+          </div>
+
+          {/* Mobile Bottom Navigation */}
+          <MobileNav />
+        </div>
+      ) : (
+        /* Public Pages Layout */
+        <main id="main-content" className="flex-1 pt-[52px] max-w-7xl w-full mx-auto px-4">
+          <Outlet />
+        </main>
+      )}
+    </div>
+  );
+}
