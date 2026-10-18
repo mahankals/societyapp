@@ -49,6 +49,7 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
   ];
 
   const links = isAdminView ? adminLinks : isCommitteeView ? committeeLinks : residentLinks;
+  const needsMobile = Boolean(!user.phone || !user.phone.trim());
 
   return (
     <aside
@@ -60,49 +61,79 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
     >
       {/* Navigation items */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-1">
-        {links.map((item) => {
-          const isActive = item.exact 
-            ? location.pathname === item.to 
-            : location.pathname.startsWith(item.to);
+        {needsMobile ? (
+          <div className="p-3 my-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center space-y-1">
+            {!isCollapsed ? (
+              <>
+                <p className="font-semibold text-amber-200">Registration Incomplete</p>
+                <p className="text-[10px] text-amber-300/80 leading-snug">
+                  Please enter your mobile phone number on your Profile to unlock society features.
+                </p>
+              </>
+            ) : (
+              <User className="w-5 h-5 mx-auto text-amber-400 animate-pulse" />
+            )}
+          </div>
+        ) : (
+          links.map((item) => {
+            const isActive = item.exact 
+              ? location.pathname === item.to 
+              : location.pathname.startsWith(item.to);
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={onCloseMobile}
-              title={item.label}
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                isActive
-                  ? 'bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30'
-                  : 'text-surface-200/70 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
-            </NavLink>
-          );
-        })}
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={onCloseMobile}
+                title={item.label}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30'
+                    : 'text-surface-200/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+              </NavLink>
+            );
+          })
+        )}
       </div>
 
       {/* Footer link section */}
       <div className="p-2 border-t border-white/10 space-y-1">
-        <NavLink
-          to="/society/contribute"
-          onClick={onCloseMobile}
-          title="Contribute Society"
-          className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all"
-        >
-          <Building className="w-4 h-4 text-emerald-400 shrink-0" />
-          {!isCollapsed && <span className="truncate">Contribute Society</span>}
-        </NavLink>
+        {!needsMobile && (
+          <NavLink
+            to="/society/contribute"
+            onClick={onCloseMobile}
+            title="Contribute Society"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <Building className="w-4 h-4 text-emerald-400 shrink-0" />
+            {!isCollapsed && <span className="truncate">Contribute Society</span>}
+          </NavLink>
+        )}
         <NavLink
           to="/profile"
           onClick={onCloseMobile}
           title="My Profile"
-          className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all"
+          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+            needsMobile
+              ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 ring-1 ring-amber-500/50'
+              : 'text-surface-200/70 hover:text-white hover:bg-white/5'
+          }`}
         >
-          <User className="w-4 h-4 text-brand-400 shrink-0" />
-          {!isCollapsed && <span className="truncate">My Profile</span>}
+          <User className={`w-4 h-4 ${needsMobile ? 'text-amber-400' : 'text-brand-400'} shrink-0`} />
+          {!isCollapsed && (
+            <span className="truncate flex items-center justify-between flex-1">
+              <span>My Profile</span>
+              {needsMobile && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500 text-black font-extrabold uppercase tracking-wider">
+                  Required
+                </span>
+              )}
+            </span>
+          )}
         </NavLink>
       </div>
     </aside>

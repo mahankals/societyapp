@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Building2, 
+  User,
   Mail, 
+  Phone,
   Lock, 
   Eye, 
   EyeOff, 
@@ -14,13 +16,14 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import DeveloperCredits from '../../components/common/DeveloperCredits';
 
 export default function LoginPage() {
   const { login, appConfig } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -34,15 +37,17 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
-      setError('Please enter both your email address and password.');
+    if (!loginId || !password) {
+      setError('Please enter your email address or mobile number, and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await login(email, password);
-      if (returnUrl) {
+      const res = await login(loginId, password, remember);
+      if (res?.needs_mobile) {
+        navigate('/profile');
+      } else if (returnUrl) {
         navigate(returnUrl);
       } else {
         navigate(res.redirect || (res.user?.role === 'admin' ? '/admin' : '/resident'));
@@ -77,7 +82,11 @@ export default function LoginPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                  window.location.href = data.redirect || (returnUrl || '/resident');
+                  if (data.needs_mobile || data.redirect === '/profile') {
+                    window.location.href = '/profile';
+                  } else {
+                    window.location.href = data.redirect || (returnUrl || '/resident');
+                  }
                 } else {
                   setError(data.error || 'Google Sign-In failed.');
                 }
@@ -151,7 +160,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-surface-500 dark:text-surface-200/40 pt-8 border-t border-surface-200/80 dark:border-white/5">
-          <span>&copy; {new Date().getFullYear()} {appConfig.appName}</span>
+          <DeveloperCredits linkClassName="text-surface-700 dark:text-surface-200/70" />
           <span>All rights reserved</span>
         </div>
       </div>
@@ -187,21 +196,22 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1.5">
-                Email address
+              <label htmlFor="login" className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1.5">
+                Email address or Mobile number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Mail className="w-4 h-4 text-surface-400 dark:text-surface-200/30" />
+                  <User className="w-4 h-4 text-surface-400 dark:text-surface-200/30" />
                 </div>
                 <input
-                  type="email"
-                  id="email"
-                  name="email"
+                  type="text"
+                  id="login"
+                  name="login"
+                  autoComplete="username"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  placeholder="name@example.com or 9876543210"
                   className="w-full h-12 bg-white dark:bg-white/[0.04] border border-surface-300 dark:border-white/10 rounded-xl pl-10 pr-4 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
                 />
               </div>

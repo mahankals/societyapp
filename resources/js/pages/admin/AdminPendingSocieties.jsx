@@ -5,20 +5,52 @@ import { api } from '../../services/api';
 export default function AdminPendingSocieties() {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [message, setMessage] = useState('');
+
+  const load = async () => {
+    try {
+      const res = await api.get('/api/admin/societies/pending');
+      setProposals(res.pending || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await api.get('/api/admin/societies/pending');
-        setProposals(res.pending || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
   }, []);
+
+  const handleApprove = async (id) => {
+    setActionLoading(id);
+    setMessage('');
+    try {
+      const res = await api.post(`/api/admin/societies/requests/${id}/approve`);
+      setMessage(res.message || 'Society approved successfully!');
+      await load();
+    } catch (err) {
+      alert(err?.message || 'Failed to approve society proposal.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (id) => {
+    if (!confirm('Are you sure you want to reject this society proposal?')) return;
+    setActionLoading(id);
+    setMessage('');
+    try {
+      const res = await api.post(`/api/admin/societies/requests/${id}/reject`);
+      setMessage(res.message || 'Society proposal rejected.');
+      await load();
+    } catch (err) {
+      alert(err?.message || 'Failed to reject society proposal.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -31,6 +63,13 @@ export default function AdminPendingSocieties() {
         </p>
       </div>
 
+      {message && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{message}</span>
+        </div>
+      )}
+
       <div className="p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4">
         {loading ? (
           <div className="py-12 text-center">
@@ -39,7 +78,7 @@ export default function AdminPendingSocieties() {
         ) : proposals.length > 0 ? (
           <div className="space-y-3">
             {proposals.map((p) => (
-              <div key={p.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div key={p.id} data-proposal-card={p.name} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-brand-400" />
@@ -59,14 +98,18 @@ export default function AdminPendingSocieties() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/30 transition-all flex items-center gap-1"
+                    disabled={actionLoading === p.id}
+                    onClick={() => handleApprove(p.id)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/30 disabled:opacity-50 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Approve</span>
+                    <span>{actionLoading === p.id ? 'Approving...' : 'Approve'}</span>
                   </button>
                   <button
                     type="button"
-                    className="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold hover:bg-red-500/30 transition-all flex items-center gap-1"
+                    disabled={actionLoading === p.id}
+                    onClick={() => handleReject(p.id)}
+                    className="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold hover:bg-red-500/30 disabled:opacity-50 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Reject</span>

@@ -1,25 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Search, User, Home } from 'lucide-react';
+import { Building2, Search, User, Home, PlusCircle, X, CheckCircle2 } from 'lucide-react';
 import { api } from '../../services/api';
 
 export default function CommitteeFlats() {
   const [flats, setFlats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [wing, setWing] = useState('B');
+  const [flatNo, setFlatNo] = useState('');
+  const [floor, setFloor] = useState('2');
+  const [flatType, setFlatType] = useState('2 BHK');
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const load = async () => {
+    try {
+      const res = await api.get('/api/committee/flats');
+      setFlats(res.flats || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await api.get('/api/committee/flats');
-        setFlats(res.flats || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
   }, []);
+
+  const handleCreateFlat = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setSuccessMsg('');
+    try {
+      const res = await api.post('/api/committee/flats', {
+        wing,
+        flat_no: flatNo,
+        floor,
+        flat_type: flatType,
+      });
+      setSuccessMsg(res.message || 'Flat added successfully!');
+      setShowAddModal(false);
+      setFlatNo('');
+      await load();
+    } catch (err) {
+      alert(err?.message || 'Failed to create flat.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const filtered = flats.filter((f) =>
     f.flat_no?.toLowerCase().includes(search.toLowerCase()) ||
@@ -30,14 +60,31 @@ export default function CommitteeFlats() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
-          Flats &amp; Occupancy Management
-        </h1>
-        <p className="text-xs text-surface-200/60 mt-0.5">
-          Society inventory, ownership records, and tenant assignments
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
+            Flats &amp; Occupancy Management
+          </h1>
+          <p className="text-xs text-surface-200/60 mt-0.5">
+            Society inventory, ownership records, and tenant assignments
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer self-start sm:self-auto"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Add Unit / Flat</span>
+        </button>
       </div>
+
+      {successMsg && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
       <div className="p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4">
         <div className="relative">
@@ -92,6 +139,109 @@ export default function CommitteeFlats() {
           </div>
         )}
       </div>
+
+      {/* Add Unit / Flat Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-surface-950 border border-white/20 p-6 space-y-4 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-surface-200/60 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-brand-400" />
+                <span>Add Society Unit / Flat</span>
+              </h2>
+              <p className="text-xs text-surface-200/60">
+                Register a new flat under wing/tower inventory
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateFlat} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                    Wing / Tower
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={wing}
+                    onChange={(e) => setWing(e.target.value.toUpperCase())}
+                    placeholder="e.g. A, B"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                    Flat Number
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={flatNo}
+                    onChange={(e) => setFlatNo(e.target.value)}
+                    placeholder="e.g. 204"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                    Floor Number
+                  </label>
+                  <input
+                    type="text"
+                    value={floor}
+                    onChange={(e) => setFloor(e.target.value)}
+                    placeholder="e.g. 2"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                    Unit Type
+                  </label>
+                  <select
+                    value={flatType}
+                    onChange={(e) => setFlatType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="1 BHK" className="bg-surface-950 text-white">1 BHK</option>
+                    <option value="2 BHK" className="bg-surface-950 text-white">2 BHK</option>
+                    <option value="3 BHK" className="bg-surface-950 text-white">3 BHK</option>
+                    <option value="Penthouse" className="bg-surface-950 text-white">Penthouse</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                >
+                  {submitting ? 'Adding...' : 'Save Flat'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

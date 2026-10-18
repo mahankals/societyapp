@@ -72,9 +72,22 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
       className="fixed top-0 left-0 right-0 z-50 h-13 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md border-b border-surface-200/80 dark:border-white/10 shadow-sm transition-all duration-200"
       style={{ height: '52px' }}
     >
-      <div className="h-full max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
-        {/* Left Section: Sidebar Toggle & Society Switcher / Logo */}
+      <div className={`h-full ${user ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-3 sm:px-4'} flex items-center justify-between gap-3`}>
+        {/* Left Section: Logo & Sidebar Toggle & Society Switcher */}
         <div className="flex items-center gap-2.5 min-w-0">
+          {/* Logo brand */}
+          <Link to={user ? (isAdminView ? '/admin' : '/resident') : '/'} className="flex items-center gap-2 group shrink-0">
+            <img 
+              src={appConfig.appLogo || '/assets/icons/logo.svg'} 
+              alt={appConfig.appName} 
+              className="w-7 h-7 rounded-lg object-contain" 
+            />
+            <span className="text-sm font-bold text-surface-900 dark:text-white tracking-tight hidden sm:inline">
+              {appConfig.appName}
+            </span>
+          </Link>
+
+          {/* Sidebar Toggle (Positioned after logo) */}
           {user && (
             <button
               type="button"
@@ -90,18 +103,6 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               )}
             </button>
           )}
-
-          {/* Logo on mobile or unauthenticated */}
-          <Link to={user ? (isAdminView ? '/admin' : '/resident') : '/'} className="flex items-center gap-2 group shrink-0">
-            <img 
-              src={appConfig.appLogo || '/assets/icons/logo.svg'} 
-              alt={appConfig.appName} 
-              className="w-7 h-7 rounded-lg object-contain" 
-            />
-            <span className="text-sm font-bold text-surface-900 dark:text-white tracking-tight hidden sm:inline">
-              {appConfig.appName}
-            </span>
-          </Link>
 
           {/* Society Switcher Dropdown */}
           {user && !isAdminView && userSocieties.length > 0 && (

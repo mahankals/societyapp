@@ -364,7 +364,7 @@ return function (App $app) {
                     }
 
                     $existingUser = Database::fetchOne(
-                        "SELECT id, email, name, role, pin_hash FROM users WHERE google_id = ? OR email = ?",
+                        "SELECT id, email, name, role, phone, pin_hash FROM users WHERE google_id = ? OR email = ?",
                         [$userInfo['id'], $userInfo['email']]
                     );
 
@@ -378,17 +378,22 @@ return function (App $app) {
                         $userId = Database::insert('users', [
                             'email'             => $userInfo['email'],
                             'name'              => $userInfo['name'] ?? explode('@', $userInfo['email'])[0],
+                            'phone'             => null,
                             'google_id'         => $userInfo['id'],
                             'role'              => 'resident',
                             'email_verified_at' => date('Y-m-d H:i:s'),
                         ]);
                         loginUser($userId, 'resident', $userInfo['email']);
-                        $existingUser = ['role' => 'resident'];
+                        $existingUser = ['role' => 'resident', 'phone' => null];
                     }
 
                     if (isMaintenanceModeActive() && ($existingUser['role'] ?? '') !== 'admin') {
                         Session::flash('error', 'The system is currently undergoing scheduled maintenance. Only system administrators can sign in at this time.');
                         redirect('/maintenance');
+                    }
+
+                    if (empty($existingUser['phone']) || trim($existingUser['phone']) === '') {
+                        redirect('/profile');
                     }
 
                     redirect(getUserRoleDashboardUrl($existingUser));
@@ -469,7 +474,7 @@ return function (App $app) {
         }
 
         $existingUser = Database::fetchOne(
-            "SELECT id, email, name, role, pin_hash FROM users WHERE google_id = ? OR email = ?",
+            "SELECT id, email, name, role, phone, pin_hash FROM users WHERE google_id = ? OR email = ?",
             [$googleId, $email]
         );
 
@@ -485,15 +490,18 @@ return function (App $app) {
                 Database::update('users', $updates, 'id = ?', [$existingUser['id']]);
             }
             loginUser($existingUser['id'], $existingUser['role'], $existingUser['email']);
-            $redirectUrl = getUserRoleDashboardUrl($existingUser);
+            $needsMobile = empty($existingUser['phone']) || trim($existingUser['phone']) === '';
+            $redirectUrl = $needsMobile ? '/profile' : getUserRoleDashboardUrl($existingUser);
             Session::flash('success', 'Welcome back, ' . htmlspecialchars($existingUser['name']) . '!');
             echo json_encode([
                 'success' => true,
                 'redirect' => $redirectUrl,
+                'needs_mobile' => $needsMobile,
                 'user' => [
                     'id' => $existingUser['id'],
                     'name' => $existingUser['name'],
                     'email' => $existingUser['email'],
+                    'phone' => $existingUser['phone'] ?? '',
                     'role' => $existingUser['role'],
                 ]
             ]);
@@ -503,6 +511,7 @@ return function (App $app) {
         $userId = Database::insert('users', [
             'email' => $email,
             'name' => $name,
+            'phone' => null,
             'google_id' => $googleId,
             'profile_photo' => $avatar ?: null,
             'role' => 'resident',
@@ -510,14 +519,16 @@ return function (App $app) {
             'email_verified_at' => date('Y-m-d H:i:s'),
         ]);
         loginUser($userId, 'resident', $email);
-        Session::flash('success', 'Welcome to Society App!');
+        Session::flash('success', 'Welcome! Please add your mobile number to complete your profile.');
         echo json_encode([
             'success'  => true,
-            'redirect' => '/resident',
+            'redirect' => '/profile',
+            'needs_mobile' => true,
             'user'     => [
                 'id'    => $userId,
                 'name'  => $name,
                 'email' => $email,
+                'phone' => '',
                 'role'  => 'resident',
             ]
         ]);

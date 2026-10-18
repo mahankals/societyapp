@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import DeveloperCredits from '../../components/common/DeveloperCredits';
 
 export default function RegisterPage() {
   const { appConfig, refreshBootstrap } = useAuth();
@@ -32,8 +33,14 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    if (!name || !email || !password) {
-      setError('Please fill in your name, email, and password.');
+    if (!name || !email || !phone || !password) {
+      setError('Please fill in your name, email address, mobile number, and password.');
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setError('Please enter a valid mobile number with at least 10 digits.');
       return;
     }
 
@@ -82,7 +89,11 @@ export default function RegisterPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                  window.location.href = data.redirect || '/resident';
+                  if (data.needs_mobile || data.redirect === '/profile') {
+                    window.location.href = '/profile';
+                  } else {
+                    window.location.href = data.redirect || '/resident';
+                  }
                 } else {
                   setError(data.error || 'Google Sign-Up failed.');
                 }
@@ -167,7 +178,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-surface-500 dark:text-surface-200/40 pt-8 border-t border-surface-200/80 dark:border-white/5">
-          <span>&copy; {new Date().getFullYear()} {appConfig.appName}</span>
+          <DeveloperCredits linkClassName="text-surface-700 dark:text-surface-200/70" />
           <span>All rights reserved</span>
         </div>
       </div>
@@ -242,7 +253,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1">
-                Mobile Number (Optional)
+                Mobile number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -250,6 +261,7 @@ export default function RegisterPage() {
                 </div>
                 <input
                   type="tel"
+                  required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="9876543210"
@@ -269,6 +281,7 @@ export default function RegisterPage() {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="password"
                     required
                     minLength={8}
                     value={password}
@@ -296,6 +309,7 @@ export default function RegisterPage() {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

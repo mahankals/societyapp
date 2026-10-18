@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import DeveloperCredits from '../common/DeveloperCredits';
 
 export default function Footer() {
   const { appConfig } = useAuth();
@@ -103,12 +104,7 @@ export default function Footer() {
 
         {/* Bottom credits */}
         <div className="pt-6 border-t border-surface-200/80 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-3">
-          <p className="text-[11px] text-surface-500 dark:text-white/40">
-            Designed &amp; Developed by{' '}
-            <Link to="/contact" className="text-surface-700 dark:text-white/70 hover:text-brand-500 dark:hover:text-brand-400 underline decoration-surface-300 dark:decoration-white/20 transition-colors">
-              Atul Mahankal
-            </Link>
-          </p>
+          <DeveloperCredits className="text-[11px] text-surface-500 dark:text-white/40" />
           <div className="flex items-center gap-2 text-[11px] text-surface-500 dark:text-white/30">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
