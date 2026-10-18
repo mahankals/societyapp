@@ -128,17 +128,17 @@ export default function ResidentDashboard() {
       {/* Top Banner / Welcome */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
+          <h1 className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white font-heading">
             Welcome, {user?.name || 'Resident'}
           </h1>
-          <p className="text-xs text-surface-200/60 mt-0.5">
+          <p className="text-xs text-surface-600 dark:text-surface-200/60 mt-0.5">
             Your housing society dashboard and pending bills summary
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/resident/link-flat"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-700 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-xs font-semibold transition-all shadow-xs"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Link Unit / Flat</span>
@@ -152,7 +152,7 @@ export default function ResidentDashboard() {
           </Link>
           <Link
             to="/resident/members"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-700 dark:bg-white/10 dark:hover:bg-white/15 dark:border-transparent dark:text-white text-xs font-semibold transition-all shadow-xs"
           >
             <Users className="w-3.5 h-3.5" />
             <span>Directory</span>
@@ -161,7 +161,7 @@ export default function ResidentDashboard() {
       </div>
 
       {message && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{message}</span>
         </div>
@@ -169,47 +169,47 @@ export default function ResidentDashboard() {
 
       {/* Dues & Quick Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10">
+        <div className="p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-surface-200/60">Outstanding Dues</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <span className="text-xs font-medium text-surface-600 dark:text-surface-200/60">Outstanding Dues</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-2 font-heading">
+          <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2 font-heading">
             ₹{totalDueAmount.toLocaleString('en-IN')}
           </p>
-          <p className="text-[11px] text-surface-200/50 mt-1">
+          <p className="text-[11px] text-surface-500 dark:text-surface-200/50 mt-1">
             {pendingDues.length} pending maintenance bill{pendingDues.length === 1 ? '' : 's'}
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10">
+        <div className="p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-surface-200/60">Linked Units</span>
-            <div className="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+            <span className="text-xs font-medium text-surface-600 dark:text-surface-200/60">Linked Units</span>
+            <div className="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center">
               <Home className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-white mt-2 font-heading">
+          <p className="text-2xl sm:text-3xl font-extrabold text-surface-900 dark:text-white mt-2 font-heading">
             {flats.length}
           </p>
-          <p className="text-[11px] text-surface-200/50 mt-1">
+          <p className="text-[11px] text-surface-500 dark:text-surface-200/50 mt-1">
             Active residential occupancy
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10">
+        <div className="p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-surface-200/60">Payment Status</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <span className="text-xs font-medium text-surface-600 dark:text-surface-200/60">Payment Status</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <CheckCircle className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-2 font-heading">
+          <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2 font-heading">
             {totalDueAmount === 0 ? 'Clear' : 'Pending'}
           </p>
-          <Link to="/resident/receipts" className="text-[11px] text-emerald-400 hover:text-emerald-300 mt-1 inline-flex items-center gap-1">
+          <Link to="/resident/receipts" className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 mt-1 inline-flex items-center gap-1 font-medium">
             <span>Payment history</span>
             <ArrowRight className="w-3 h-3" />
           </Link>
@@ -217,13 +217,13 @@ export default function ResidentDashboard() {
       </div>
 
       {/* Associated Units & Flats with Rental Control */}
-      <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4">
+      <div className="p-5 rounded-3xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-brand-400" />
+          <h2 className="text-sm font-bold text-surface-900 dark:text-white flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             <span>My Associated Flats &amp; Tenancy Management</span>
           </h2>
-          <Link to="/resident/link-flat" className="text-xs text-brand-400 hover:text-brand-300 font-medium">
+          <Link to="/resident/link-flat" className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-semibold">
             + Link Flat
           </Link>
         </div>
@@ -236,24 +236,24 @@ export default function ResidentDashboard() {
               const isRented = f.occupancy_status === 'rented' || Boolean(f.tenant_name);
 
               return (
-                <div key={f.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                <div key={f.id} className="p-4 rounded-2xl bg-surface-50 dark:bg-white/[0.02] border border-surface-200 dark:border-white/5 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-sm font-bold text-white">
+                      <span className="text-sm font-bold text-surface-900 dark:text-white">
                         Unit {f.wing ? f.wing + '-' : ''}{f.flat_no}
                       </span>
-                      <p className="text-xs text-surface-200/60">{f.society_name}</p>
+                      <p className="text-xs text-surface-500 dark:text-surface-200/60">{f.society_name}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 capitalize">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30 capitalize">
                         {f.role || 'Resident'}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                         isRented
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30'
                           : isAvailableForRent
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
+                          : 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
                       }`}>
                         {isRented ? 'Rented' : isAvailableForRent ? 'Available for Rent' : 'Self Occupied'}
                       </span>
@@ -262,14 +262,14 @@ export default function ResidentDashboard() {
 
                   {/* Tenant Details if Rented */}
                   {isRented && (
-                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-1">
+                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-900 dark:text-purple-200 space-y-1">
                       <p className="font-semibold flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-purple-400" />
+                        <Users className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                         <span>Tenant: {f.tenant_name || 'Active Tenant'}</span>
                       </p>
                       {f.tenant_phone && (
-                        <p className="text-[11px] text-purple-300/80 flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-purple-400" />
+                        <p className="text-[11px] text-purple-700/80 dark:text-purple-300/80 flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                           <span>{f.tenant_phone}</span>
                         </p>
                       )}
@@ -278,13 +278,13 @@ export default function ResidentDashboard() {
 
                   {/* Owner Controls: Toggle Rent / Link Tenant */}
                   {isOwner && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                    <div className="flex items-center gap-2 pt-1 border-t border-surface-200 dark:border-white/5">
                       <button
                         type="button"
                         onClick={() => handleToggleRent(f.flat_id)}
-                        className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-lg bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-700 dark:bg-white/5 dark:hover:bg-white/10 dark:border-transparent dark:text-white text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                       >
-                        <Key className="w-3 h-3 text-brand-400" />
+                        <Key className="w-3 h-3 text-brand-600 dark:text-brand-400" />
                         <span>{isAvailableForRent ? 'Mark Self Occupied' : 'Make Available for Rent'}</span>
                       </button>
 
@@ -299,7 +299,7 @@ export default function ResidentDashboard() {
                             setSelectedTenantUser(null);
                             setTenantError('');
                           }}
-                          className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 dark:text-purple-300 dark:border-purple-500/30 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                         >
                           <UserCheck className="w-3 h-3" />
                           <span>Link Tenant</span>
@@ -312,7 +312,7 @@ export default function ResidentDashboard() {
             })}
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-surface-200/50">
+          <div className="py-8 text-center text-xs text-surface-500 dark:text-surface-200/50">
             You haven't linked any flat yet. Click &ldquo;+ Link Flat&rdquo; to associate your residence.
           </div>
         )}
@@ -321,30 +321,30 @@ export default function ResidentDashboard() {
       {/* Link Tenant Modal - Search Registered Users Only */}
       {selectedFlatForTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-surface-950 border border-white/20 p-6 space-y-4 shadow-2xl relative">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-surface-950 border border-surface-200 dark:border-white/20 p-6 space-y-4 shadow-2xl relative">
             <button
               type="button"
               onClick={() => {
                 setSelectedFlatForTenant(null);
                 setSelectedTenantUser(null);
               }}
-              className="absolute top-4 right-4 p-1.5 text-surface-200/60 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 text-surface-400 hover:text-surface-700 dark:text-surface-200/60 dark:hover:text-white rounded-lg hover:bg-surface-100 dark:hover:bg-white/10 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-purple-400" />
+              <h2 className="text-base font-bold text-surface-900 dark:text-white flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Link Tenant to Unit {selectedFlatForTenant.wing}-{selectedFlatForTenant.flat_no}</span>
               </h2>
-              <p className="text-xs text-surface-200/60">
+              <p className="text-xs text-surface-500 dark:text-surface-200/60">
                 Search registered users by email or phone. Only app-registered users can be tenants.
               </p>
             </div>
 
             {tenantError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{tenantError}</span>
               </div>
@@ -352,13 +352,13 @@ export default function ResidentDashboard() {
 
             {/* Search Input */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-surface-200/80">
-                Search Tenant by Email or Mobile <span className="text-red-400">*</span>
+              <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80">
+                Search Tenant by Email or Mobile <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-surface-200/40" />
+                    <Search className="w-4 h-4 text-surface-400 dark:text-surface-200/40" />
                   </div>
                   <input
                     type="text"
@@ -380,14 +380,14 @@ export default function ResidentDashboard() {
                       }
                     }}
                     placeholder="Enter email or mobile number..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder-surface-200/30 focus:outline-none focus:border-purple-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs placeholder-surface-400 dark:placeholder-surface-200/30 focus:outline-none focus:border-purple-500 transition-all"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => handleSearchTenant()}
                   disabled={searchingTenant || searchQuery.trim().length < 2}
-                  className="px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-40 text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
                   <Search className="w-3.5 h-3.5" />
                   <span>{searchingTenant ? 'Searching...' : 'Search'}</span>
@@ -398,17 +398,17 @@ export default function ResidentDashboard() {
             {/* Search Results */}
             {hasSearched && (
               <div className="space-y-2 pt-1">
-                <div className="text-[10px] font-semibold text-surface-200/50 uppercase tracking-wider">
+                <div className="text-[10px] font-semibold text-surface-500 dark:text-surface-200/50 uppercase tracking-wider">
                   Registered Users ({searchResults.length})
                 </div>
 
                 {searchResults.length === 0 ? (
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs space-y-1">
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs space-y-1">
                     <p className="font-semibold flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>No registered user found</span>
                     </p>
-                    <p className="text-[11px] text-amber-300/80 pl-5">
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300/80 pl-5">
                       Only registered app users can be tenants. Please ask your tenant to register on Society App first.
                     </p>
                   </div>
@@ -422,19 +422,19 @@ export default function ResidentDashboard() {
                           onClick={() => setSelectedTenantUser(u)}
                           className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                             isSelected
-                              ? 'bg-purple-500/20 border-purple-500/50 ring-1 ring-purple-500/40'
-                              : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'
+                              ? 'bg-purple-50 dark:bg-purple-500/20 border-purple-300 dark:border-purple-500/50 ring-1 ring-purple-400/40'
+                              : 'bg-surface-50 dark:bg-white/[0.03] border-surface-200 dark:border-white/10 hover:bg-surface-100 dark:hover:bg-white/[0.06]'
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm shrink-0">
+                            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-sm shrink-0">
                               {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-white truncate">{u.name}</p>
-                              <p className="text-[11px] text-surface-200/60 truncate">{u.email}</p>
+                              <p className="text-xs font-bold text-surface-900 dark:text-white truncate">{u.name}</p>
+                              <p className="text-[11px] text-surface-600 dark:text-surface-200/60 truncate">{u.email}</p>
                               {u.phone && (
-                                <p className="text-[10px] text-surface-200/40 truncate">{u.phone}</p>
+                                <p className="text-[10px] text-surface-500 dark:text-surface-200/40 truncate">{u.phone}</p>
                               )}
                             </div>
                           </div>
@@ -446,8 +446,8 @@ export default function ResidentDashboard() {
                             }}
                             className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
                               isSelected
-                                ? 'bg-purple-500 text-white shadow-sm'
-                                : 'bg-white/10 hover:bg-white/20 text-white'
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : 'bg-surface-200 hover:bg-surface-300 text-surface-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white'
                             }`}
                           >
                             {isSelected ? 'Selected' : 'Select'}
@@ -462,21 +462,21 @@ export default function ResidentDashboard() {
 
             {/* Selected Tenant Preview */}
             {selectedTenantUser && (
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5">
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Registered User Selected</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
                     Verified
                   </span>
                 </div>
                 <div className="text-xs space-y-0.5">
-                  <p className="font-bold text-white text-sm">{selectedTenantUser.name}</p>
-                  <p className="text-surface-200/70">{selectedTenantUser.email}</p>
+                  <p className="font-bold text-surface-900 dark:text-white text-sm">{selectedTenantUser.name}</p>
+                  <p className="text-surface-600 dark:text-surface-200/70">{selectedTenantUser.email}</p>
                   {selectedTenantUser.phone && (
-                    <p className="text-surface-200/70">{selectedTenantUser.phone}</p>
+                    <p className="text-surface-600 dark:text-surface-200/70">{selectedTenantUser.phone}</p>
                   )}
                 </div>
               </div>
@@ -490,14 +490,14 @@ export default function ResidentDashboard() {
                     setSelectedFlatForTenant(null);
                     setSelectedTenantUser(null);
                   }}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-all cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-medium transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!selectedTenantUser || submittingTenant}
-                  className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
                 >
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>{submittingTenant ? 'Linking...' : 'Confirm Tenant'}</span>

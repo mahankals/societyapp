@@ -23,15 +23,15 @@ export default function ResidentReceipts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
+        <h1 className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white font-heading">
           Payment Receipts &amp; Ledger
         </h1>
-        <p className="text-xs text-surface-200/60 mt-0.5">
+        <p className="text-xs text-surface-600 dark:text-surface-200/60 mt-0.5">
           Download tax invoices and official digital receipts for maintenance payments
         </p>
       </div>
 
-      <div className="p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs space-y-4">
         {loading ? (
           <div className="py-12 text-center">
             <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -40,7 +40,7 @@ export default function ResidentReceipts() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-surface-200/50">
+                <tr className="border-b border-surface-200 dark:border-white/10 text-surface-500 dark:text-surface-200/50">
                   <th className="pb-2.5 font-medium">Receipt #</th>
                   <th className="pb-2.5 font-medium">Particulars</th>
                   <th className="pb-2.5 font-medium">Amount</th>
@@ -49,29 +49,29 @@ export default function ResidentReceipts() {
                   <th className="pb-2.5 font-medium text-right">Receipt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-surface-200 dark:divide-white/5">
                 {receipts.map((r) => (
-                  <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 font-mono text-brand-400">
+                  <tr key={r.id} className="hover:bg-surface-50 dark:hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 font-mono text-brand-600 dark:text-brand-400 font-semibold">
                       REC-{String(r.id).padStart(5, '0')}
                     </td>
-                    <td className="py-3 font-semibold text-white">
+                    <td className="py-3 font-semibold text-surface-900 dark:text-white">
                       {r.bill_title || 'Maintenance Dues'}
                     </td>
-                    <td className="py-3 font-semibold text-emerald-400">
+                    <td className="py-3 font-semibold text-emerald-600 dark:text-emerald-400">
                       ₹{parseFloat(r.amount).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 text-surface-200/70 capitalize">
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70 capitalize">
                       {r.payment_method || 'UPI'}
                     </td>
-                    <td className="py-3 text-surface-200/70">
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70">
                       {r.payment_date ? new Date(r.payment_date).toLocaleDateString() : '—'}
                     </td>
                     <td className="py-3 text-right">
                       <button
                         type="button"
                         onClick={() => alert(`Downloading Receipt REC-${String(r.id).padStart(5, '0')}`)}
-                        className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Download className="w-3 h-3" />
                         <span>PDF</span>
@@ -83,7 +83,7 @@ export default function ResidentReceipts() {
             </table>
           </div>
         ) : (
-          <div className="py-12 text-center text-xs text-surface-200/50">
+          <div className="py-12 text-center text-xs text-surface-500 dark:text-surface-200/50">
             No payment receipts on file yet.
           </div>
         )}

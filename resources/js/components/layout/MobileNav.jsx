@@ -37,12 +37,12 @@ export default function MobileNav() {
   const needsMobile = Boolean(!user.phone || !user.phone.trim());
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-950/95 dark:bg-surface-950/95 backdrop-blur-xl border-t border-white/10 px-2 py-1.5" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)' }}>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-surface-950/95 backdrop-blur-xl border-t border-surface-200 dark:border-white/10 px-2 py-1.5" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)' }}>
       <div className="flex items-center justify-around">
         {needsMobile ? (
           <NavLink
             to="/profile"
-            className="flex items-center gap-2 text-amber-400 font-bold py-1 px-4 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs animate-pulse"
+            className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold py-1 px-4 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs animate-pulse"
           >
             <User className="w-4 h-4" />
             <span>Add Mobile Number to Unlock</span>
@@ -58,7 +58,7 @@ export default function MobileNav() {
                 key={item.to}
                 to={item.to}
                 className={`flex flex-col items-center gap-0.5 transition-colors ${
-                  isActive ? 'text-brand-400 font-semibold' : 'text-surface-200/60 hover:text-white'
+                  isActive ? 'text-brand-600 dark:text-brand-400 font-semibold' : 'text-surface-600 hover:text-surface-900 dark:text-surface-200/60 dark:hover:text-white'
                 }`}
               >
                 <item.icon className="w-4 h-4" />

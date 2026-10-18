@@ -110,18 +110,18 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               <button
                 type="button"
                 onClick={() => setSocietyMenuOpen(!societyMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition-all max-w-[160px] sm:max-w-[220px]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-800 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-white text-xs font-medium transition-all max-w-[160px] sm:max-w-[220px]"
               >
-                <Building2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+                <Building2 className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
                 <span className="truncate">{activeSociety ? activeSociety.name : 'Select Society'}</span>
                 {userSocieties.length > 1 && (
-                  <ChevronDown className="w-3 h-3 text-surface-200/50 shrink-0" />
+                  <ChevronDown className="w-3 h-3 text-surface-400 dark:text-surface-200/50 shrink-0" />
                 )}
               </button>
 
               {societyMenuOpen && userSocieties.length > 1 && (
-                <div className="absolute left-0 mt-1.5 w-64 border border-white/20 bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50 py-1">
-                  <div className="px-3 py-1.5 border-b border-white/10 text-[10px] font-semibold text-surface-200/50 uppercase tracking-wider">
+                <div className="absolute left-0 mt-1.5 w-64 border border-surface-200 dark:border-white/20 bg-white/95 dark:bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50 py-1">
+                  <div className="px-3 py-1.5 border-b border-surface-200 dark:border-white/10 text-[10px] font-semibold text-surface-500 dark:text-surface-200/50 uppercase tracking-wider">
                     My Societies
                   </div>
                   <div className="max-h-60 overflow-y-auto p-1 space-y-0.5">
@@ -137,17 +137,17 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
                           }}
                           className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                             isActive
-                              ? 'bg-brand-500/15 text-brand-300 font-semibold'
-                              : 'text-surface-200 hover:text-white hover:bg-white/10'
+                              ? 'bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-300 font-semibold'
+                              : 'text-surface-700 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200 dark:hover:text-white dark:hover:bg-white/10'
                           }`}
                         >
                           <div className="min-w-0 pr-2">
                             <p className="truncate font-medium">{s.name}</p>
-                            <p className="text-[10px] text-surface-200/50 truncate">
+                            <p className="text-[10px] text-surface-500 dark:text-surface-200/50 truncate">
                               {s.city} {s.flat_no ? `· Unit ${s.wing ? s.wing + '-' : ''}${s.flat_no}` : ''}
                             </p>
                           </div>
-                          {isActive && <Check className="w-3.5 h-3.5 text-brand-400 shrink-0" />}
+                          {isActive && <Check className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />}
                         </button>
                       );
                     })}
@@ -158,7 +158,7 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
           )}
 
           {isAdminView && (
-            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30">
               System Admin
             </span>
           )}
@@ -172,7 +172,7 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               <button
                 type="button"
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-1.5 text-surface-200/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="relative p-1.5 text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/10 rounded-lg transition-colors"
                 title="Notifications"
                 aria-label="Notifications"
               >
@@ -185,39 +185,39 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 mt-1.5 w-80 border border-white/20 bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50">
-                  <div className="p-3 border-b border-white/10 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white">Notifications</span>
+                <div className="absolute right-0 mt-1.5 w-80 border border-surface-200 dark:border-white/20 bg-white/95 dark:bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50">
+                  <div className="p-3 border-b border-surface-200 dark:border-white/10 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-surface-900 dark:text-white">Notifications</span>
                     {unreadNotifications > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30">
                         {unreadNotifications} new
                       </span>
                     )}
                   </div>
-                  <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
+                  <div className="max-h-64 overflow-y-auto divide-y divide-surface-200 dark:divide-white/5">
                     {latestNotifications.length > 0 ? (
                       latestNotifications.map((n) => (
                         <Link
                           key={n.id}
                           to={n.action_url || '/notifications'}
                           onClick={() => setNotificationsOpen(false)}
-                          className="block p-2.5 hover:bg-white/5 transition-colors"
+                          className="block p-2.5 hover:bg-surface-50 dark:hover:bg-white/5 transition-colors"
                         >
-                          <p className="text-xs font-medium text-white truncate">{n.title}</p>
-                          <p className="text-[11px] text-surface-200/60 line-clamp-2 mt-0.5">{n.message}</p>
+                          <p className="text-xs font-medium text-surface-900 dark:text-white truncate">{n.title}</p>
+                          <p className="text-[11px] text-surface-500 dark:text-surface-200/60 line-clamp-2 mt-0.5">{n.message}</p>
                         </Link>
                       ))
                     ) : (
-                      <div className="p-4 text-center text-xs text-surface-200/50">
+                      <div className="p-4 text-center text-xs text-surface-500 dark:text-surface-200/50">
                         No unread notifications
                       </div>
                     )}
                   </div>
-                  <div className="p-2 border-t border-white/10 text-center">
+                  <div className="p-2 border-t border-surface-200 dark:border-white/10 text-center">
                     <Link
                       to="/notifications"
                       onClick={() => setNotificationsOpen(false)}
-                      className="text-xs font-semibold text-brand-400 hover:text-brand-300"
+                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
                     >
                       View all notifications &rarr;
                     </Link>
@@ -280,7 +280,7 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
               <button
                 type="button"
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-white/10 transition-colors"
+                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-white/10 transition-colors"
                 aria-label="Profile menu"
               >
                 {user.profile_photo ? (
@@ -290,23 +290,23 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
-                <ChevronDown className="w-3 h-3 text-surface-200/50" />
+                <ChevronDown className="w-3 h-3 text-surface-400 dark:text-surface-200/50" />
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-1.5 w-52 border border-white/20 bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50">
-                  <div className="p-2.5 border-b border-white/10">
-                    <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-                    <p className="text-[10px] text-surface-200/50 truncate">{user.email}</p>
+                <div className="absolute right-0 mt-1.5 w-52 border border-surface-200 dark:border-white/20 bg-white/95 dark:bg-surface-950/95 backdrop-blur-xl rounded-xl overflow-hidden shadow-2xl z-50">
+                  <div className="p-2.5 border-b border-surface-200 dark:border-white/10">
+                    <p className="text-xs font-semibold text-surface-900 dark:text-white truncate">{user.name}</p>
+                    <p className="text-[10px] text-surface-500 dark:text-surface-200/50 truncate">{user.email}</p>
                   </div>
                   <div className="p-1 space-y-0.5">
                     {capabilities.isAdmin && !isAdminView && (
                       <Link
                         to="/admin"
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-brand-300 hover:bg-white/10 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-brand-600 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-white/10 rounded-lg transition-colors font-medium"
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
                         <span>Admin View</span>
                       </Link>
                     )}
@@ -314,32 +314,32 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
                       <Link
                         to="/resident"
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-brand-300 hover:bg-white/10 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-brand-600 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-white/10 rounded-lg transition-colors font-medium"
                       >
-                        <Building2 className="w-3.5 h-3.5 text-brand-400" />
+                        <Building2 className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
                         <span>Resident View</span>
                       </Link>
                     )}
                     <Link
                       to="/profile"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-surface-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-surface-700 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200 dark:hover:text-white dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
-                      <User className="w-3.5 h-3.5 text-surface-200" />
+                      <User className="w-3.5 h-3.5 text-surface-500 dark:text-surface-200" />
                       <span>My Profile</span>
                     </Link>
                     <Link
                       to="/contact"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-surface-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-surface-700 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200 dark:hover:text-white dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+                      <HelpCircle className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
                       <span>Help &amp; Support</span>
                     </Link>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>

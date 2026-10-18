@@ -54,7 +54,7 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
   return (
     <aside
       id="desktop-sidebar"
-      className={`fixed top-13 bottom-0 left-0 z-40 bg-surface-950/95 dark:bg-surface-950/95 backdrop-blur-md border-r border-white/10 flex flex-col justify-between transition-all duration-200 ${
+      className={`fixed top-13 bottom-0 left-0 z-40 bg-white/95 dark:bg-surface-950/95 backdrop-blur-md border-r border-surface-200 dark:border-white/10 flex flex-col justify-between transition-all duration-200 ${
         isCollapsed ? 'w-16' : 'w-60'
       }`}
       style={{ top: '52px' }}
@@ -62,16 +62,16 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
       {/* Navigation items */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-1">
         {needsMobile ? (
-          <div className="p-3 my-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center space-y-1">
+          <div className="p-3 my-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs text-center space-y-1">
             {!isCollapsed ? (
               <>
-                <p className="font-semibold text-amber-200">Registration Incomplete</p>
-                <p className="text-[10px] text-amber-300/80 leading-snug">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">Registration Incomplete</p>
+                <p className="text-[10px] text-amber-800/80 dark:text-amber-300/80 leading-snug">
                   Please enter your mobile phone number on your Profile to unlock society features.
                 </p>
               </>
             ) : (
-              <User className="w-5 h-5 mx-auto text-amber-400 animate-pulse" />
+              <User className="w-5 h-5 mx-auto text-amber-600 dark:text-amber-400 animate-pulse" />
             )}
           </div>
         ) : (
@@ -88,8 +88,8 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
                 title={item.label}
                 className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30'
-                    : 'text-surface-200/70 hover:text-white hover:bg-white/5'
+                    ? 'bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 font-semibold border border-brand-200 dark:border-brand-500/30'
+                    : 'text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/5'
                 }`}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
@@ -101,15 +101,15 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
       </div>
 
       {/* Footer link section */}
-      <div className="p-2 border-t border-white/10 space-y-1">
+      <div className="p-2 border-t border-surface-200 dark:border-white/10 space-y-1">
         {!needsMobile && (
           <NavLink
             to="/society/contribute"
             onClick={onCloseMobile}
             title="Contribute Society"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-surface-200/70 hover:text-white hover:bg-white/5 transition-all"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/5 transition-all"
           >
-            <Building className="w-4 h-4 text-emerald-400 shrink-0" />
+            <Building className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             {!isCollapsed && <span className="truncate">Contribute Society</span>}
           </NavLink>
         )}
@@ -119,11 +119,11 @@ export default function Sidebar({ isCollapsed, onCloseMobile }) {
           title="My Profile"
           className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
             needsMobile
-              ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 ring-1 ring-amber-500/50'
-              : 'text-surface-200/70 hover:text-white hover:bg-white/5'
+              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold border border-amber-500/40 ring-1 ring-amber-500/50'
+              : 'text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/5'
           }`}
         >
-          <User className={`w-4 h-4 ${needsMobile ? 'text-amber-400' : 'text-brand-400'} shrink-0`} />
+          <User className={`w-4 h-4 ${needsMobile ? 'text-amber-600 dark:text-amber-400' : 'text-brand-600 dark:text-brand-400'} shrink-0`} />
           {!isCollapsed && (
             <span className="truncate flex items-center justify-between flex-1">
               <span>My Profile</span>

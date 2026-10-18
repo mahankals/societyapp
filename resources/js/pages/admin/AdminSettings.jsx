@@ -34,17 +34,17 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
+        <h1 className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white font-heading">
           Platform Settings
         </h1>
-        <p className="text-xs text-surface-200/60 mt-0.5">
+        <p className="text-xs text-surface-600 dark:text-surface-200/60 mt-0.5">
           Configure branding, mail server SMTP, and system maintenance guards
         </p>
       </div>
 
-      <div className="p-6 sm:p-8 rounded-3xl bg-white/[0.03] border border-white/10 space-y-6">
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs space-y-6">
         {saved && (
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
             <span>Settings saved successfully.</span>
           </div>
@@ -53,62 +53,62 @@ export default function AdminSettings() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* General Branding */}
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Globe className="w-4 h-4 text-brand-400" />
+            <h2 className="text-sm font-semibold text-surface-900 dark:text-white flex items-center gap-2">
+              <Globe className="w-4 h-4 text-brand-500 dark:text-brand-400" />
               <span>Branding &amp; Identity</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                <label className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1">
                   Application Name
                 </label>
                 <input
                   type="text"
                   value={settings.app_name || 'Society App'}
                   onChange={(e) => handleChange('app_name', e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                <label className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1">
                   Support Email
                 </label>
                 <input
                   type="email"
                   value={settings.support_email || 'support@societyapp.ddev.site'}
                   onChange={(e) => handleChange('support_email', e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                 />
               </div>
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-4 space-y-4">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Mail className="w-4 h-4 text-amber-400" />
+          <div className="border-t border-surface-200 dark:border-white/10 pt-4 space-y-4">
+            <h2 className="text-sm font-semibold text-surface-900 dark:text-white flex items-center gap-2">
+              <Mail className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>SMTP Mail Configuration</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                <label className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1">
                   SMTP Host
                 </label>
                 <input
                   type="text"
                   value={settings.smtp_host || 'localhost'}
                   onChange={(e) => handleChange('smtp_host', e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
+                <label className="block text-xs font-medium text-surface-700 dark:text-surface-200/80 mb-1">
                   SMTP Port
                 </label>
                 <input
                   type="number"
                   value={settings.smtp_port || '1025'}
                   onChange={(e) => handleChange('smtp_port', e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                 />
               </div>
             </div>

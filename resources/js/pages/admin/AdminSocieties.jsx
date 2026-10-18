@@ -32,10 +32,10 @@ export default function AdminSocieties() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
+          <h1 className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white font-heading">
             Housing Societies Management
           </h1>
-          <p className="text-xs text-surface-200/60 mt-0.5">
+          <p className="text-xs text-surface-600 dark:text-surface-200/60 mt-0.5">
             View and manage all approved residential communities
           </p>
         </div>
@@ -48,16 +48,16 @@ export default function AdminSocieties() {
         </Link>
       </div>
 
-      <div className="p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 shadow-xs space-y-4">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-4 h-4 text-surface-200/40 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-surface-400 dark:text-surface-200/40 absolute left-3.5 top-3" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, city, or society code..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
           />
         </div>
 
@@ -69,7 +69,7 @@ export default function AdminSocieties() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-surface-200/50">
+                <tr className="border-b border-surface-200 dark:border-white/10 text-surface-500 dark:text-surface-200/50">
                   <th className="pb-2.5 font-medium">Society Name</th>
                   <th className="pb-2.5 font-medium">Code</th>
                   <th className="pb-2.5 font-medium">Address</th>
@@ -77,21 +77,21 @@ export default function AdminSocieties() {
                   <th className="pb-2.5 font-medium">Units</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-surface-200 dark:divide-white/5">
                 {filtered.map((s) => (
-                  <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 font-semibold text-white">{s.name}</td>
-                    <td className="py-3 font-mono text-brand-400">{s.society_code}</td>
-                    <td className="py-3 text-surface-200/70">{s.address || '—'}</td>
-                    <td className="py-3 text-surface-200/70">{s.city || '—'}</td>
-                    <td className="py-3 text-surface-200/70">{s.flats_count || 0}</td>
+                  <tr key={s.id} className="hover:bg-surface-50 dark:hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 font-semibold text-surface-900 dark:text-white">{s.name}</td>
+                    <td className="py-3 font-mono text-brand-600 dark:text-brand-400 font-semibold">{s.society_code}</td>
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70">{s.address || '—'}</td>
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70">{s.city || '—'}</td>
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70">{s.flats_count || 0}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="py-12 text-center text-xs text-surface-200/50">
+          <div className="py-12 text-center text-xs text-surface-500 dark:text-surface-200/50">
             No societies found matching your search.
           </div>
         )}
