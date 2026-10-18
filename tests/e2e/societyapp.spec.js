@@ -358,23 +358,39 @@ test.describe('SocietyApp Complete Multi-Role Walkthrough & Demo', () => {
     // =========================================================================
     // STEP 14: Request as Tenant / Link Tenant to Flat (as Resident)
     // =========================================================================
-    console.log('[STEP 14] Link Tenant to Available Unit');
+    console.log('[STEP 14] Search Registered User & Link Tenant to Available Unit');
     const linkTenantBtn = page.locator('button:has-text("Link Tenant")').first();
     if (await linkTenantBtn.isVisible()) {
       await linkTenantBtn.click();
       await page.waitForSelector('text=Link Tenant to Unit', { timeout: 5000 });
 
       const tenantModal = page.locator('.fixed.inset-0').last();
-      await tenantModal.locator('input[placeholder*="Rahul Verma"]').fill('Kunal Deshmukh');
-      await tenantModal.locator('input[placeholder*="+91 98234"]').fill('+91 98901 23456');
+      const searchInput = tenantModal.locator('input[placeholder*="Enter email or mobile"]');
+      await searchInput.fill(guestEmail);
+      await page.waitForTimeout(500);
+
+      const searchBtn = tenantModal.locator('button:has-text("Search")');
+      await searchBtn.click();
       await page.waitForTimeout(1000);
 
+      // Verify registered user name appears in search results
+      await expect(tenantModal.locator('text=Rohan Deshmukh').first()).toBeVisible({ timeout: 5000 });
+
+      // Click Select on the user
+      await tenantModal.locator('button:has-text("Select")').first().click();
+      await page.waitForTimeout(800);
+
+      // Verify Verified preview badge
+      await expect(tenantModal.locator('text=Registered User Selected').first()).toBeVisible();
+
+      // Confirm Tenant
       await tenantModal.locator('button:has-text("Confirm Tenant")').click();
       await expect(page.locator('text=Tenant linked successfully').first()).toBeVisible({ timeout: 10000 });
       await page.waitForTimeout(1500);
 
       // Verify Rented status badge
       await expect(page.locator('span:has-text("Rented")').first()).toBeVisible();
+      await expect(page.locator('text=Rohan Deshmukh').first()).toBeVisible();
     }
 
     // =========================================================================

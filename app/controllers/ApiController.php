@@ -1356,6 +1356,40 @@ class ApiController
     }
 
     /**
+     * GET /api/resident/search-tenant
+     */
+    public function searchTenant(): void
+    {
+        $user = getUser();
+        if (!$user) {
+            self::json(['success' => false, 'error' => 'Authentication required.'], 401);
+        }
+
+        $query = trim($_GET['query'] ?? '');
+        if (empty($query) || strlen($query) < 2) {
+            self::json(['success' => true, 'users' => []]);
+        }
+
+        $cleanPhone = preg_replace('/[^0-9]/', '', $query);
+        $phonePattern = '%' . ($cleanPhone ?: $query) . '%';
+        $textPattern = '%' . $query . '%';
+
+        $users = Database::fetchAll("
+            SELECT id, name, email, phone, profile_photo, created_at
+            FROM users
+            WHERE (email LIKE ? OR phone LIKE ? OR name LIKE ?)
+              AND id != ?
+            ORDER BY id DESC
+            LIMIT 5
+        ", [$textPattern, $phonePattern, $textPattern, (int)$user['id']]);
+
+        self::json([
+            'success' => true,
+            'users' => $users,
+        ]);
+    }
+
+    /**
      * POST /api/resident/flats/{id}/assign-tenant
      */
     public function assignTenant($flatId): void
@@ -1366,14 +1400,36 @@ class ApiController
         }
 
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $tenantName = trim($input['tenant_name'] ?? 'John Renter');
-        $tenantPhone = trim($input['tenant_phone'] ?? '+91 98765 43210');
-        $leaseEndDate = trim($input['lease_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
+        $tenantUserId = (int)($input['tenant_user_id'] ?? 0);
+        $identifier = trim($input['query'] ?? $input['email'] ?? $input['phone'] ?? '');
+
+        $tenantUser = null;
+        if ($tenantUserId > 0) {
+            $tenantUser = Database::fetchOne("SELECT id, name, email, phone FROM users WHERE id = ?", [$tenantUserId]);
+        } elseif (!empty($identifier)) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+            $tenantUser = Database::fetchOne(
+                "SELECT id, name, email, phone FROM users WHERE (email = ? OR phone = ? OR phone = ?) LIMIT 1",
+                [$identifier, $identifier, $cleanPhone]
+            );
+        }
+
+        // Only app-registered users can be a tenant
+        if (!$tenantUser) {
+            self::json([
+                'success' => false,
+                'error' => 'Only registered app users can be linked as tenants. Please ask the tenant to create an account on Society App first.',
+            ], 422);
+        }
 
         $flat = Database::fetchOne("SELECT * FROM flats WHERE id = ?", [(int)$flatId]);
         if (!$flat) {
             self::json(['success' => false, 'error' => 'Flat not found.'], 404);
         }
+
+        $tenantName = $tenantUser['name'];
+        $tenantPhone = !empty($tenantUser['phone']) ? $tenantUser['phone'] : ($input['tenant_phone'] ?? '');
+        $leaseEndDate = trim($input['lease_end_date'] ?? date('Y-m-d', strtotime('+1 year')));
 
         Database::update('flats', [
             'occupancy_status' => 'rented',
@@ -1383,9 +1439,39 @@ class ApiController
             'lease_end_date' => $leaseEndDate,
         ], 'id = ?', [(int)$flatId]);
 
+        // Map as active tenant in society_members
+        $societyId = (int)$flat['society_id'];
+        $existing = Database::fetchOne(
+            "SELECT id FROM society_members WHERE society_id = ? AND flat_id = ? AND user_id = ?",
+            [$societyId, (int)$flatId, (int)$tenantUser['id']]
+        );
+
+        if ($existing) {
+            Database::update('society_members', [
+                'role' => 'tenant',
+                'status' => 'active',
+                'ownership_type' => 'tenant',
+            ], 'id = ?', [(int)$existing['id']]);
+        } else {
+            Database::insert('society_members', [
+                'society_id' => $societyId,
+                'flat_id' => (int)$flatId,
+                'user_id' => (int)$tenantUser['id'],
+                'role' => 'tenant',
+                'status' => 'active',
+                'ownership_type' => 'tenant',
+            ]);
+        }
+
         self::json([
             'success' => true,
             'message' => "Tenant linked successfully! {$tenantName} is assigned to unit {$flat['wing']}-{$flat['flat_no']}.",
+            'tenant' => [
+                'id' => (int)$tenantUser['id'],
+                'name' => $tenantName,
+                'email' => $tenantUser['email'],
+                'phone' => $tenantPhone,
+            ],
         ]);
     }
 }

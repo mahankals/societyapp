@@ -58,6 +58,7 @@ return function (App $app) {
         $group->post('/resident/link-flat', SlimBridge::wrap([$api, 'requestLinkFlat']));
         $group->get('/resident/requests', SlimBridge::wrap([$api, 'residentRequests']));
         $group->post('/resident/flats/{id}/toggle-rent', SlimBridge::wrap([$api, 'toggleFlatRent']));
+        $group->get('/resident/search-tenant', SlimBridge::wrap([$api, 'searchTenant']));
         $group->post('/resident/flats/{id}/assign-tenant', SlimBridge::wrap([$api, 'assignTenant']));
 
         // Committee Endpoints

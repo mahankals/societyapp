@@ -8,13 +8,17 @@ import {
   PlusCircle, 
   ArrowRight, 
   AlertTriangle, 
+  AlertCircle,
   CheckCircle, 
   Home, 
   Key, 
   UserCheck, 
   X, 
   CheckCircle2, 
-  Phone 
+  Phone,
+  Search,
+  Mail,
+  User
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -27,8 +31,12 @@ export default function ResidentDashboard() {
 
   // Tenant modal state
   const [selectedFlatForTenant, setSelectedFlatForTenant] = useState(null);
-  const [tenantName, setTenantName] = useState('Rahul Verma');
-  const [tenantPhone, setTenantPhone] = useState('+91 98234 56789');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchingTenant, setSearchingTenant] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedTenantUser, setSelectedTenantUser] = useState(null);
+  const [tenantError, setTenantError] = useState('');
   const [submittingTenant, setSubmittingTenant] = useState(false);
 
   const loadData = async () => {
@@ -56,20 +64,48 @@ export default function ResidentDashboard() {
     }
   };
 
+  const handleSearchTenant = async (queryToSearch) => {
+    const q = (queryToSearch !== undefined ? queryToSearch : searchQuery).trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+    setSearchingTenant(true);
+    setTenantError('');
+    try {
+      const res = await api.get(`/api/resident/search-tenant?query=${encodeURIComponent(q)}`);
+      setSearchResults(res.users || []);
+      setHasSearched(true);
+    } catch (err) {
+      setTenantError(err?.message || 'Failed to search registered users.');
+    } finally {
+      setSearchingTenant(false);
+    }
+  };
+
   const handleAssignTenant = async (e) => {
     e.preventDefault();
     if (!selectedFlatForTenant) return;
+    if (!selectedTenantUser) {
+      setTenantError('Please search and select a registered tenant user first.');
+      return;
+    }
     setSubmittingTenant(true);
+    setTenantError('');
     try {
       const res = await api.post(`/api/resident/flats/${selectedFlatForTenant.flat_id}/assign-tenant`, {
-        tenant_name: tenantName,
-        tenant_phone: tenantPhone,
+        tenant_user_id: selectedTenantUser.id,
       });
       setMessage(res.message || 'Tenant linked successfully!');
       setSelectedFlatForTenant(null);
+      setSelectedTenantUser(null);
+      setSearchQuery('');
+      setSearchResults([]);
+      setHasSearched(false);
       await loadData();
     } catch (err) {
-      alert(err?.message || 'Failed to assign tenant.');
+      setTenantError(err?.message || 'Failed to assign tenant.');
     } finally {
       setSubmittingTenant(false);
     }
@@ -255,7 +291,14 @@ export default function ResidentDashboard() {
                       {isAvailableForRent && (
                         <button
                           type="button"
-                          onClick={() => setSelectedFlatForTenant(f)}
+                          onClick={() => {
+                            setSelectedFlatForTenant(f);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setHasSearched(false);
+                            setSelectedTenantUser(null);
+                            setTenantError('');
+                          }}
                           className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                         >
                           <UserCheck className="w-3 h-3" />
@@ -275,13 +318,16 @@ export default function ResidentDashboard() {
         )}
       </div>
 
-      {/* Link Tenant Modal */}
+      {/* Link Tenant Modal - Search Registered Users Only */}
       {selectedFlatForTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-surface-950 border border-white/20 p-6 space-y-4 shadow-2xl relative">
+          <div className="w-full max-w-md rounded-3xl bg-surface-950 border border-white/20 p-6 space-y-4 shadow-2xl relative">
             <button
               type="button"
-              onClick={() => setSelectedFlatForTenant(null)}
+              onClick={() => {
+                setSelectedFlatForTenant(null);
+                setSelectedTenantUser(null);
+              }}
               className="absolute top-4 right-4 p-1.5 text-surface-200/60 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -293,53 +339,168 @@ export default function ResidentDashboard() {
                 <span>Link Tenant to Unit {selectedFlatForTenant.wing}-{selectedFlatForTenant.flat_no}</span>
               </h2>
               <p className="text-xs text-surface-200/60">
-                Register verified tenant details and contact information
+                Search registered users by email or phone. Only app-registered users can be tenants.
               </p>
             </div>
 
-            <form onSubmit={handleAssignTenant} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
-                  Tenant Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={tenantName}
-                  onChange={(e) => setTenantName(e.target.value)}
-                  placeholder="e.g. Rahul Verma"
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
-                />
+            {tenantError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{tenantError}</span>
               </div>
+            )}
 
-              <div>
-                <label className="block text-xs font-medium text-surface-200/80 mb-1">
-                  Tenant Mobile Number
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={tenantPhone}
-                  onChange={(e) => setTenantPhone(e.target.value)}
-                  placeholder="+91 98234 56789"
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
+            {/* Search Input */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-surface-200/80">
+                Search Tenant by Email or Mobile <span className="text-red-400">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-surface-200/40" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSearchQuery(val);
+                      if (val.trim().length >= 2) {
+                        handleSearchTenant(val);
+                      } else {
+                        setSearchResults([]);
+                        setHasSearched(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchTenant();
+                      }
+                    }}
+                    placeholder="Enter email or mobile number..."
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder-surface-200/30 focus:outline-none focus:border-purple-500 transition-all"
+                  />
+                </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedFlatForTenant(null)}
+                  onClick={() => handleSearchTenant()}
+                  disabled={searchingTenant || searchQuery.trim().length < 2}
+                  className="px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-40 text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>{searchingTenant ? 'Searching...' : 'Search'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search Results */}
+            {hasSearched && (
+              <div className="space-y-2 pt-1">
+                <div className="text-[10px] font-semibold text-surface-200/50 uppercase tracking-wider">
+                  Registered Users ({searchResults.length})
+                </div>
+
+                {searchResults.length === 0 ? (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs space-y-1">
+                    <p className="font-semibold flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>No registered user found</span>
+                    </p>
+                    <p className="text-[11px] text-amber-300/80 pl-5">
+                      Only registered app users can be tenants. Please ask your tenant to register on Society App first.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
+                    {searchResults.map((u) => {
+                      const isSelected = selectedTenantUser?.id === u.id;
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => setSelectedTenantUser(u)}
+                          className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                            isSelected
+                              ? 'bg-purple-500/20 border-purple-500/50 ring-1 ring-purple-500/40'
+                              : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm shrink-0">
+                              {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{u.name}</p>
+                              <p className="text-[11px] text-surface-200/60 truncate">{u.email}</p>
+                              {u.phone && (
+                                <p className="text-[10px] text-surface-200/40 truncate">{u.phone}</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTenantUser(u);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                              isSelected
+                                ? 'bg-purple-500 text-white shadow-sm'
+                                : 'bg-white/10 hover:bg-white/20 text-white'
+                            }`}
+                          >
+                            {isSelected ? 'Selected' : 'Select'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Selected Tenant Preview */}
+            {selectedTenantUser && (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Registered User Selected</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300">
+                    Verified
+                  </span>
+                </div>
+                <div className="text-xs space-y-0.5">
+                  <p className="font-bold text-white text-sm">{selectedTenantUser.name}</p>
+                  <p className="text-surface-200/70">{selectedTenantUser.email}</p>
+                  {selectedTenantUser.phone && (
+                    <p className="text-surface-200/70">{selectedTenantUser.phone}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleAssignTenant} className="pt-2">
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFlatForTenant(null);
+                    setSelectedTenantUser(null);
+                  }}
                   className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingTenant}
-                  className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                  disabled={!selectedTenantUser || submittingTenant}
+                  className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
                 >
-                  {submittingTenant ? 'Linking...' : 'Confirm Tenant'}
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>{submittingTenant ? 'Linking...' : 'Confirm Tenant'}</span>
                 </button>
               </div>
             </form>
