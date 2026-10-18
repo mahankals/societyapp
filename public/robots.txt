@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /contact
+Allow: /society/contribute
+Allow: /join/
+Disallow: /admin/
+Disallow: /resident/
+Disallow: /comitee/
+Disallow: /committee/
+Disallow: /setup/
+Disallow: /auth/
+Disallow: /api/
+
+Sitemap: https://societyapp.ddev.site/sitemap.xml

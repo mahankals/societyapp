@@ -75,8 +75,11 @@ function logoutUser(): void {
     Session::destroy();
 }
 
-function redirect(string $url): void {
-    header('Location: ' . $url);
+function redirect(string $url, int $statusCode = 302): void {
+    if (class_exists(\App\Core\RedirectException::class)) {
+        throw new \App\Core\RedirectException($url, $statusCode);
+    }
+    header('Location: ' . $url, true, $statusCode);
     exit;
 }
 
@@ -174,13 +177,30 @@ function getUserRoleDashboardUrl(?array $user = null): string {
     return '/resident';
 }
 
+function getTwigEnvironment(): \Twig\Environment {
+    static $twig = null;
+    if ($twig === null) {
+        $config = require __DIR__ . '/../../config/app.php';
+        $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../views');
+        $twig = new \Twig\Environment($loader, [
+            'debug' => $config['app']['debug'] ?? false,
+            'strict_variables' => false,
+        ]);
+
+        $twig->addFunction(new \Twig\TwigFunction('vite_asset', function (string $entry) {
+            return \App\Services\ViteAssetService::getAssetUrl($entry);
+        }));
+
+        $twig->addFunction(new \Twig\TwigFunction('vite_tags', function (string $jsEntry = 'resources/js/main.jsx', string $cssEntry = 'resources/css/app.css') {
+            return \App\Services\ViteAssetService::renderTags($jsEntry, $cssEntry);
+        }, ['is_safe' => ['html']]));
+    }
+    return $twig;
+}
+
 function view(string $name, array $data = []): string {
     $config = require __DIR__ . '/../../config/app.php';
-    $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../views');
-    $twig = new \Twig\Environment($loader, [
-        'debug' => $config['app']['debug'],
-        'strict_variables' => false,
-    ]);
+    $twig = getTwigEnvironment();
 
     $data['appConfig'] = $config;
 

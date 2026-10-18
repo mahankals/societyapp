@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ seo.title|default(appName|default('SocietyApp — Modern Residential Living')) }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ seo.description|default(appDesc|default('The premium management platform for modern residential communities.')) }}{% endblock %}">
+  {% if seo.canonical is defined and seo.canonical %}
+    <link rel="canonical" href="{{ seo.canonical }}">
+  {% endif %}
+  <meta property="og:title" content="{{ seo.title|default(appName|default('SocietyApp')) }}">
+  <meta property="og:description" content="{{ seo.description|default(appDesc|default('The premium management platform for modern residential communities.')) }}">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="{{ appFavicon|default('/assets/icons/logo.svg') }}">
+  <link rel="apple-touch-icon" href="{{ appLogo|default('/assets/icons/logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  {# Hashed Vite assets with automatic fallback #}
+  {{ vite_tags()|raw }}
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/js/dropdown.js"></script>
+
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-surface-950 text-surface-100 font-body antialiased selection:bg-brand-500/30 selection:text-white">
+  <div class="noise-overlay"></div>
+
+  {% block header %}{% endblock %}
+
+  <main id="main-content" class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}{% endblock %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

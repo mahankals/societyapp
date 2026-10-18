@@ -3,8 +3,9 @@ RewriteEngine On
 # Deny access to sensitive directories
 RewriteRule ^(app|config|vendor|docs|\.git|\.ddev) - [F,L]
 
-# Rewrite /assets/* to /public/assets/* (when DocumentRoot = project root)
+# Rewrite /assets/* and /dist/* to /public/* (when DocumentRoot = project root)
 RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+RewriteRule ^dist/(.*)$ public/dist/$1 [L]
 
 # Rewrite public root files when DocumentRoot = project root
 RewriteRule ^(favicon\.ico)$ public/assets/icons/logo.svg [L]

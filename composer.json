@@ -1,6 +1,6 @@
 {
     "name": "mahankals/societyapp",
-    "description": "SocietyApp Rebirth with Twig and Tailwind",
+    "description": "SocietyApp with Slim 4, Twig, React and Tailwind",
     "authors": [
         {
             "name": "Himan",
@@ -8,7 +8,19 @@
         }
     ],
     "require": {
-        "php": ">=8.5",
-        "twig/twig": "^3.20"
+        "php": ">=8.2",
+        "slim/slim": "^4.14",
+        "slim/psr7": "^1.7",
+        "slim/twig-view": "^3.4",
+        "twig/twig": "^3.20",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/core/helpers.php"
+        ]
     }
 }

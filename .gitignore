@@ -71,3 +71,6 @@ access_log
 
 # Storage & sessions
 /storage/
+
+# Vite Hot Reload
+/public/hot

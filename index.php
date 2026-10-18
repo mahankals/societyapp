@@ -26,3 +26,6 @@ $siteConfig = [
 
 // Load maintenance & coming soon system
 require_once ROOT_PATH . '/maintenance.php';
+
+// Pass through to Slim 4 front controller in public/index.php
+require_once ROOT_PATH . '/public/index.php';

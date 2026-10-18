@@ -7,9 +7,11 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css",
+    "dev": "vite",
+    "build": "vite build && tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css",
+    "build:vite": "vite build",
     "watch": "tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vite build --mode test"
   },
   "repository": {
     "type": "git",
@@ -25,10 +27,15 @@
   "homepage": "https://github.com/mahankals/societyapp#readme",
   "devDependencies": {
     "@parcel/watcher-linux-x64-glibc": "^2.6.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
     "puppeteer-core": "^25.12.0",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.3.4"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.2.2"
+    "@tailwindcss/cli": "^4.2.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }
