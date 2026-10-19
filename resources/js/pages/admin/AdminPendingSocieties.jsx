@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, CheckCircle2, XCircle, AlertCircle, Building2 } from 'lucide-react';
 import { api } from '../../services/api';
+import { useModal } from '../../context/ModalContext';
 
 export default function AdminPendingSocieties() {
+  const { showConfirm, showAlert } = useModal();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -30,23 +32,49 @@ export default function AdminPendingSocieties() {
       const res = await api.post(`/api/admin/societies/requests/${id}/approve`);
       setMessage(res.message || 'Society approved successfully!');
       await load();
+      showAlert({
+        title: 'Society Approved',
+        message: res.message || 'Society approved successfully!',
+        variant: 'success',
+      });
     } catch (err) {
-      alert(err?.message || 'Failed to approve society proposal.');
+      showAlert({
+        title: 'Approval Error',
+        message: err?.message || 'Failed to approve society proposal.',
+        variant: 'danger',
+      });
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleReject = async (id) => {
-    if (!confirm('Are you sure you want to reject this society proposal?')) return;
+    const confirmed = await showConfirm({
+      title: 'Reject Proposal',
+      message: 'Are you sure you want to reject this society proposal?',
+      danger: true,
+      confirmText: 'Reject Proposal',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
+
     setActionLoading(id);
     setMessage('');
     try {
       const res = await api.post(`/api/admin/societies/requests/${id}/reject`);
       setMessage(res.message || 'Society proposal rejected.');
       await load();
+      showAlert({
+        title: 'Proposal Rejected',
+        message: res.message || 'Society proposal rejected.',
+        variant: 'info',
+      });
     } catch (err) {
-      alert(err?.message || 'Failed to reject society proposal.');
+      showAlert({
+        title: 'Rejection Error',
+        message: err?.message || 'Failed to reject society proposal.',
+        variant: 'danger',
+      });
     } finally {
       setActionLoading(null);
     }

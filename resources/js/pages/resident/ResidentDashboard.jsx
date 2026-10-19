@@ -23,9 +23,11 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext';
 
 export default function ResidentDashboard() {
   const { user } = useAuth();
+  const { showConfirm, showAlert } = useModal();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -60,21 +62,45 @@ export default function ResidentDashboard() {
       const res = await api.post(`/api/resident/flats/${flatId}/toggle-rent`);
       setMessage(res.message || 'Rental status updated!');
       await loadData();
+      showAlert({
+        title: 'Status Updated',
+        message: res.message || 'Rental status updated successfully!',
+        variant: 'success',
+      });
     } catch (err) {
-      alert(err?.message || 'Failed to update rent status.');
+      showAlert({
+        title: 'Update Failed',
+        message: err?.message || 'Failed to update rent status.',
+        variant: 'danger',
+      });
     }
   };
 
   const handleRemoveTenant = async (flatId) => {
-    if (!window.confirm('Are you sure you want to remove this tenant from the unit? The unit will be marked as self occupied.')) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: 'Remove Tenant Confirmation',
+      message: 'Are you sure you want to remove this tenant from the unit? The unit will be marked as self occupied.',
+      danger: true,
+      confirmText: 'Remove Tenant',
+      cancelText: 'Keep Tenant',
+    });
+    if (!confirmed) return;
+
     try {
       const res = await api.post(`/api/resident/flats/${flatId}/remove-tenant`);
       setMessage(res.message || 'Tenant removed successfully!');
       await loadData();
+      showAlert({
+        title: 'Tenant Removed',
+        message: res.message || 'Tenant removed successfully! Unit is now marked as Self Occupied.',
+        variant: 'success',
+      });
     } catch (err) {
-      alert(err?.message || 'Failed to remove tenant.');
+      showAlert({
+        title: 'Removal Error',
+        message: err?.message || 'Failed to remove tenant.',
+        variant: 'danger',
+      });
     }
   };
 

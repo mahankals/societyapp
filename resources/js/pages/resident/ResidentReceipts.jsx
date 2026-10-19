@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Receipt, CheckCircle, Download, FileText } from 'lucide-react';
 import { api } from '../../services/api';
+import { useModal } from '../../context/ModalContext';
 
 export default function ResidentReceipts() {
+  const { showAlert } = useModal();
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +72,11 @@ export default function ResidentReceipts() {
                     <td className="py-3 text-right">
                       <button
                         type="button"
-                        onClick={() => alert(`Downloading Receipt REC-${String(r.id).padStart(5, '0')}`)}
+                        onClick={() => showAlert({
+                          title: 'Receipt Download',
+                          message: `Downloading Receipt REC-${String(r.id).padStart(5, '0')}`,
+                          variant: 'info',
+                        })}
                         className="px-2.5 py-1 rounded-lg bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Download className="w-3 h-3" />

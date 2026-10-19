@@ -20,10 +20,13 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext';
+import CustomCheckbox from '../../components/common/CustomCheckbox';
 import DeveloperCredits from '../../components/common/DeveloperCredits';
 
 export default function ProfilePage() {
   const { user, loading: authLoading, refreshBootstrap } = useAuth();
+  const { showConfirm, showAlert } = useModal();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -224,9 +227,14 @@ export default function ProfilePage() {
 
   // Disconnect Google Account
   const handleDisconnectGoogle = async () => {
-    if (!window.confirm('Are you sure you want to unlink your Google account? You will need your password to sign in.')) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: 'Unlink Google Account',
+      message: 'Are you sure you want to unlink your Google account? You will need your password to sign in.',
+      danger: true,
+      confirmText: 'Unlink Account',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
 
     setLoading(true);
     setErrorMsg('');
@@ -502,22 +510,12 @@ export default function ProfilePage() {
 
                   {/* WhatsApp Toggle */}
                   <div className="pt-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={isWhatsapp} 
-                        onChange={(e) => setIsWhatsapp(e.target.checked)} 
-                        className="w-4 h-4 rounded border-surface-300 dark:border-white/20 bg-white dark:bg-white/5 text-brand-500 focus:ring-brand-500/30 cursor-pointer"
-                      />
-                      <div>
-                        <span className="text-xs font-medium text-surface-800 dark:text-surface-200">
-                          Receive notifications via WhatsApp
-                        </span>
-                        <p className="text-[11px] text-surface-500 dark:text-surface-200/50">
-                          Receive instant receipts, emergency notices, and maintenance bills on WhatsApp
-                        </p>
-                      </div>
-                    </label>
+                    <CustomCheckbox
+                      checked={isWhatsapp}
+                      onChange={(e, val) => setIsWhatsapp(val !== undefined ? val : e.target.checked)}
+                      label="Receive notifications via WhatsApp"
+                      description="Receive instant receipts, emergency notices, and maintenance bills on WhatsApp"
+                    />
                   </div>
 
                   <div className="pt-3">

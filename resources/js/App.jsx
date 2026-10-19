@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ModalProvider } from './context/ModalContext';
 import AppLayout from './components/layout/AppLayout';
 
 // Public & Auth Pages
@@ -39,53 +40,55 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<AppLayout />}>
-              {/* Public Routes */}
-              <Route index element={<LandingPage />} />
-              <Route path="contact" element={<ContactPage />} />
-              <Route path="society/contribute" element={<ContributePage />} />
+        <ModalProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<AppLayout />}>
+                {/* Public Routes */}
+                <Route index element={<LandingPage />} />
+                <Route path="contact" element={<ContactPage />} />
+                <Route path="society/contribute" element={<ContributePage />} />
 
-              {/* Authentication Routes */}
-              <Route path="login" element={<LoginPage />} />
-              <Route path="auth/login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="auth/register" element={<RegisterPage />} />
-              <Route path="reset-password" element={<LoginPage />} />
+                {/* Authentication Routes */}
+                <Route path="login" element={<LoginPage />} />
+                <Route path="auth/login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route path="auth/register" element={<RegisterPage />} />
+                <Route path="reset-password" element={<LoginPage />} />
 
-              {/* Admin Portal */}
-              <Route path="admin" element={<AdminDashboard />} />
-              <Route path="admin/societies" element={<AdminSocieties />} />
-              <Route path="admin/societies/pending" element={<AdminPendingSocieties />} />
-              <Route path="admin/users" element={<AdminUsers />} />
-              <Route path="admin/invitations" element={<AdminInvitations />} />
-              <Route path="admin/settings" element={<AdminSettings />} />
+                {/* Admin Portal */}
+                <Route path="admin" element={<AdminDashboard />} />
+                <Route path="admin/societies" element={<AdminSocieties />} />
+                <Route path="admin/societies/pending" element={<AdminPendingSocieties />} />
+                <Route path="admin/users" element={<AdminUsers />} />
+                <Route path="admin/invitations" element={<AdminInvitations />} />
+                <Route path="admin/settings" element={<AdminSettings />} />
 
-              {/* Resident Portal */}
-              <Route path="resident" element={<ResidentDashboard />} />
-              <Route path="resident/bills" element={<ResidentBills />} />
-              <Route path="resident/receipts" element={<ResidentReceipts />} />
-              <Route path="resident/members" element={<ResidentMembers />} />
-              <Route path="resident/link-flat" element={<ResidentLinkFlat />} />
+                {/* Resident Portal */}
+                <Route path="resident" element={<ResidentDashboard />} />
+                <Route path="resident/bills" element={<ResidentBills />} />
+                <Route path="resident/receipts" element={<ResidentReceipts />} />
+                <Route path="resident/members" element={<ResidentMembers />} />
+                <Route path="resident/link-flat" element={<ResidentLinkFlat />} />
 
-              {/* Committee Portal */}
-              <Route path="committee" element={<CommitteeDashboard />} />
-              <Route path="committee/flats" element={<CommitteeFlats />} />
-              <Route path="comitee" element={<Navigate to="/committee" replace />} />
-              <Route path="comitee/flats" element={<Navigate to="/committee/flats" replace />} />
+                {/* Committee Portal */}
+                <Route path="committee" element={<CommitteeDashboard />} />
+                <Route path="committee/flats" element={<CommitteeFlats />} />
+                <Route path="comitee" element={<Navigate to="/committee" replace />} />
+                <Route path="comitee/flats" element={<Navigate to="/committee/flats" replace />} />
 
-              {/* User Account Routes */}
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="user/profile" element={<ProfilePage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="user/notification" element={<NotificationsPage />} />
+                {/* User Account Routes */}
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="user/profile" element={<ProfilePage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="user/notification" element={<NotificationsPage />} />
 
-              {/* 404 Catch-All */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+                {/* 404 Catch-All */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ModalProvider>
       </AuthProvider>
     </ThemeProvider>
   );

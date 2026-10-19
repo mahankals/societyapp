@@ -19,9 +19,12 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function CommitteeDashboard() {
   const { activeSociety } = useAuth();
+  const { showAlert } = useModal();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
@@ -70,7 +73,11 @@ export default function CommitteeDashboard() {
       setMessage(res.message || 'Request approved successfully!');
       await loadAll();
     } catch (err) {
-      alert(err?.message || 'Failed to approve request.');
+      showAlert({
+        title: 'Approval Error',
+        message: err?.message || 'Failed to approve request.',
+        variant: 'danger',
+      });
     }
   };
 
@@ -87,7 +94,11 @@ export default function CommitteeDashboard() {
       setShowBillModal(false);
       await loadAll();
     } catch (err) {
-      alert(err?.message || 'Failed to generate bill.');
+      showAlert({
+        title: 'Bill Generation Error',
+        message: err?.message || 'Failed to generate bill.',
+        variant: 'danger',
+      });
     } finally {
       setSubmittingBill(false);
     }
@@ -107,7 +118,11 @@ export default function CommitteeDashboard() {
       setShowExpenseModal(false);
       await loadAll();
     } catch (err) {
-      alert(err?.message || 'Failed to record expense.');
+      showAlert({
+        title: 'Expense Error',
+        message: err?.message || 'Failed to record expense.',
+        variant: 'danger',
+      });
     } finally {
       setSubmittingExpense(false);
     }
@@ -324,18 +339,17 @@ export default function CommitteeDashboard() {
 
             <form onSubmit={handleCreateBill} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                  Billing Category
-                </label>
-                <select
+                <CustomSelect
+                  label="Billing Category"
                   value={billType}
-                  onChange={(e) => setBillType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500"
-                >
-                  <option value="Monthly Maintenance" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Monthly Maintenance Bill</option>
-                  <option value="Parking Charges" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Parking Slot Charges</option>
-                  <option value="Clubhouse Amenity" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Clubhouse / Facility Amenity</option>
-                </select>
+                  onChange={(val) => setBillType(val)}
+                  options={[
+                    { value: 'Monthly Maintenance', label: 'Monthly Maintenance Bill' },
+                    { value: 'Parking Charges', label: 'Parking Slot Charges' },
+                    { value: 'Clubhouse Amenity', label: 'Clubhouse / Facility Amenity' },
+                  ]}
+                  placeholder="Select Category"
+                />
               </div>
 
               <div>

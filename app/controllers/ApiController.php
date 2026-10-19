@@ -945,6 +945,26 @@ class ApiController
     }
 
     /**
+     * GET /api/society/my-proposals
+     */
+    public function mySocietyProposals(): void
+    {
+        $user = getUser();
+        if (!$user) {
+            self::json(['success' => true, 'proposals' => []]);
+        }
+        $userId = (int)$user['id'];
+        $proposals = Database::fetchAll("
+            SELECT id, society_name, city, state, status, created_at 
+            FROM society_requests 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC
+        ", [$userId]);
+
+        self::json(['success' => true, 'proposals' => $proposals]);
+    }
+
+    /**
      * POST /api/admin/societies/requests/{id}/approve
      */
     public function approveSocietyRequest($requestId): void
@@ -1663,8 +1683,9 @@ class ApiController
         ], 'id = ?', [(int)$flatId]);
 
         Database::update('society_members', [
-            'status' => 'inactive',
-        ], "flat_id = ? AND role = 'tenant'", [(int)$flatId]);
+            'status' => 'unlinked',
+            'flat_id' => null,
+        ], "flat_id = ? AND (role = 'tenant' OR ownership_type = 'tenant')", [(int)$flatId]);
 
         self::json([
             'success' => true,

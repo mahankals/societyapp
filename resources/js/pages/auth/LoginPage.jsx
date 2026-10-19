@@ -16,10 +16,13 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext';
+import CustomCheckbox from '../../components/common/CustomCheckbox';
 import DeveloperCredits from '../../components/common/DeveloperCredits';
 
 export default function LoginPage() {
   const { login, appConfig } = useAuth();
+  const { showAlert } = useModal();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -62,7 +65,11 @@ export default function LoginPage() {
   const handleGoogleSignIn = () => {
     const clientId = appConfig?.googleClientId;
     if (!clientId) {
-      alert('Google Sign-In is not configured yet on this platform.');
+      showAlert({
+        title: 'Google Sign-In',
+        message: 'Google Sign-In is not configured yet on this platform.',
+        variant: 'info',
+      });
       return;
     }
 
@@ -251,15 +258,11 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="w-4 h-4 rounded border-surface-300 dark:border-white/20 bg-white dark:bg-white/5 text-brand-500 focus:ring-brand-500/30 cursor-pointer"
-                />
-                <span className="text-xs text-surface-600 dark:text-surface-200/60">Remember me for 30 days</span>
-              </label>
+              <CustomCheckbox
+                checked={remember}
+                onChange={(e, val) => setRemember(val !== undefined ? val : e.target.checked)}
+                label="Remember me for 30 days"
+              />
             </div>
 
             <button

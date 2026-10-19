@@ -98,12 +98,19 @@ Text elements must maintain sufficient WCAG 2.1 AA contrast ratio across both Li
 
 ---
 
-## 6. Custom Modals in Place of Native Alerts/Confirms
+## 6. Custom Modals in Place of Native Alerts, Confirms, and Dialogs
 
 ### Decision
-Browser-native `alert()`, `confirm()`, and `prompt()` dialogues are deprecated in SocietyApp.
-- Use `window.appAlert(message, title)` and `window.appConfirm(message, callback, title)` defined globally in the base layout (`mobile.html.twig` / `base.html.twig`).
-- These custom modals integrate with the application's theme, handle asynchronous actions cleanly, and avoid browser pop-up blocking issues.
+Browser-native `alert()`, `confirm()`, and `prompt()` dialogues are strictly prohibited across SocietyApp. All notifications, error dialogs, confirmations, and user prompts must be presented as styled, theme-matching modal dialogues.
+
+### Rationale
+- Native browser dialogs look disjointed, ignore active dark/light theme tokens, pause browser execution threads, and are frequently blocked or suppressed by browser privacy policies.
+- Custom modals provide rich semantic styling (success, warning, error, info icons), accessible focus management, customizable action button labels (e.g., "Remove Tenant" vs "Cancel"), and full responsiveness.
+
+### Implementation Pattern
+- **React SPA**: Implemented via `ModalContext` (`<ModalProvider>`) exporting `showAlert({ title, message, variant, confirmText, onConfirm })` and `showConfirm({ title, message, variant, danger, confirmText, cancelText, onConfirm, onCancel })`.
+- **Global Shim**: `window.alert` and `window.confirm` are safely bridged to the custom modal system to eliminate unstyled OS popups from any component or third-party script.
+- **Twig & SSR**: `window.appAlert(message, title)` and `window.appConfirm(message, callback, title)` defined globally in the base layout (`mobile.html.twig` / `base.html.twig`).
 
 ---
 
@@ -148,3 +155,37 @@ On form submission or live field validation, validation error messages must be p
    - Attach an `input` or `change` listener to each field that automatically removes the error state, hides the helper error message, and restores normal border styling as soon as the user interacts with the input.
 4. **Form Submit Integration**:
    - On failed client-side or AJAX submission, scroll smoothly (`scrollIntoView({ behavior: 'smooth', block: 'center' })`) and focus the first invalid field.
+
+---
+
+## 9. Custom Dropdown & Select Elements
+
+### Decision
+Native OS `<select>` elements with default styling are replaced with themed custom dropdown components (`CustomSelect`).
+
+### Rationale
+- Default browser selects exhibit unstyled platform-specific popup menus (especially on Windows and mobile devices) that fail dark mode styling and disrupt visual harmony.
+- Custom dropdowns support rich metadata (e.g. unit subheadings, society codes), smooth chevron transitions, interactive search filtering, and precise WCAG AA color contrast.
+
+### Implementation Pattern
+- **Trigger**: Themed button rendering the selected option or placeholder, chevron arrow with rotation animation, and active focus ring.
+- **Menu Panel**: Floating panel with `z-50`, rounded borders (`rounded-2xl`), shadow elevation, smooth entrance animation, and outside-click dismissal.
+- **Accessibility & Form Compat**: Encapsulates an accessible hidden `<select>` (`sr-only`) synchronized with state, allowing automated test frameworks (e.g. Playwright `selectOption`) and standard form submissions to operate without regressions.
+
+---
+
+## 10. Custom Checkbox Elements
+
+### Decision
+Default OS checkboxes (`<input type="checkbox">`) must not be rendered directly without a custom themed wrapper (`CustomCheckbox`).
+
+### Rationale
+- Native OS checkboxes render in platform-dependent colors (often harsh blue or grey) that ignore the application's active brand palette and dark mode tokens.
+- Custom styled checkboxes provide uniform brand accents, crisp SVG checkmarks, hover states, and seamless alignment with multi-line labels and descriptions.
+
+### Implementation Pattern
+- **Component**: `CustomCheckbox` wrapping a hidden `<input type="checkbox" className="sr-only" />` alongside a custom `4x4` rounded box.
+- **Checked State**: `bg-brand-500 border-brand-500 text-white` displaying a centered Lucide `<Check />` icon.
+- **Unchecked State**: `bg-surface-50 dark:bg-white/5 border-surface-300 dark:border-white/20` with subtle inner shadow and hover border highlights.
+- **Label Integration**: Supports structured titles and subtext with proper light/dark contrast (`text-surface-800 dark:text-surface-200`).
+

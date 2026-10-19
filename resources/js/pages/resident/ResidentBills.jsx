@@ -15,6 +15,9 @@ import {
   RotateCw,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import CustomSelect from '../../components/common/CustomSelect';
+import CustomCheckbox from '../../components/common/CustomCheckbox';
+import { useModal } from '../../context/ModalContext';
 
 export default function ResidentBills() {
   const [bills, setBills] = useState([]);
@@ -331,17 +334,13 @@ export default function ResidentBills() {
           <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
           <span className="text-xs font-bold text-surface-900 dark:text-white">Society:</span>
           {societies.length > 0 ? (
-            <select
+            <CustomSelect
               value={selectedSocietyId}
-              onChange={(e) => handleSocietyChange(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-brand-500"
-            >
-              {societies.map((s) => (
-                <option key={s.id} value={s.id} className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleSocietyChange(val)}
+              options={societies.map((s) => ({ value: s.id, label: s.name }))}
+              placeholder="Select Society"
+              className="min-w-[200px]"
+            />
           ) : (
             <span className="text-xs text-surface-500 dark:text-surface-200/60">No societies registered</span>
           )}
@@ -406,12 +405,11 @@ export default function ResidentBills() {
                 <tr className="border-b border-surface-200 dark:border-white/10 text-surface-500 dark:text-surface-200/50">
                   <th className="pb-2.5 font-medium w-8 text-center">
                     {unpaidBills.length > 0 && (
-                      <input
-                        type="checkbox"
+                      <CustomCheckbox
                         checked={allUnpaidSelected}
                         onChange={handleToggleSelectAll}
                         title="Select All Unpaid Bills"
-                        className="rounded border-surface-300 text-brand-500 focus:ring-0 cursor-pointer"
+                        className="mx-auto"
                       />
                     )}
                   </th>
@@ -436,11 +434,11 @@ export default function ResidentBills() {
                     >
                       <td className="py-3 text-center">
                         {isUnpaid ? (
-                          <input
-                            type="checkbox"
+                          <CustomCheckbox
                             checked={isChecked}
                             onChange={() => handleToggleBillSelect(b.id)}
-                            className="rounded border-surface-300 text-brand-500 focus:ring-0 cursor-pointer"
+                            title={`Select Unit ${b.wing ? b.wing + '-' : ''}${b.flat_no}`}
+                            className="mx-auto"
                           />
                         ) : (
                           <Check className="w-3.5 h-3.5 text-emerald-500 mx-auto" />

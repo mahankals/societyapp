@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Search, User, Home, PlusCircle, X, CheckCircle2 } from 'lucide-react';
 import { api } from '../../services/api';
+import { useModal } from '../../context/ModalContext';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function CommitteeFlats() {
+  const { showAlert } = useModal();
   const [flats, setFlats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -45,7 +48,11 @@ export default function CommitteeFlats() {
       setFlatNo('');
       await load();
     } catch (err) {
-      alert(err?.message || 'Failed to create flat.');
+      showAlert({
+        title: 'Error Adding Flat',
+        message: err?.message || 'Failed to create flat.',
+        variant: 'danger',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -206,19 +213,13 @@ export default function CommitteeFlats() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                    Unit Type
-                  </label>
-                  <select
+                  <CustomSelect
+                    label="Unit Type"
                     value={flatType}
-                    onChange={(e) => setFlatType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500"
-                  >
-                    <option value="1 BHK" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">1 BHK</option>
-                    <option value="2 BHK" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">2 BHK</option>
-                    <option value="3 BHK" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">3 BHK</option>
-                    <option value="Penthouse" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Penthouse</option>
-                  </select>
+                    onChange={(val) => setFlatType(val)}
+                    options={['1 BHK', '2 BHK', '3 BHK', 'Penthouse']}
+                    placeholder="Select Type"
+                  />
                 </div>
               </div>
 

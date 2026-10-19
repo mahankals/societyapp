@@ -13,10 +13,13 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useModal } from '../../context/ModalContext';
+import CustomCheckbox from '../../components/common/CustomCheckbox';
 import DeveloperCredits from '../../components/common/DeveloperCredits';
 
 export default function RegisterPage() {
   const { appConfig, refreshBootstrap } = useAuth();
+  const { showAlert } = useModal();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -69,7 +72,11 @@ export default function RegisterPage() {
   const handleGoogleSignUp = () => {
     const clientId = appConfig?.googleClientId;
     if (!clientId) {
-      alert('Google Sign-In is not configured yet on this platform.');
+      showAlert({
+        title: 'Google Sign-In',
+        message: 'Google Sign-In is not configured yet on this platform.',
+        variant: 'info',
+      });
       return;
     }
 
@@ -320,18 +327,17 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 pt-1">
-              <input
-                type="checkbox"
+            <div className="pt-1">
+              <CustomCheckbox
                 id="terms"
-                required
                 checked={terms}
-                onChange={(e) => setTerms(e.target.checked)}
-                className="w-4 h-4 mt-0.5 rounded border-surface-300 dark:border-white/20 bg-white dark:bg-white/5 text-brand-500 focus:ring-brand-500/30 cursor-pointer"
+                onChange={(e, val) => setTerms(val !== undefined ? val : e.target.checked)}
+                label={
+                  <span>
+                    I agree to the <span className="text-brand-600 dark:text-brand-400 underline">Terms of Service</span> and <span className="text-brand-600 dark:text-brand-400 underline">Privacy Policy</span>
+                  </span>
+                }
               />
-              <label htmlFor="terms" className="text-xs text-surface-600 dark:text-surface-200/60 leading-snug cursor-pointer">
-                I agree to the <span className="text-brand-600 dark:text-brand-400 underline">Terms of Service</span> and <span className="text-brand-600 dark:text-brand-400 underline">Privacy Policy</span>
-              </label>
             </div>
 
             <button
