@@ -40,6 +40,7 @@ return function (App $app) {
         // Public / Contribution
         $group->post('/society/contribute', SlimBridge::wrap([$api, 'submitSocietyProposal']));
         $group->get('/society/my-proposals', SlimBridge::wrap([$api, 'mySocietyProposals']));
+        $group->get('/society/contribute/search-user', SlimBridge::wrap([$api, 'searchUserForContribution']));
 
         // Admin Endpoints
         $group->get('/admin/dashboard', SlimBridge::wrap([$api, 'adminDashboard']));

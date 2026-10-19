@@ -190,7 +190,7 @@ export default function ResidentDashboard() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-700 dark:bg-white/10 dark:hover:bg-white/15 dark:border-transparent dark:text-white text-xs font-semibold transition-all shadow-xs"
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Directory</span>
+            <span>Contact</span>
           </Link>
         </div>
       </div>

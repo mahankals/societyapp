@@ -18,7 +18,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
+export default function Navbar({ onToggleSidebar, isSidebarCollapsed, isMobileOpen }) {
   const { 
     user, 
     capabilities, 
@@ -92,15 +92,24 @@ export default function Navbar({ onToggleSidebar, isSidebarCollapsed }) {
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="inline-flex items-center justify-center p-1.5 rounded-lg text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/10 transition-colors focus:outline-none"
+              className="inline-flex items-center justify-center p-1.5 rounded-lg text-surface-600 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-200/70 dark:hover:text-white dark:hover:bg-white/10 transition-colors focus:outline-none cursor-pointer"
               title="Toggle Sidebar"
               aria-label="Toggle Sidebar"
             >
-              {isSidebarCollapsed ? (
-                <PanelLeft className="w-4 h-4 text-surface-600 dark:text-surface-200" />
-              ) : (
-                <PanelLeftClose className="w-4 h-4 text-surface-600 dark:text-surface-200" />
-              )}
+              <span className="hidden md:inline-flex">
+                {isSidebarCollapsed ? (
+                  <PanelLeft className="w-4 h-4 text-surface-600 dark:text-surface-200" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4 text-surface-600 dark:text-surface-200" />
+                )}
+              </span>
+              <span className="md:hidden inline-flex">
+                {isMobileOpen ? (
+                  <PanelLeftClose className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                ) : (
+                  <PanelLeft className="w-4 h-4 text-surface-600 dark:text-surface-200" />
+                )}
+              </span>
             </button>
           )}
 

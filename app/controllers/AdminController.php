@@ -427,15 +427,35 @@ class AdminController
         }
 
         // Mark request as approved
-        // Notify proposer
+        // Notify proposer & committee members
+        $notifiedUserIds = [];
         if (!empty($req['user_id'])) {
+            $notifiedUserIds[] = (int)$req['user_id'];
             Database::insert('notifications', [
                 'user_id' => (int)$req['user_id'],
                 'title' => 'Society Proposal Approved!',
                 'message' => "Congratulations! Your society proposal for '{$req['society_name']}' has been approved and registered with Society Code {$code}.",
                 'type' => 'success',
                 'action_url' => '/resident',
+                'is_read' => 0,
             ]);
+        }
+
+        foreach ($members as $m) {
+            $mUid = !empty($m['user_id']) ? (int)$m['user_id'] : null;
+            if ($mUid && !in_array($mUid, $notifiedUserIds)) {
+                $notifiedUserIds[] = $mUid;
+                $roleLabel = ucfirst($m['role'] ?? 'committee');
+                $unitLabel = ($m['wing'] ?? 'A') . '-' . ($m['flat_no'] ?? '101');
+                Database::insert('notifications', [
+                    'user_id' => $mUid,
+                    'title' => 'Society Approved & Committee Role Activated',
+                    'message' => "The proposal for '{$req['society_name']}' has been approved! You are now assigned as {$roleLabel} for Unit {$unitLabel}.",
+                    'type' => 'success',
+                    'action_url' => '/resident',
+                    'is_read' => 0,
+                ]);
+            }
         }
 
         Database::update('society_requests', ['status' => 'approved'], 'id = ?', [$requestId]);

@@ -979,6 +979,28 @@ class ApiController
     }
 
     /**
+     * GET /api/society/contribute/search-user?q=...
+     */
+    public function searchUserForContribution(): void
+    {
+        $q = trim($_GET['q'] ?? '');
+        if (empty($q) || strlen($q) < 2) {
+            self::json(['success' => true, 'users' => []]);
+            return;
+        }
+
+        $cleanPhone = preg_replace('/[^\d]/', '', $q);
+        $users = Database::fetchAll("
+            SELECT id, name, email, phone 
+            FROM users 
+            WHERE (email LIKE ? OR name LIKE ? OR phone LIKE ? OR (? != '' AND phone LIKE ?)) AND is_active = 1 
+            LIMIT 10
+        ", ['%' . $q . '%', '%' . $q . '%', '%' . $q . '%', $cleanPhone, '%' . $cleanPhone . '%']);
+
+        self::json(['success' => true, 'users' => $users ?: []]);
+    }
+
+    /**
      * POST /api/society/contribute
      */
     public function submitSocietyProposal(): void
@@ -998,6 +1020,7 @@ class ApiController
 
         if (empty($name) || empty($city)) {
             self::json(['success' => false, 'error' => 'Society name and city are required.'], 400);
+            return;
         }
 
         if (!$userId) {
@@ -1013,20 +1036,88 @@ class ApiController
             }
         }
 
-        $membersData = [
-            [
+        // Parse committee members with flat mapping
+        $rawMembers = $input['members'] ?? $input['members_data'] ?? [];
+        if (is_string($rawMembers)) {
+            $rawMembers = json_decode($rawMembers, true) ?: [];
+        }
+
+        $membersData = [];
+        if (is_array($rawMembers)) {
+            foreach ($rawMembers as $m) {
+                $mName = trim($m['name'] ?? '');
+                if (empty($mName)) continue;
+                $mEmail = trim($m['email'] ?? '');
+                $mPhone = trim($m['phone'] ?? '');
+                $mUid = !empty($m['user_id']) ? (int)$m['user_id'] : null;
+
+                // Lookup matching user if user_id was not explicitly supplied
+                if (!$mUid && !empty($mEmail)) {
+                    $uFound = Database::fetchOne("SELECT id FROM users WHERE email = ?", [$mEmail]);
+                    if ($uFound) $mUid = (int)$uFound['id'];
+                }
+                if (!$mUid && !empty($mPhone)) {
+                    $cleanP = preg_replace('/[^\d]/', '', $mPhone);
+                    $uFound = Database::fetchOne("SELECT id FROM users WHERE phone = ? OR phone LIKE ?", [$mPhone, '%' . $cleanP]);
+                    if ($uFound) $mUid = (int)$uFound['id'];
+                }
+
+                $membersData[] = [
+                    'user_id' => $mUid,
+                    'name' => $mName,
+                    'email' => $mEmail,
+                    'phone' => $mPhone,
+                    'role' => strtolower(trim($m['role'] ?? 'committee')),
+                    'wing' => trim($m['wing'] ?? 'A'),
+                    'floor' => trim($m['floor'] ?? '1'),
+                    'flat_no' => trim($m['flat_no'] ?? '101'),
+                    'area_sqft' => (float)($m['area_sqft'] ?? 850.00),
+                    'flat_type' => trim($m['flat_type'] ?? '2 BHK'),
+                    'occupancy_status' => trim($m['occupancy_status'] ?? 'self_occupied'),
+                    'is_primary' => !empty($m['is_primary']),
+                ];
+            }
+        }
+
+        // If no members supplied, fallback to logged-in user if available
+        if (empty($membersData) && $userId) {
+            $membersData[] = [
                 'user_id' => $userId,
                 'name' => $contactName,
                 'email' => $contactEmail,
                 'phone' => $contactPhone,
+                'role' => 'chairman',
                 'wing' => 'A',
                 'floor' => '1',
                 'flat_no' => '101',
-                'area_sqft' => '850.00',
+                'area_sqft' => 850.00,
                 'flat_type' => '2 BHK',
+                'occupancy_status' => 'self_occupied',
                 'is_primary' => true,
-            ]
-        ];
+            ];
+        }
+
+        // Requirement: Minimum 1 committee member with flat mapping is mandatory
+        if (empty($membersData)) {
+            self::json(['success' => false, 'error' => 'Please add at least 1 committee member with flat mapping.'], 400);
+            return;
+        }
+
+        // Ensure at least one primary / chairman
+        $hasPrimary = false;
+        foreach ($membersData as &$md) {
+            if (!empty($md['is_primary']) || $md['role'] === 'chairman') {
+                $hasPrimary = true;
+                break;
+            }
+        }
+        if (!$hasPrimary && count($membersData) > 0) {
+            $membersData[0]['is_primary'] = true;
+            $membersData[0]['role'] = 'chairman';
+        }
+
+        $firstMem = $membersData[0];
+        $contact1Flat = ($firstMem['wing'] ?? 'A') . '-' . ($firstMem['flat_no'] ?? '101');
 
         $requestId = Database::insert('society_requests', [
             'user_id' => $userId,
@@ -1036,16 +1127,47 @@ class ApiController
             'pincode' => $pincode,
             'address' => $address,
             'members_data' => json_encode($membersData),
-            'contact1_name' => $contactName,
-            'contact1_phone' => $contactPhone,
-            'contact1_flat' => 'A-101',
+            'contact1_name' => $firstMem['name'] ?: $contactName,
+            'contact1_phone' => $firstMem['phone'] ?: $contactPhone,
+            'contact1_flat' => $contact1Flat,
             'status' => 'pending',
         ]);
+
+        // 1. Send Notification to Contributor
+        if ($userId) {
+            Database::insert('notifications', [
+                'user_id' => $userId,
+                'title' => "Society Proposal Submitted: {$name}",
+                'message' => "Your proposal for '{$name}' has been successfully submitted with " . count($membersData) . " committee member(s) and is awaiting administrator approval.",
+                'type' => 'info',
+                'action_url' => '/society/contribute',
+                'is_read' => 0,
+            ]);
+        }
+
+        // 2. Send Notification to each nominated committee member
+        $notifiedUserIds = [$userId];
+        foreach ($membersData as $m) {
+            $mUid = !empty($m['user_id']) ? (int)$m['user_id'] : null;
+            if ($mUid && !in_array($mUid, $notifiedUserIds)) {
+                $notifiedUserIds[] = $mUid;
+                $roleLabel = ucfirst($m['role'] ?? 'committee');
+                $unitLabel = ($m['wing'] ?? 'A') . '-' . ($m['flat_no'] ?? '101');
+                Database::insert('notifications', [
+                    'user_id' => $mUid,
+                    'title' => "Nominated to {$name} Committee",
+                    'message' => "You have been nominated as {$roleLabel} for Unit {$unitLabel} in the newly proposed housing society '{$name}'.",
+                    'type' => 'info',
+                    'action_url' => '/society/contribute',
+                    'is_read' => 0,
+                ]);
+            }
+        }
 
         self::json([
             'success' => true,
             'id' => $requestId,
-            'message' => 'Society proposal submitted successfully! Our committee and admin team will review it.',
+            'message' => 'Society proposal submitted successfully! Notifications sent to contributor and nominated committee members.',
         ]);
     }
 
@@ -1151,11 +1273,43 @@ class ApiController
                             'ownership_type' => 'owner',
                         ]);
                     }
+                    Database::query("UPDATE users SET role = 'committee' WHERE id = ? AND role = 'resident'", [$mUserId]);
                 }
             }
         }
 
         Database::update('society_requests', ['status' => 'approved'], 'id = ?', [(int)$requestId]);
+
+        // Notify contributor & committee members on approval
+        $notifiedUserIds = [];
+        if (!empty($req['user_id'])) {
+            $notifiedUserIds[] = (int)$req['user_id'];
+            Database::insert('notifications', [
+                'user_id' => (int)$req['user_id'],
+                'title' => 'Society Proposal Approved!',
+                'message' => "Congratulations! Your society proposal for '{$req['society_name']}' has been approved and registered with Society Code {$code}.",
+                'type' => 'success',
+                'action_url' => '/resident',
+                'is_read' => 0,
+            ]);
+        }
+
+        foreach ($members as $m) {
+            $mUid = !empty($m['user_id']) ? (int)$m['user_id'] : null;
+            if ($mUid && !in_array($mUid, $notifiedUserIds)) {
+                $notifiedUserIds[] = $mUid;
+                $roleLabel = ucfirst($m['role'] ?? 'committee');
+                $unitLabel = ($m['wing'] ?? 'A') . '-' . ($m['flat_no'] ?? '101');
+                Database::insert('notifications', [
+                    'user_id' => $mUid,
+                    'title' => 'Society Approved & Committee Role Activated',
+                    'message' => "The proposal for '{$req['society_name']}' has been approved! You are now assigned as {$roleLabel} for Unit {$unitLabel}.",
+                    'type' => 'success',
+                    'action_url' => '/resident',
+                    'is_read' => 0,
+                ]);
+            }
+        }
 
         self::json([
             'success' => true,

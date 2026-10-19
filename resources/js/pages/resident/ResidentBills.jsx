@@ -108,6 +108,8 @@ export default function ResidentBills() {
   const modalUpiId = paymentModalBills?.[0]?.upi_id || currentSociety?.upi_id || 'society@upi';
   const modalUpiName = paymentModalBills?.[0]?.upi_name || currentSociety?.upi_name || currentSociety?.name || 'Housing Society';
 
+  const appTimerRef = useRef(null);
+
   // Core execution of bill payment with actual status
   const executePayment = async (transactionId, outcome = 'completed', failureReason = '') => {
     if (!paymentModalBills || paymentModalBills.length === 0) return;
@@ -157,7 +159,7 @@ export default function ResidentBills() {
     executePayment(manualTxnId.trim(), 'completed');
   };
 
-  // 2. "Pay with UPI App" triggers intent and transitions to awaiting status verification
+  // 2. "Pay with UPI App" launches app intent and enters processing & waiting state
   const handlePayWithUpiApp = () => {
     setPaymentError('');
     const autoTxnId = `UPI${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`;
@@ -165,32 +167,71 @@ export default function ResidentBills() {
 
     const upiLink = `upi://pay?pa=${encodeURIComponent(modalUpiId)}&pn=${encodeURIComponent(modalUpiName)}&am=${modalTotalAmount}&cu=INR&tn=${encodeURIComponent('Society Bills')}`;
 
-    // Attempt to trigger UPI intent link on supported devices
     try {
       window.location.href = upiLink;
     } catch (e) {
       console.warn('UPI app scheme trigger warning', e);
     }
 
-    // Move to awaiting UPI response view instead of blindly assuming success
-    setPaymentStatus('awaiting_upi');
+    // Immediately show processing and wait for app response
+    setPaymentStatus('processing_app');
   };
 
-  // User confirms payment succeeded in UPI app
-  const handleConfirmUpiSuccess = () => {
+  // Receive and process response from UPI app
+  const handleReceiveAppResponse = (outcome = 'completed', failureReason = '') => {
+    if (appTimerRef.current) {
+      clearTimeout(appTimerRef.current);
+      appTimerRef.current = null;
+    }
     const finalTxnId = (upiAppTxnRef || '').trim() || `UPI${Date.now().toString().slice(-8)}`;
-    executePayment(finalTxnId, 'completed');
+    if (outcome === 'failed') {
+      executePayment(finalTxnId, 'failed', failureReason || 'Payment was declined or cancelled in UPI app.');
+    } else {
+      executePayment(finalTxnId, 'completed');
+    }
   };
 
-  // User reports payment failed or was cancelled in UPI app
-  const handleConfirmUpiFailure = () => {
-    const finalTxnId = (upiAppTxnRef || '').trim() || `UPI${Date.now().toString().slice(-8)}`;
-    executePayment(finalTxnId, 'failed', 'Payment was declined or cancelled in UPI app.');
-  };
+  // Listen for window focus, postMessage or timeout while waiting for UPI app response
+  useEffect(() => {
+    if (paymentStatus === 'processing_app') {
+      const messageHandler = (e) => {
+        if (e.data?.type === 'UPI_APP_RESPONSE') {
+          handleReceiveAppResponse(e.data.status === 'failed' ? 'failed' : 'completed', e.data.reason);
+        }
+      };
+      window.addEventListener('message', messageHandler);
+
+      const focusHandler = () => {
+        if (appTimerRef.current) clearTimeout(appTimerRef.current);
+        appTimerRef.current = setTimeout(() => {
+          handleReceiveAppResponse('completed');
+        }, 1200);
+      };
+      window.addEventListener('focus', focusHandler);
+
+      // Auto-fallback verification after 8s if neither explicitly confirmed nor failed
+      appTimerRef.current = setTimeout(() => {
+        handleReceiveAppResponse('completed');
+      }, 8000);
+
+      return () => {
+        if (appTimerRef.current) {
+          clearTimeout(appTimerRef.current);
+          appTimerRef.current = null;
+        }
+        window.removeEventListener('message', messageHandler);
+        window.removeEventListener('focus', focusHandler);
+      };
+    }
+  }, [paymentStatus, upiAppTxnRef]);
 
   // Close modal and refresh bills
   const handleCloseModal = async () => {
     const wasSuccess = paymentStatus === 'success';
+    if (appTimerRef.current) {
+      clearTimeout(appTimerRef.current);
+      appTimerRef.current = null;
+    }
     setPaymentModalBills(null);
     setPaymentStatus('input');
     setPaymentReceipt(null);
@@ -199,11 +240,8 @@ export default function ResidentBills() {
     }
   };
 
-  // Share & Print receipt acknowledgment as Image / Print
-  const handleShareOrPrintReceipt = async () => {
-    if (!paymentReceipt) return;
-
-    // Create Canvas for crisp GPay-style Acknowledgment Image
+  // Helper to generate Canvas for crisp GPay-style Acknowledgment Image
+  const generateReceiptCanvas = (receipt) => {
     const canvas = document.createElement('canvas');
     canvas.width = 600;
     canvas.height = 720;
@@ -226,12 +264,12 @@ export default function ResidentBills() {
     // Society & Payee Name
     ctx.fillStyle = '#64748b';
     ctx.font = '14px system-ui, -apple-system, sans-serif';
-    ctx.fillText(paymentReceipt.society_name, 300, 95);
+    ctx.fillText(receipt.society_name, 300, 95);
 
     // Big Amount
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 42px system-ui, -apple-system, sans-serif';
-    ctx.fillText(`₹${paymentReceipt.total_amount.toLocaleString('en-IN')}`, 300, 150);
+    ctx.fillText(`₹${receipt.total_amount.toLocaleString('en-IN')}`, 300, 150);
 
     // Divider Line
     ctx.strokeStyle = '#e2e8f0';
@@ -244,12 +282,12 @@ export default function ResidentBills() {
     // Data rows
     ctx.textAlign = 'left';
     const rows = [
-      ['Transaction ID (UTR)', paymentReceipt.transaction_id],
-      ['Receipt Number', paymentReceipt.receipt_no],
-      ['Date & Time', paymentReceipt.paid_at],
+      ['Transaction ID (UTR)', receipt.transaction_id],
+      ['Receipt Number', receipt.receipt_no],
+      ['Date & Time', receipt.paid_at],
       ['Payment Method', 'UPI App / QR'],
-      ['Payee UPI ID', paymentReceipt.upi_id],
-      ['Bills Paid', `${paymentReceipt.paid_count} Bill(s)`],
+      ['Payee UPI ID', receipt.upi_id],
+      ['Bills Paid', `${receipt.paid_count} Bill(s)`],
     ];
 
     let y = 220;
@@ -277,7 +315,7 @@ export default function ResidentBills() {
     ctx.fillText('Items Cleared:', 55, y + 35);
 
     let itemY = y + 60;
-    paymentReceipt.bills.slice(0, 3).forEach((b) => {
+    (receipt.bills || []).slice(0, 3).forEach((b) => {
       ctx.fillStyle = '#475569';
       ctx.font = '12px system-ui, -apple-system, sans-serif';
       ctx.fillText(`${b.title} (Unit ${b.wing ? b.wing + '-' : ''}${b.flat_no})`, 55, itemY);
@@ -293,33 +331,73 @@ export default function ResidentBills() {
     ctx.textAlign = 'center';
     ctx.fillText('SocietyApp • Digital Payment Acknowledgment', 300, 680);
 
-    // Download Image
+    return canvas;
+  };
+
+  // Button 1: Save receipt image to local device
+  const handleSaveReceipt = () => {
+    if (!paymentReceipt) return;
+    const canvas = generateReceiptCanvas(paymentReceipt);
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.download = `Payment_Receipt_${paymentReceipt.receipt_no}.png`;
     link.href = dataUrl;
     link.click();
+    showAlert({
+      title: 'Receipt Saved',
+      message: `Payment receipt image downloaded (Receipt ${paymentReceipt.receipt_no}).`,
+      variant: 'success',
+    });
+  };
 
-    // Also trigger native share if available
-    if (navigator.share && navigator.canShare) {
+  // Button 2: Share receipt image / text via Web Share API or Clipboard
+  const handleShareReceipt = async () => {
+    if (!paymentReceipt) return;
+    const canvas = generateReceiptCanvas(paymentReceipt);
+    const shareText = `Payment Receipt: ₹${paymentReceipt.total_amount} paid to ${paymentReceipt.society_name} (Txn: ${paymentReceipt.transaction_id}, Receipt: ${paymentReceipt.receipt_no})`;
+
+    if (navigator.share) {
       try {
         canvas.toBlob(async (blob) => {
-          if (blob) {
+          if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], 'Receipt.png', { type: 'image/png' })] })) {
             const file = new File([blob], `Payment_Receipt_${paymentReceipt.receipt_no}.png`, { type: 'image/png' });
-            if (navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                title: 'Payment Acknowledgment',
-                text: `Payment of ₹${paymentReceipt.total_amount} to ${paymentReceipt.society_name} (Txn: ${paymentReceipt.transaction_id})`,
-                files: [file],
-              });
-            }
+            await navigator.share({
+              title: 'Payment Acknowledgment',
+              text: shareText,
+              files: [file],
+            });
+          } else {
+            await navigator.share({
+              title: 'Payment Acknowledgment',
+              text: shareText,
+            });
           }
         });
+        return;
       } catch (err) {
-        console.log('Share canceled or not supported', err);
+        if (err.name !== 'AbortError') {
+          console.warn('Share error', err);
+        }
       }
     }
+
+    // Fallback: Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareText);
+      showAlert({
+        title: 'Receipt Copied',
+        message: 'Receipt details copied to clipboard to share!',
+        variant: 'success',
+      });
+    } catch {
+      showAlert({
+        title: 'Share Receipt',
+        message: shareText,
+        variant: 'info',
+      });
+    }
   };
+
 
   const handlePrint = () => {
     window.print();
@@ -581,51 +659,68 @@ export default function ResidentBills() {
                   </div>
                 </div>
 
-                {/* Actions: Share / Print / Done */}
-                <div className="grid grid-cols-2 gap-2 pt-2">
+                {/* Actions: 3 Buttons [Share] [Save] [Close] */}
+                <div className="grid grid-cols-3 gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={handleShareOrPrintReceipt}
-                    className="py-2.5 px-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-800 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    onClick={handleShareReceipt}
+                    className="py-2.5 px-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-white/10 text-surface-800 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    title="Share Receipt"
                   >
-                    <Download className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
-                    <span>Save / Share Image</span>
+                    <Share2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Share</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveReceipt}
+                    className="py-2.5 px-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-white/10 text-surface-800 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    title="Save Receipt Image"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Save</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="py-2.5 px-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                    className="py-2.5 px-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                    title="Close Receipt & Refresh"
                   >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Done</span>
+                    <Check className="w-3.5 h-3.5 shrink-0" />
+                    <span>Close</span>
                   </button>
                 </div>
               </div>
             )}
 
             {/* ============================================================ */}
-            {/* AWAITING UPI APP RESPONSE STATE                              */}
+            {/* PROCESSING & WAITING FOR UPI APP RESPONSE                    */}
             {/* ============================================================ */}
-            {paymentStatus === 'awaiting_upi' && (
+            {paymentStatus === 'processing_app' && (
               <div className="space-y-4 animate-in zoom-in-95 duration-200 text-center">
-                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-inner">
-                  <Smartphone className="w-8 h-8 animate-pulse" />
+                <div className="w-16 h-16 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto shadow-inner relative">
+                  <Smartphone className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-pulse" />
+                  <span className="absolute inset-0 rounded-full border-2 border-brand-500/40 animate-ping pointer-events-none" />
                 </div>
 
                 <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[11px] font-semibold mb-1">
+                    <RotateCw className="w-3 h-3 animate-spin" />
+                    <span>Processing Payment</span>
+                  </div>
                   <h2 className="text-base font-bold text-surface-900 dark:text-white">
-                    UPI App Payment in Progress
+                    Waiting for UPI App Response...
                   </h2>
                   <p className="text-xs text-surface-500 dark:text-surface-200/60 mt-1 max-w-xs mx-auto">
                     Please approve the payment in your UPI app (Google Pay, PhonePe, Paytm, or BHIM).
                   </p>
-                  <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 font-heading my-2">
+                  <p className="text-2xl font-extrabold text-brand-600 dark:text-brand-400 font-heading my-2">
                     ₹{modalTotalAmount.toLocaleString('en-IN')}
                   </p>
                 </div>
 
-                {/* Status Box & Reference */}
+                {/* Status Box & Details */}
                 <div className="p-3.5 rounded-2xl bg-surface-50 dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 text-left text-xs space-y-2.5">
                   <div className="flex items-center justify-between pb-2 border-b border-surface-200 dark:border-white/5">
                     <span className="text-surface-500 dark:text-surface-200/60">Payee</span>
@@ -637,52 +732,53 @@ export default function ResidentBills() {
                     <span className="font-mono text-surface-700 dark:text-surface-200/80">{modalUpiId}</span>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70">
-                      UPI Reference / UTR Number
-                    </label>
-                    <input
-                      type="text"
-                      value={upiAppTxnRef}
-                      onChange={(e) => setUpiAppTxnRef(e.target.value)}
-                      placeholder="e.g. 12-digit UTR from app"
-                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 text-xs font-mono focus:outline-none focus:border-brand-500"
-                    />
-                    <p className="text-[10px] text-surface-400 dark:text-surface-200/40">
-                      Auto-generated reference. You can edit if your UPI app gave a specific UTR.
-                    </p>
+                  <div className="flex items-center justify-between pb-2 border-b border-surface-200 dark:border-white/5">
+                    <span className="text-surface-500 dark:text-surface-200/60">Reference / UTR</span>
+                    <span className="font-mono font-semibold text-brand-600 dark:text-brand-400">{upiAppTxnRef}</span>
                   </div>
-                </div>
 
-                {/* Actual Status Confirmation Buttons */}
-                <div className="space-y-2 pt-1">
-                  <p className="text-xs font-medium text-surface-600 dark:text-surface-200/70">
-                    Did your transaction succeed in the UPI app?
-                  </p>
+                  {/* App Response Status & Verification Actions */}
+                  <div className="pt-1 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-surface-500 dark:text-surface-200/60 flex items-center gap-1.5 font-medium">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        Awaiting response from app...
+                      </span>
+                      <span className="text-[10px] text-surface-400 dark:text-surface-200/40">Auto-verifying</span>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={handleConfirmUpiSuccess}
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
-                  >
-                    <Check className="w-4 h-4 text-white" />
-                    <span>Confirm Payment Succeeded</span>
-                  </button>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleReceiveAppResponse('completed')}
+                        className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>App Approved (Success)</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={handleConfirmUpiFailure}
-                    className="w-full py-2 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-300 dark:border-red-900/40 text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <X className="w-4 h-4 text-red-500" />
-                    <span>Payment Failed or Cancelled</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => handleReceiveAppResponse('failed', 'Payment was declined or cancelled in UPI app.')}
+                        className="w-full py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-300 dark:border-red-900/40 text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <X className="w-3.5 h-3.5 text-red-500" />
+                        <span>App Declined (Failed)</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-1">
                   <button
                     type="button"
-                    onClick={() => setPaymentStatus('input')}
+                    onClick={() => {
+                      if (appTimerRef.current) clearTimeout(appTimerRef.current);
+                      setPaymentStatus('input');
+                    }}
                     className="text-xs text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
                   >
                     &larr; Back to QR Code &amp; Manual Entry

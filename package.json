@@ -11,7 +11,8 @@
     "build": "vite build && tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css",
     "build:vite": "vite build",
     "watch": "tailwindcss -i ./public/assets/src/input.css -o ./public/assets/dist/output.css --watch",
-    "test": "vite build --mode test"
+    "test": "vite build --mode test",
+    "screenshots": "node scripts/capture-all-screenshots.js"
   },
   "repository": {
     "type": "git",
