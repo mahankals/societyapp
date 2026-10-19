@@ -27,11 +27,11 @@ export default function ResidentBills() {
   const [selectedBillIds, setSelectedBillIds] = useState([]);
   const [paymentModalBills, setPaymentModalBills] = useState(null);
 
-  // Payment states: 'input' | 'processing' | 'success' | 'failed'
+  // Payment states: 'input' | 'awaiting_upi' | 'processing' | 'success' | 'failed'
   const [paymentStatus, setPaymentStatus] = useState('input');
   const [manualTxnId, setManualTxnId] = useState('');
   const [txnIdError, setTxnIdError] = useState('');
-  const [payingWithApp, setPayingWithApp] = useState(false);
+  const [upiAppTxnRef, setUpiAppTxnRef] = useState('');
   const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [paymentError, setPaymentError] = useState('');
 
@@ -84,7 +84,7 @@ export default function ResidentBills() {
     setPaymentStatus('input');
     setManualTxnId('');
     setTxnIdError('');
-    setPayingWithApp(false);
+    setUpiAppTxnRef('');
     setPaymentReceipt(null);
     setPaymentError('');
   };
@@ -108,8 +108,8 @@ export default function ResidentBills() {
   const modalUpiId = paymentModalBills?.[0]?.upi_id || currentSociety?.upi_id || 'society@upi';
   const modalUpiName = paymentModalBills?.[0]?.upi_name || currentSociety?.upi_name || currentSociety?.name || 'Housing Society';
 
-  // Core execution of bill payment
-  const executePayment = async (transactionId) => {
+  // Core execution of bill payment with actual status
+  const executePayment = async (transactionId, outcome = 'completed', failureReason = '') => {
     if (!paymentModalBills || paymentModalBills.length === 0) return;
     setPaymentStatus('processing');
     setPaymentError('');
@@ -119,7 +119,13 @@ export default function ResidentBills() {
       const res = await api.post('/api/resident/bills/pay', {
         bill_ids: billIds,
         transaction_id: transactionId,
+        status: outcome,
+        reason: failureReason,
       });
+
+      if (res && res.status === 'failed') {
+        throw new Error(res.error || 'Payment was declined or cancelled in UPI app.');
+      }
 
       const receiptData = {
         transaction_id: res.transaction_ref || transactionId,
@@ -136,7 +142,7 @@ export default function ResidentBills() {
       setPaymentReceipt(receiptData);
       setPaymentStatus('success');
     } catch (err) {
-      setPaymentError(err?.message || 'Payment submission failed. Please try again.');
+      setPaymentError(err?.message || (outcome === 'failed' ? 'UPI transaction was declined or cancelled.' : 'Payment submission failed. Please try again.'));
       setPaymentStatus('failed');
     }
   };
@@ -148,13 +154,14 @@ export default function ResidentBills() {
       return;
     }
     setTxnIdError('');
-    executePayment(manualTxnId.trim());
+    executePayment(manualTxnId.trim(), 'completed');
   };
 
-  // 2. "Pay with UPI App" with auto-confirmation
+  // 2. "Pay with UPI App" triggers intent and transitions to awaiting status verification
   const handlePayWithUpiApp = () => {
-    setPayingWithApp(true);
     setPaymentError('');
+    const autoTxnId = `UPI${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`;
+    setUpiAppTxnRef(autoTxnId);
 
     const upiLink = `upi://pay?pa=${encodeURIComponent(modalUpiId)}&pn=${encodeURIComponent(modalUpiName)}&am=${modalTotalAmount}&cu=INR&tn=${encodeURIComponent('Society Bills')}`;
 
@@ -165,13 +172,20 @@ export default function ResidentBills() {
       console.warn('UPI app scheme trigger warning', e);
     }
 
-    // Auto-generate verified UPI reference and auto-confirm payment
-    const autoTxnId = `UPI${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`;
+    // Move to awaiting UPI response view instead of blindly assuming success
+    setPaymentStatus('awaiting_upi');
+  };
 
-    setTimeout(async () => {
-      await executePayment(autoTxnId);
-      setPayingWithApp(false);
-    }, 1200);
+  // User confirms payment succeeded in UPI app
+  const handleConfirmUpiSuccess = () => {
+    const finalTxnId = (upiAppTxnRef || '').trim() || `UPI${Date.now().toString().slice(-8)}`;
+    executePayment(finalTxnId, 'completed');
+  };
+
+  // User reports payment failed or was cancelled in UPI app
+  const handleConfirmUpiFailure = () => {
+    const finalTxnId = (upiAppTxnRef || '').trim() || `UPI${Date.now().toString().slice(-8)}`;
+    executePayment(finalTxnId, 'failed', 'Payment was declined or cancelled in UPI app.');
   };
 
   // Close modal and refresh bills
@@ -591,6 +605,110 @@ export default function ResidentBills() {
             )}
 
             {/* ============================================================ */}
+            {/* AWAITING UPI APP RESPONSE STATE                              */}
+            {/* ============================================================ */}
+            {paymentStatus === 'awaiting_upi' && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-200 text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-inner">
+                  <Smartphone className="w-8 h-8 animate-pulse" />
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-surface-900 dark:text-white">
+                    UPI App Payment in Progress
+                  </h2>
+                  <p className="text-xs text-surface-500 dark:text-surface-200/60 mt-1 max-w-xs mx-auto">
+                    Please approve the payment in your UPI app (Google Pay, PhonePe, Paytm, or BHIM).
+                  </p>
+                  <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 font-heading my-2">
+                    ₹{modalTotalAmount.toLocaleString('en-IN')}
+                  </p>
+                </div>
+
+                {/* Status Box & Reference */}
+                <div className="p-3.5 rounded-2xl bg-surface-50 dark:bg-white/[0.03] border border-surface-200 dark:border-white/10 text-left text-xs space-y-2.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-surface-200 dark:border-white/5">
+                    <span className="text-surface-500 dark:text-surface-200/60">Payee</span>
+                    <span className="font-semibold text-surface-900 dark:text-white">{modalUpiName}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between pb-2 border-b border-surface-200 dark:border-white/5">
+                    <span className="text-surface-500 dark:text-surface-200/60">UPI ID</span>
+                    <span className="font-mono text-surface-700 dark:text-surface-200/80">{modalUpiId}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70">
+                      UPI Reference / UTR Number
+                    </label>
+                    <input
+                      type="text"
+                      value={upiAppTxnRef}
+                      onChange={(e) => setUpiAppTxnRef(e.target.value)}
+                      placeholder="e.g. 12-digit UTR from app"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 text-xs font-mono focus:outline-none focus:border-brand-500"
+                    />
+                    <p className="text-[10px] text-surface-400 dark:text-surface-200/40">
+                      Auto-generated reference. You can edit if your UPI app gave a specific UTR.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actual Status Confirmation Buttons */}
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs font-medium text-surface-600 dark:text-surface-200/70">
+                    Did your transaction succeed in the UPI app?
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirmUpiSuccess}
+                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 text-white" />
+                    <span>Confirm Payment Succeeded</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirmUpiFailure}
+                    className="w-full py-2 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-300 dark:border-red-900/40 text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <X className="w-4 h-4 text-red-500" />
+                    <span>Payment Failed or Cancelled</span>
+                  </button>
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentStatus('input')}
+                    className="text-xs text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
+                  >
+                    &larr; Back to QR Code &amp; Manual Entry
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* PROCESSING STATE: Shows spinner while calling API            */}
+            {/* ============================================================ */}
+            {paymentStatus === 'processing' && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-200 text-center py-8">
+                <div className="w-14 h-14 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto shadow-inner animate-spin">
+                  <RotateCw className="w-8 h-8" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-surface-900 dark:text-white">Recording Payment...</h2>
+                  <p className="text-xs text-surface-500 dark:text-surface-200/60 mt-1">
+                    Please wait while your transaction status is being recorded and verified.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
             {/* FAILED STATE: Replaces Modal Body with Error & Retry Option */}
             {/* ============================================================ */}
             {paymentStatus === 'failed' && (
@@ -600,9 +718,16 @@ export default function ResidentBills() {
                 </div>
 
                 <div>
-                  <h2 className="text-base font-bold text-surface-900 dark:text-white">Payment Submission Failed</h2>
+                  <h2 className="text-base font-bold text-surface-900 dark:text-white">Payment Failed / Declined</h2>
                   <p className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs mx-auto">
                     {paymentError || 'Unable to record payment transaction. Please verify details and retry.'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-left text-xs text-surface-700 dark:text-surface-200/80">
+                  <p className="font-semibold text-red-700 dark:text-red-300 mb-1">Status: Unpaid / Pending</p>
+                  <p className="text-[11px] text-surface-500 dark:text-surface-200/60">
+                    Your bills remain unpaid. No dues have been cleared. You can retry paying via UPI or scan the QR code.
                   </p>
                 </div>
 
@@ -629,7 +754,7 @@ export default function ResidentBills() {
             {/* ============================================================ */}
             {/* INPUT / ACTIVE PAYMENT STATE                                  */}
             {/* ============================================================ */}
-            {(paymentStatus === 'input' || paymentStatus === 'processing') && (
+            {paymentStatus === 'input' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1">
                   <h2 className="text-base font-bold text-surface-900 dark:text-white">Pay via UPI QR Code</h2>
@@ -641,19 +766,18 @@ export default function ResidentBills() {
                   </p>
                 </div>
 
-                {/* Option A: Quick Pay with UPI App (Auto-confirms) */}
+                {/* Option A: Quick Pay with UPI App */}
                 <div>
                   <button
                     type="button"
-                    disabled={paymentStatus === 'processing' || payingWithApp}
                     onClick={handlePayWithUpiApp}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Smartphone className="w-4 h-4" />
-                    <span>{payingWithApp ? 'Waiting for UPI App Response...' : 'Pay with UPI App (GPay / PhonePe / Paytm)'}</span>
+                    <span>Pay with UPI App (GPay / PhonePe / Paytm)</span>
                   </button>
                   <p className="text-[10px] text-center text-surface-400 dark:text-surface-200/50 mt-1">
-                    Opens your UPI app and automatically verifies the transaction.
+                    Opens your UPI app and allows you to confirm the actual payment status.
                   </p>
                 </div>
 
@@ -716,12 +840,11 @@ export default function ResidentBills() {
                   </button>
                   <button
                     type="button"
-                    disabled={paymentStatus === 'processing'}
                     onClick={handleConfirmPaid}
-                    className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                    className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
                   >
                     <Check className="w-3.5 h-3.5 text-white" />
-                    <span>{paymentStatus === 'processing' ? 'Recording...' : 'Confirm Paid'}</span>
+                    <span>Confirm Paid</span>
                   </button>
                 </div>
               </div>

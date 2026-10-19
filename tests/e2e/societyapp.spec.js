@@ -128,7 +128,7 @@ test.describe('SocietyApp Complete Multi-Role Walkthrough & Demo', () => {
     await approveBtn.click();
 
     // Verify approval confirmation
-    await expect(page.locator('text=approved successfully')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=approved successfully').first()).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(1500);
 
     // =========================================================================
@@ -224,7 +224,7 @@ test.describe('SocietyApp Complete Multi-Role Walkthrough & Demo', () => {
     // Click Approve
     const committeeApproveBtn = pendingReqRow.locator('button:has-text("Approve")');
     await committeeApproveBtn.click();
-    await expect(page.locator('text=approved successfully')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=approved successfully').first()).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(1500);
 
     // =========================================================================

@@ -481,12 +481,54 @@ class ApiController
         }
 
         $userTxId = trim($input['transaction_id'] ?? '');
+        $status = strtolower(trim($input['status'] ?? 'completed'));
+        $reason = trim($input['reason'] ?? '');
         $txRef = !empty($userTxId) ? $userTxId : ('UPI-' . strtoupper(bin2hex(random_bytes(4))));
         $now = date('Y-m-d H:i:s');
         $today = date('Y-m-d');
         $paidCount = 0;
         $totalPaid = 0.0;
-        $receiptNo = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $billIds[0] ?? rand(100, 999));
+        $receiptNo = 'REC-' . date('YmdHis') . '-' . sprintf('%04d', $billIds[0] ?? rand(100, 999));
+
+        if ($status === 'failed') {
+            foreach ($billIds as $bid) {
+                $bill = Database::fetchOne("SELECT * FROM maintenance_bills WHERE id = ?", [$bid]);
+                if ($bill) {
+                    $existingTx = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ?", [$bid]);
+                    if ($existingTx) {
+                        Database::update('transactions', [
+                            'status' => 'failed',
+                            'transaction_ref' => $txRef,
+                            'payment_method' => 'upi',
+                            'remark' => $reason ?: 'Payment was declined, cancelled, or failed in UPI app.',
+                        ], 'id = ?', [$existingTx['id']]);
+                    } else {
+                        Database::insert('transactions', [
+                            'receipt_no' => 'FAIL-' . date('YmdHis') . '-' . sprintf('%04d', $bid) . rand(10, 99),
+                            'society_id' => (int)$bill['society_id'],
+                            'flat_id' => (int)$bill['flat_id'],
+                            'user_id' => $userId,
+                            'bill_id' => $bid,
+                            'amount' => (float)$bill['amount'],
+                            'payment_method' => 'upi',
+                            'transaction_ref' => $txRef,
+                            'particulars' => ($bill['title'] ?: 'Maintenance Payment') . ' (Failed UPI)',
+                            'payment_date' => $today,
+                            'status' => 'failed',
+                            'remark' => $reason ?: 'Payment was declined, cancelled, or failed in UPI app.',
+                        ]);
+                    }
+                }
+            }
+
+            self::json([
+                'success' => false,
+                'status' => 'failed',
+                'error' => $reason ?: 'Payment was declined or cancelled in UPI app.',
+                'transaction_ref' => $txRef,
+            ], 400);
+            return;
+        }
 
         foreach ($billIds as $bid) {
             $bill = Database::fetchOne("SELECT * FROM maintenance_bills WHERE id = ?", [$bid]);
@@ -498,11 +540,21 @@ class ApiController
                     'transaction_id' => $txRef,
                 ], 'id = ?', [$bid]);
 
-                $receiptNo = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $bid);
+                $billReceiptNo = 'REC-' . date('YmdHis') . '-' . sprintf('%04d', $bid);
+                $receiptNo = $billReceiptNo;
                 $existingTx = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ?", [$bid]);
-                if (!$existingTx) {
+                if ($existingTx) {
+                    Database::update('transactions', [
+                        'receipt_no' => $billReceiptNo,
+                        'status' => 'completed',
+                        'transaction_ref' => $txRef,
+                        'payment_method' => 'upi',
+                        'payment_date' => $today,
+                        'remark' => null,
+                    ], 'id = ?', [$existingTx['id']]);
+                } else {
                     Database::insert('transactions', [
-                        'receipt_no' => $receiptNo,
+                        'receipt_no' => $billReceiptNo,
                         'society_id' => (int)$bill['society_id'],
                         'flat_id' => (int)$bill['flat_id'],
                         'user_id' => $userId,

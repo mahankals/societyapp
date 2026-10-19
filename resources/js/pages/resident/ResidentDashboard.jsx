@@ -62,11 +62,6 @@ export default function ResidentDashboard() {
       const res = await api.post(`/api/resident/flats/${flatId}/toggle-rent`);
       setMessage(res.message || 'Rental status updated!');
       await loadData();
-      showAlert({
-        title: 'Status Updated',
-        message: res.message || 'Rental status updated successfully!',
-        variant: 'success',
-      });
     } catch (err) {
       showAlert({
         title: 'Update Failed',

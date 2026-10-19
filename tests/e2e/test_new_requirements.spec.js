@@ -124,15 +124,33 @@ test.describe('Verify New Resident Requirements', () => {
       await page.click('button:has-text("Done")');
       await page.waitForTimeout(1000);
 
-      // 4. Test "Pay with UPI App" auto-confirm on next unpaid bill
+      // 4. Test "Pay with UPI App" with actual status confirmation (both failed and succeeded)
       const remainingCheckboxes = page.locator('tbody input[type="checkbox"]');
       if (await remainingCheckboxes.count() > 0) {
         await remainingCheckboxes.first().check();
         await page.click('button:has-text("Pay Selected with UPI")');
         await expect(page.locator('button:has-text("Pay with UPI App")')).toBeVisible();
 
-        // Click Pay with UPI App -> auto-confirms with generated transaction ID
+        // Click Pay with UPI App -> transitions to awaiting actual outcome view
         await page.click('button:has-text("Pay with UPI App")');
+        await expect(page.locator('h2:has-text("UPI App Payment in Progress")')).toBeVisible();
+        await expect(page.locator('button:has-text("Confirm Payment Succeeded")')).toBeVisible();
+        await expect(page.locator('button:has-text("Payment Failed or Cancelled")')).toBeVisible();
+
+        // 4a. Verify "Payment Failed or Cancelled" path
+        await page.click('button:has-text("Payment Failed or Cancelled")');
+        await expect(page.locator('h2:has-text("Payment Failed / Declined")')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('text=Your bills remain unpaid')).toBeVisible();
+        await expect(page.locator('button:has-text("Try Again")')).toBeVisible();
+
+        // 4b. Verify "Try Again" returns to input mode
+        await page.click('button:has-text("Try Again")');
+        await expect(page.locator('button:has-text("Pay with UPI App")')).toBeVisible();
+
+        // 4c. Verify "Confirm Payment Succeeded" path
+        await page.click('button:has-text("Pay with UPI App")');
+        await expect(page.locator('h2:has-text("UPI App Payment in Progress")')).toBeVisible();
+        await page.click('button:has-text("Confirm Payment Succeeded")');
         await expect(page.locator('h2:has-text("Payment Successful")')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('button:has-text("Save / Share Image")')).toBeVisible();
         await page.click('button:has-text("Done")');
