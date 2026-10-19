@@ -142,6 +142,7 @@ class ResidentController
             'recentReceipts' => $recentReceipts,
             'rejectedFlats' => $rejectedFlats,
             'profileComplete' => $profileComplete,
+            'csrfToken' => generateCSRFToken(),
             'currentRoute' => '/resident',
         ]);
     }

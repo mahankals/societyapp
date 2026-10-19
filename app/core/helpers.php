@@ -183,6 +183,7 @@ function view(string $name, array $data = []): string {
     ]);
 
     $data['appConfig'] = $config;
+    $data['csrfToken'] = $data['csrfToken'] ?? generateCSRFToken();
 
     // Flash messages support
     if (!isset($data['flash']) && Session::has('flash')) {
