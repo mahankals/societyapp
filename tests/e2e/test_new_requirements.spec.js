@@ -41,26 +41,29 @@ test.describe('Verify New Resident Requirements', () => {
     await expect(contributeLink).toBeVisible();
     await expect(contributeLink).toHaveAttribute('href', '/society/contribute');
 
-    // Verify Occupancy Type is before Flat selector
-    // In DOM order, "Occupancy Type" label should appear before "Select Available"
+    // Verify Residency Type is before Flat selector
+    // In DOM order, "Your Residency Type" label should appear before "Select Available Unit"
     const pageContent = await page.content();
-    const occupancyIndex = pageContent.indexOf('Occupancy Type');
-    const flatSelectIndex = pageContent.indexOf('Select Available');
-    expect(occupancyIndex).toBeGreaterThan(-1);
+    const residencyIndex = pageContent.indexOf('Your Residency Type');
+    const flatSelectIndex = pageContent.indexOf('Select Available Unit');
+    expect(residencyIndex).toBeGreaterThan(-1);
     expect(flatSelectIndex).toBeGreaterThan(-1);
-    expect(occupancyIndex).toBeLessThan(flatSelectIndex);
-    console.log('[TEST] Occupancy Type is verified before Flat selection');
+    expect(residencyIndex).toBeLessThan(flatSelectIndex);
+    console.log('[TEST] Residency Type is verified before Flat selection');
 
-    // Verify Occupancy Type select
-    const roleSelect = page.locator('select[name="role"]');
-    await expect(roleSelect).toBeVisible();
+    // Verify Flat Owner and Tenant radio cards
+    await expect(page.locator('label:has-text("Flat Owner")')).toBeVisible();
+    await expect(page.locator('label:has-text("Tenant")')).toBeVisible();
 
     // Switch between owner and tenant to verify dynamic available flat label
-    await roleSelect.selectOption('tenant');
-    await expect(page.locator('text=Select Unit Available for Rent')).toBeVisible();
+    await page.click('label:has-text("Tenant")');
+    await expect(page.locator('text=Select Available Unit / Flat (Available for Rent)')).toBeVisible();
 
-    await roleSelect.selectOption('owner');
-    await expect(page.locator('text=Select Available Unlinked Unit')).toBeVisible();
+    await page.click('label:has-text("Flat Owner")');
+    await expect(page.locator('text=Select Available Unit / Flat (for Owner)')).toBeVisible();
+
+    // Verify unlinked flat dropdown
+    await expect(page.locator('select[name="flat_id"]')).toBeVisible();
 
     await page.screenshot({ path: 'test_link_flat_page.png' });
 

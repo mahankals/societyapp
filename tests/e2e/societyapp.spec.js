@@ -177,13 +177,25 @@ test.describe('SocietyApp Complete Multi-Role Walkthrough & Demo', () => {
     await page.waitForSelector('h1:has-text("Link Flat")', { timeout: 10000 });
     await page.waitForTimeout(1000);
 
-    // Fill Link Flat form for Wing B, Flat 302 as Owner
-    await page.fill('input[placeholder*="A, B"]', 'B');
-    await page.fill('input[placeholder*="101, 204"]', '302');
-    await page.selectOption('select:has(option[value="owner"])', 'owner');
-    await page.waitForTimeout(1000);
+    // Select Available Unit / Flat from dropdown (Unit B-302 created in Step 5)
+    const flatSelect = page.locator('select[name="flat_id"]');
+    const flatOption = flatSelect.locator('option:has-text("302")');
+    if (await flatOption.count() > 0) {
+      const val = await flatOption.getAttribute('value');
+      await flatSelect.selectOption(val);
+      await page.waitForTimeout(800);
+    } else {
+      const manualBtn = page.locator('button:has-text("Enter manually")');
+      if (await manualBtn.isVisible()) {
+        await manualBtn.click();
+        await page.waitForTimeout(500);
+      }
+      await page.fill('input[placeholder*="A, B"]', 'B');
+      await page.fill('input[placeholder*="101, 204"]', '302');
+      await page.waitForTimeout(500);
+    }
 
-    await page.click('button:has-text("Send Request to Committee")');
+    await page.click('button:has-text("Submit Request"), button:has-text("Send Request to Committee")');
     await expect(page.locator('text=Request Sent to Committee!')).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(1500);
 
