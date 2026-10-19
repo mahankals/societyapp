@@ -593,16 +593,69 @@ class ApiController
             self::json(['success' => false, 'error' => 'Authentication required.'], 401);
         }
         $userId = (int)$user['id'];
-        $receipts = Database::fetchAll(
-            "SELECT p.*, b.title as bill_title, f.wing, f.flat_no, s.name as society_name 
-             FROM payments p 
-             LEFT JOIN maintenance_bills b ON p.bill_id = b.id 
-             LEFT JOIN flats f ON b.flat_id = f.id 
-             LEFT JOIN societies s ON f.society_id = s.id 
-             WHERE p.user_id = ? 
-             ORDER BY p.payment_date DESC",
-            [$userId]
-        );
+        $isAdmin = ($user['role'] ?? '') === 'admin';
+
+        // 1. Fetch completed records from transactions table
+        $sql = "
+            SELECT t.id, t.receipt_no, t.amount, t.payment_method, t.payment_date, t.status,
+                   t.transaction_ref, t.bill_id,
+                   COALESCE(t.particulars, b.title, 'Maintenance Payment') as bill_title,
+                   f.wing, f.flat_no, s.name as society_name, s.registration_no, s.address as society_address
+            FROM transactions t
+            LEFT JOIN maintenance_bills b ON t.bill_id = b.id
+            LEFT JOIN flats f ON COALESCE(t.flat_id, b.flat_id) = f.id
+            LEFT JOIN societies s ON COALESCE(t.society_id, f.society_id) = s.id
+            WHERE t.status = 'completed'
+              AND (t.user_id = ? OR t.flat_id IN (SELECT flat_id FROM society_members WHERE user_id = ? AND status = 'active') OR ?)
+            ORDER BY t.payment_date DESC, t.id DESC
+        ";
+        $receipts = Database::fetchAll($sql, [$userId, $userId, $isAdmin ? 1 : 0]) ?: [];
+
+        // 2. Also include any paid maintenance_bills that do not have a matching transaction
+        $billsSql = "
+            SELECT b.id as bill_id, b.bill_number, b.amount, b.payment_method,
+                   COALESCE(b.paid_at, b.created_at) as payment_date,
+                   COALESCE(b.title, 'Maintenance Payment') as bill_title,
+                   b.transaction_id as transaction_ref,
+                   f.wing, f.flat_no, s.name as society_name, s.registration_no, s.address as society_address
+            FROM maintenance_bills b
+            LEFT JOIN flats f ON b.flat_id = f.id
+            LEFT JOIN societies s ON b.society_id = s.id
+            WHERE b.status = 'paid'
+              AND (b.user_id = ? OR b.flat_id IN (SELECT flat_id FROM society_members WHERE user_id = ? AND status = 'active') OR ?)
+            ORDER BY b.paid_at DESC, b.id DESC
+        ";
+        $paidBills = Database::fetchAll($billsSql, [$userId, $userId, $isAdmin ? 1 : 0]) ?: [];
+
+        // Track already included transaction bill IDs
+        $txBillIds = [];
+        foreach ($receipts as $r) {
+            if (!empty($r['bill_id'])) {
+                $txBillIds[] = (int)$r['bill_id'];
+            }
+        }
+
+        foreach ($paidBills as $pb) {
+            $bid = (int)$pb['bill_id'];
+            if (!in_array($bid, $txBillIds)) {
+                $receipts[] = [
+                    'id' => $bid,
+                    'receipt_no' => 'REC-' . date('Ymd', strtotime($pb['payment_date'] ?: 'now')) . '-' . sprintf('%04d', $bid),
+                    'amount' => (float)$pb['amount'],
+                    'payment_method' => $pb['payment_method'] ?: 'upi',
+                    'payment_date' => $pb['payment_date'] ? date('Y-m-d', strtotime($pb['payment_date'])) : date('Y-m-d'),
+                    'status' => 'completed',
+                    'transaction_ref' => $pb['transaction_ref'] ?: ('UPI-' . sprintf('%06d', $bid)),
+                    'bill_title' => $pb['bill_title'],
+                    'wing' => $pb['wing'],
+                    'flat_no' => $pb['flat_no'],
+                    'society_name' => $pb['society_name'] ?: 'Housing Society',
+                    'registration_no' => $pb['registration_no'] ?: '',
+                    'society_address' => $pb['society_address'] ?: '',
+                ];
+            }
+        }
+
         self::json(['success' => true, 'receipts' => $receipts]);
     }
 

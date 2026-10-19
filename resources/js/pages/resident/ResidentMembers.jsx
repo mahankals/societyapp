@@ -67,9 +67,26 @@ export default function ResidentMembers() {
                       <span>Unit {m.wing ? m.wing + '-' : ''}{m.flat_no}</span>
                     </p>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30 capitalize">
-                    {m.role || 'Resident'}
-                  </span>
+                  {(() => {
+                    const r = (m.role || 'resident').toLowerCase();
+                    let badgeClass = 'bg-brand-500/15 text-brand-800 dark:text-brand-300 border-brand-500/30';
+                    if (r === 'chairman') {
+                      badgeClass = 'bg-amber-500/15 text-amber-900 dark:text-amber-300 border-amber-500/40 font-bold';
+                    } else if (r === 'secretary') {
+                      badgeClass = 'bg-blue-500/15 text-blue-900 dark:text-blue-300 border-blue-500/40 font-bold';
+                    } else if (r === 'treasurer') {
+                      badgeClass = 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-300 border-emerald-500/40 font-bold';
+                    } else if (r === 'committee') {
+                      badgeClass = 'bg-indigo-500/15 text-indigo-900 dark:text-indigo-300 border-indigo-500/40 font-bold';
+                    } else if (r === 'tenant') {
+                      badgeClass = 'bg-cyan-500/15 text-cyan-900 dark:text-cyan-300 border-cyan-500/40';
+                    }
+                    return (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border capitalize ${badgeClass}`}>
+                        {m.role || 'Resident'}
+                      </span>
+                    );
+                  })()}
                 </div>
                 {m.phone && (
                   <p className="text-[11px] text-surface-600 dark:text-surface-200/60 flex items-center gap-1.5">

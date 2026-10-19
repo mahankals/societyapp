@@ -155,6 +155,38 @@ test.describe('Verify New Resident Requirements', () => {
         await expect(page.locator('button:has-text("Save / Share Image")')).toBeVisible();
         await page.click('button:has-text("Done")');
       }
+
+      // 5. Test Payment Receipts page now displays paid rows & PDF links
+      console.log('[TEST] Checking Payment Receipts Ledger...');
+      await page.goto('/resident/receipts');
+      await page.waitForSelector('h1:has-text("Payment Receipts")', { timeout: 10000 });
+      const receiptRows = page.locator('tbody tr');
+      await expect(receiptRows.first()).toBeVisible({ timeout: 10000 });
+      const count = await receiptRows.count();
+      console.log(`[TEST] Found ${count} payment receipt row(s)`);
+      expect(count).toBeGreaterThan(0);
+      await expect(page.locator('a:has-text("PDF")').first()).toBeVisible();
+
+      // 6. Test Searchable CustomSelect with options
+      console.log('[TEST] Checking Searchable CustomSelect dropdown...');
+      await page.goto('/resident/bills');
+      await page.waitForSelector('h1:has-text("Maintenance Bills & Dues")', { timeout: 10000 });
+      // Open society dropdown
+      const selectTrigger = page.locator('button[aria-haspopup="listbox"]').first();
+      await selectTrigger.click();
+      await expect(page.locator('[aria-expanded="true"]')).toBeVisible();
+      // Dropdown option text is visible
+      const optionBtn = page.locator('div[class*="rounded-2xl"] button').first();
+      await expect(optionBtn).toBeVisible();
+      // Close dropdown
+      await selectTrigger.click();
+
+      // 7. Verify Role text visibility on Resident Dashboard
+      console.log('[TEST] Checking Role text visibility on Resident Dashboard...');
+      await page.goto('/resident');
+      await page.waitForSelector('h1:has-text("Welcome")', { timeout: 10000 });
+      const roleBadge = page.locator('span[class*="capitalize"]').first();
+      await expect(roleBadge).toBeVisible();
     }
 
     console.log('[TEST] All requirements successfully tested and verified!');

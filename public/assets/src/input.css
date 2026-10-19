@@ -24,6 +24,11 @@
   --color-surface-50: oklch(0.985 0.002 270);
   --color-surface-100: oklch(0.97 0.005 270);
   --color-surface-200: oklch(0.93 0.008 270);
+  --color-surface-300: oklch(0.85 0.01 270);
+  --color-surface-400: oklch(0.70 0.015 270);
+  --color-surface-500: oklch(0.55 0.02 270);
+  --color-surface-600: oklch(0.40 0.02 270);
+  --color-surface-700: oklch(0.30 0.018 270);
   --color-surface-800: oklch(0.22 0.01 270);
   --color-surface-900: oklch(0.16 0.015 270);
   --color-surface-950: oklch(0.12 0.02 270);
@@ -446,9 +451,6 @@ html.light button[class*="bg-emerald-6"],
 html.light button[class*="bg-emerald-7"],
 html.light button[class*="bg-red-6"],
 html.light button[class*="bg-red-7"],
-html.light span[class*="bg-purple-6"],
-html.light span[class*="bg-brand-5"],
-html.light span[class*="bg-emerald-6"],
 [data-theme="light"] .btn-primary,
 [data-theme="light"] button[class*="bg-purple-6"],
 [data-theme="light"] button[class*="bg-purple-7"],

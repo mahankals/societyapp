@@ -55,33 +55,34 @@ export default function ResidentReceipts() {
                 {receipts.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-50 dark:hover:bg-white/[0.02] transition-colors">
                     <td className="py-3 font-mono text-brand-600 dark:text-brand-400 font-semibold">
-                      REC-{String(r.id).padStart(5, '0')}
+                      {r.receipt_no || `REC-${String(r.id).padStart(5, '0')}`}
                     </td>
                     <td className="py-3 font-semibold text-surface-900 dark:text-white">
-                      {r.bill_title || 'Maintenance Dues'}
+                      <div>{r.bill_title || 'Maintenance Dues'}</div>
+                      <div className="text-[10px] text-surface-500 dark:text-surface-200/50 font-normal">
+                        {r.society_name} {r.flat_no ? `• Unit ${r.wing ? r.wing + '-' : ''}${r.flat_no}` : ''}
+                      </div>
                     </td>
                     <td className="py-3 font-semibold text-emerald-600 dark:text-emerald-400">
                       ₹{parseFloat(r.amount).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 text-surface-600 dark:text-surface-200/70 capitalize">
+                    <td className="py-3 text-surface-600 dark:text-surface-200/70 uppercase">
                       {r.payment_method || 'UPI'}
                     </td>
                     <td className="py-3 text-surface-600 dark:text-surface-200/70">
-                      {r.payment_date ? new Date(r.payment_date).toLocaleDateString() : '—'}
+                      {r.payment_date ? new Date(r.payment_date).toLocaleDateString('en-IN') : '—'}
                     </td>
                     <td className="py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => showAlert({
-                          title: 'Receipt Download',
-                          message: `Downloading Receipt REC-${String(r.id).padStart(5, '0')}`,
-                          variant: 'info',
-                        })}
+                      <a
+                        href={`/resident/receipts/${r.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="px-2.5 py-1 rounded-lg bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        title="View & Download PDF Voucher"
                       >
                         <Download className="w-3 h-3" />
                         <span>PDF</span>
-                      </button>
+                      </a>
                     </td>
                   </tr>
                 ))}
