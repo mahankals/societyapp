@@ -184,69 +184,18 @@ export default function ResidentLinkFlat() {
 
               {/* 2. Occupancy Type (Moved BEFORE Flat Selection) */}
               <div>
-                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1.5">
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
                   Occupancy Type
                 </label>
-                {/* Hidden select for accessibility and automated test compatibility */}
                 <select
                   name="role"
                   value={role}
                   onChange={(e) => handleRoleChange(e.target.value)}
-                  className="sr-only"
-                  tabIndex={-1}
-                  aria-hidden="true"
+                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500 font-medium"
                 >
-                  <option value="owner">Flat Owner / Resident</option>
-                  <option value="tenant">Tenant / Renter</option>
+                  <option value="owner" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Flat Owner / Resident</option>
+                  <option value="tenant" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Tenant / Renter</option>
                 </select>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange('owner')}
-                    className={`p-3 rounded-xl border text-left cursor-pointer flex items-center gap-2.5 transition-all ${
-                      role === 'owner'
-                        ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300 shadow-xs'
-                        : 'border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/[0.02] text-surface-700 dark:text-surface-200/70 hover:bg-surface-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role_radio"
-                      value="owner"
-                      checked={role === 'owner'}
-                      onChange={() => handleRoleChange('owner')}
-                      className="text-brand-500 focus:ring-0"
-                    />
-                    <div>
-                      <span className="text-xs font-bold block text-surface-900 dark:text-white">Flat Owner</span>
-                      <span className="text-[10px] text-surface-500 dark:text-surface-200/60 block">Owner of an unlinked unit</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange('tenant')}
-                    className={`p-3 rounded-xl border text-left cursor-pointer flex items-center gap-2.5 transition-all ${
-                      role === 'tenant'
-                        ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300 shadow-xs'
-                        : 'border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/[0.02] text-surface-700 dark:text-surface-200/70 hover:bg-surface-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role_radio"
-                      value="tenant"
-                      checked={role === 'tenant'}
-                      onChange={() => handleRoleChange('tenant')}
-                      className="text-brand-500 focus:ring-0"
-                    />
-                    <div>
-                      <span className="text-xs font-bold block text-surface-900 dark:text-white">Tenant</span>
-                      <span className="text-[10px] text-surface-500 dark:text-surface-200/60 block">Renting an available flat</span>
-                    </div>
-                  </button>
-                </div>
               </div>
 
               {/* 3. Available Unmapped Flats List based on Occupancy Type */}

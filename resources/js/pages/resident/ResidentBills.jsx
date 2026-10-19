@@ -362,7 +362,7 @@ export default function ResidentBills() {
                 onClick={() => setPaymentModalBills(null)}
                 className="py-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white text-xs font-semibold transition-all cursor-pointer"
               >
-                Cancel
+                Close
               </button>
               <button
                 type="button"

@@ -51,17 +51,15 @@ test.describe('Verify New Resident Requirements', () => {
     expect(occupancyIndex).toBeLessThan(flatSelectIndex);
     console.log('[TEST] Occupancy Type is verified before Flat selection');
 
-    // Verify Flat Owner vs Tenant buttons
-    const ownerBtn = page.locator('button:has-text("Flat Owner")');
-    const tenantBtn = page.locator('button:has-text("Tenant")');
-    await expect(ownerBtn).toBeVisible();
-    await expect(tenantBtn).toBeVisible();
+    // Verify Occupancy Type select
+    const roleSelect = page.locator('select[name="role"]');
+    await expect(roleSelect).toBeVisible();
 
     // Switch between owner and tenant to verify dynamic available flat label
-    await tenantBtn.click();
+    await roleSelect.selectOption('tenant');
     await expect(page.locator('text=Select Unit Available for Rent')).toBeVisible();
 
-    await ownerBtn.click();
+    await roleSelect.selectOption('owner');
     await expect(page.locator('text=Select Available Unlinked Unit')).toBeVisible();
 
     await page.screenshot({ path: 'test_link_flat_page.png' });
@@ -103,7 +101,7 @@ test.describe('Verify New Resident Requirements', () => {
       await page.screenshot({ path: 'test_bills_multi_upi_modal.png' });
 
       // Close modal
-      await page.click('button:has-text("Cancel")');
+      await page.click('button:has-text("Close")');
     }
 
     console.log('[TEST] All requirements successfully tested and verified!');
