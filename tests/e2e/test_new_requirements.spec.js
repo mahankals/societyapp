@@ -221,49 +221,55 @@ test.describe('Verify New Resident Requirements', () => {
 
     // 2. Go to Society Contribution page
     await page.goto('/society/contribute');
-    await page.waitForSelector('h1:has-text("Register / Contribute a Housing Society")', { timeout: 10000 });
+    await page.waitForSelector('h1:has-text("Propose / Onboard a Housing Society")', { timeout: 10000 });
     console.log('[TEST] On Society Contribution page');
 
-    // 3. Verify form components from design screenshot:
-    // - Card 1: Housing Society Details
-    await expect(page.locator('h2:has-text("1. Housing Society Details")')).toBeVisible();
-    // - Card 2: Founding Committee & Flat Mapping
-    await expect(page.locator('h2:has-text("2. Founding Committee & Flat Mapping")')).toBeVisible();
-    // - Occupancy Status 3 options (Self occupied, Available for rent, Rented)
-    await expect(page.locator('button:has-text("Self occupied")').first()).toBeVisible();
-    await expect(page.locator('button:has-text("Available for rent")').first()).toBeVisible();
-    await expect(page.locator('button:has-text("Rented")').first()).toBeVisible();
-    // - Info banner matching screenshot
-    await expect(page.locator('text=Link an already registered member account or fill their contact details')).toBeVisible();
+    // 3. Verify clean Option A page components:
+    // - Society Name & City fields
+    await expect(page.locator('input[placeholder="Shivneri CHS"]')).toBeVisible();
+    await expect(page.locator('input[placeholder="Pune"]')).toBeVisible();
+    // - Committee Members & Unit Allocation Section & Table
+    await expect(page.locator('text=Committee Members & Unit Allocation')).toBeVisible();
+    await expect(page.locator('th:has-text("MEMBER")')).toBeVisible();
+    await expect(page.locator('th:has-text("FLAT LOCATION")')).toBeVisible();
+    // - Verify initial member #1 in table
+    await expect(page.locator('td:has-text("Wing A · Flat 101")')).toBeVisible();
 
     // 4. Fill Society Details
     const uniqueSocName = `Palm Meadows Apex CHS ${Date.now()}`;
-    await page.fill('input[placeholder*="Green Valley"]', uniqueSocName);
-    await page.fill('textarea[placeholder*="Full street address"]', 'Plot 42, Sector 18, Palm Beach Marg');
+    await page.fill('input[placeholder="Shivneri CHS"]', uniqueSocName);
     await page.fill('input[placeholder="Pune"]', 'Pune');
-    await page.fill('input[placeholder="411001"]', '411045');
 
-    // 5. Verify Member 1 has flat mapping fields
-    await expect(page.locator('input[placeholder="A"]').first()).toBeVisible();
-    await expect(page.locator('input[placeholder="101"]').first()).toBeVisible();
+    // 5. Click "+ Add Member" to open Modal
+    await page.click('button:has-text("+ Add Member")');
+    await page.waitForSelector('h3:has-text("Add Committee Member & Flat")', { timeout: 5000 });
 
-    // 6. Add Member 2
-    await page.click('button:has-text("Add Member")');
+    // 6. Verify Modal Components (from reference screenshot)
+    await expect(page.locator('button:has-text("Self occupied")')).toBeVisible();
+    await expect(page.locator('button:has-text("Available for rent")')).toBeVisible();
+    await expect(page.locator('button:has-text("Rented")')).toBeVisible();
+    await expect(page.locator('text=Link an already registered member account or fill their contact details')).toBeVisible();
+    await expect(page.locator('input[placeholder*="Choose registered member"]')).toBeVisible();
+
+    // Fill Member 2 details inside modal
+    const modal = page.locator('div[class*="fixed inset-0"]');
+    await modal.locator('button:has-text("Available for rent")').click();
+    await modal.locator('input[placeholder="Member Full Name"]').fill('Rohan Deshmukh');
+    await modal.locator('input[placeholder="Member Phone Number"]').fill('9876543210');
+    await modal.locator('input[placeholder="Email Address"]').fill('rohan.resident.1792338476483@example.com');
+    await modal.locator('input[placeholder="A"]').fill('B');
+    await modal.locator('input[placeholder="101"]').fill('202');
+
+    // Save Member inside modal
+    await modal.locator('button:has-text("Save Member & Flat")').click();
     await page.waitForTimeout(500);
-    expect(await page.locator('text=COMMITTEE MEMBER').count()).toBeGreaterThan(0);
 
-    // Fill Member 2 details
-    const memberNameInputs = page.locator('input[placeholder="Full name"]');
-    await memberNameInputs.nth(1).fill('Rohan Deshmukh');
-    const memberEmailInputs = page.locator('input[placeholder="member@example.com"]');
-    await memberEmailInputs.nth(1).fill('rohan.resident.1792338476483@example.com');
-
-    // Select Occupancy Status "Available for rent" for Member 2
-    const rentButtons = page.locator('button:has-text("Available for rent")');
-    await rentButtons.nth(1).click();
+    // Verify Member 2 is added to the main table
+    await expect(page.locator('td:has-text("Wing B · Flat 202")')).toBeVisible();
+    console.log('[TEST] Member added via modal successfully');
 
     // 7. Submit Proposal
-    await page.click('button:has-text("Submit Society Proposal for Approval")');
+    await page.click('button:has-text("Submit Society Proposal")');
     await expect(page.locator('h2:has-text("Proposal Submitted Successfully!")')).toBeVisible({ timeout: 15000 });
     console.log('[TEST] Society proposal submitted successfully with committee flat mapping');
 

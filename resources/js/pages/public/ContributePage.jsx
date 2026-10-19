@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Building2, MapPin, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, 
-  RefreshCw, Home, Key, User, Users, Plus, Trash2, Search, Check, ChevronDown 
+  Building2, Send, CheckCircle2, AlertCircle, ShieldCheck, 
+  Home, Key, User, Plus, Trash2, Check, ChevronDown, Edit2, X, CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
@@ -11,15 +11,11 @@ export default function ContributePage() {
   const { user } = useAuth();
   const { showAlert } = useModal();
   
-  // Society Details state
+  // Society Details (minimal: Society Name & City)
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('Maharashtra');
-  const [pincode, setPincode] = useState('');
-  const [totalFlats, setTotalFlats] = useState('');
   
-  // Founding Committee Members & Flat Mapping state (Minimum 1 required)
+  // Founding Committee Members list (minimum 1 required)
   const [members, setMembers] = useState([
     {
       id: 1,
@@ -38,19 +34,37 @@ export default function ContributePage() {
     }
   ]);
 
-  // Search user state per member
-  const [searchQueries, setSearchQueries] = useState({});
-  const [searchResults, setSearchResults] = useState({});
-  const [searching, setSearching] = useState({});
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  
+  // Modal Form State (matches screenshot)
+  const [memberForm, setMemberForm] = useState({
+    user_id: null,
+    name: '',
+    email: '',
+    phone: '',
+    role: 'committee',
+    wing: 'A',
+    floor: '1',
+    flat_no: '101',
+    flat_type: '2 BHK',
+    area_sqft: '850',
+    occupancy_status: 'self_occupied',
+    is_primary: false,
+  });
+
+  // User search inside modal
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [proposals, setProposals] = useState([]);
-  const [loadingProposals, setLoadingProposals] = useState(false);
 
-  // Sync member #1 with authenticated user if loaded after initial mount
+  // Sync member #1 with authenticated user once loaded
   useEffect(() => {
     if (user) {
       setMembers(prev => {
@@ -70,61 +84,43 @@ export default function ContributePage() {
     }
   }, [user]);
 
-  const loadProposals = async () => {
-    if (!user) return;
-    try {
-      setLoadingProposals(true);
-      const res = await api.get('/api/society/my-proposals');
-      setProposals(res.proposals || []);
-    } catch (err) {
-      console.error('Failed to load proposals:', err);
-    } finally {
-      setLoadingProposals(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      loadProposals();
-    }
-  }, [user]);
-
-  // Handle member field changes
-  const updateMember = (index, field, value) => {
-    setMembers(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  // Add new committee member
-  const addMember = () => {
-    const nextId = Date.now();
-    const nextWing = String.fromCharCode(65 + (members.length % 4)); // A, B, C, D...
+  // Open modal for Adding new member
+  const handleOpenAddModal = () => {
+    setEditingIndex(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setDropdownOpen(false);
+    const nextWing = String.fromCharCode(65 + (members.length % 4));
     const nextFlatNo = `${members.length + 1}01`;
-    setMembers(prev => [
-      ...prev,
-      {
-        id: nextId,
-        user_id: null,
-        name: '',
-        email: '',
-        phone: '',
-        role: 'committee',
-        wing: nextWing,
-        floor: '1',
-        flat_no: nextFlatNo,
-        flat_type: '2 BHK',
-        area_sqft: '850',
-        occupancy_status: 'self_occupied',
-        is_primary: false,
-      }
-    ]);
+    setMemberForm({
+      user_id: null,
+      name: '',
+      email: '',
+      phone: '',
+      role: members.length === 0 ? 'chairman' : 'committee',
+      wing: nextWing,
+      floor: '1',
+      flat_no: nextFlatNo,
+      flat_type: '2 BHK',
+      area_sqft: '850',
+      occupancy_status: 'self_occupied',
+      is_primary: members.length === 0,
+    });
+    setIsModalOpen(true);
   };
 
-  // Remove committee member (enforcing minimum 1)
-  const removeMember = (index) => {
+  // Open modal for Editing existing member
+  const handleOpenEditModal = (idx) => {
+    setEditingIndex(idx);
+    setSearchQuery('');
+    setSearchResults([]);
+    setDropdownOpen(false);
+    setMemberForm({ ...members[idx] });
+    setIsModalOpen(true);
+  };
+
+  // Remove member (enforce minimum 1)
+  const handleRemoveMember = (idx) => {
     if (members.length <= 1) {
       showAlert({
         title: 'Requirement Notice',
@@ -133,46 +129,90 @@ export default function ContributePage() {
       });
       return;
     }
-    setMembers(prev => prev.filter((_, i) => i !== index));
+    setMembers(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // Search existing registered users
-  const handleUserSearch = async (index, query) => {
-    setSearchQueries(prev => ({ ...prev, [index]: query }));
-    if (!query || query.trim().length < 2) {
-      setSearchResults(prev => ({ ...prev, [index]: [] }));
+  // Handle user search in modal
+  const handleSearchUsers = async (q) => {
+    setSearchQuery(q);
+    if (!q || q.trim().length < 2) {
+      setSearchResults([]);
       return;
     }
-    setSearching(prev => ({ ...prev, [index]: true }));
+    setSearching(true);
     try {
-      const res = await api.get(`/api/society/contribute/search-user?q=${encodeURIComponent(query.trim())}`);
-      setSearchResults(prev => ({ ...prev, [index]: res.users || [] }));
-      setActiveDropdown(index);
+      const res = await api.get(`/api/society/contribute/search-user?q=${encodeURIComponent(q.trim())}`);
+      setSearchResults(res.users || []);
+      setDropdownOpen(true);
     } catch (err) {
       console.error('User search error:', err);
     } finally {
-      setSearching(prev => ({ ...prev, [index]: false }));
+      setSearching(false);
     }
   };
 
-  const selectUser = (index, u) => {
-    updateMember(index, 'user_id', u.id);
-    updateMember(index, 'name', u.name);
-    updateMember(index, 'email', u.email);
-    updateMember(index, 'phone', u.phone || '');
-    setSearchQueries(prev => ({ ...prev, [index]: '' }));
-    setSearchResults(prev => ({ ...prev, [index]: [] }));
-    setActiveDropdown(null);
+  // Select user from dropdown
+  const handleSelectUser = (u) => {
+    setMemberForm(prev => ({
+      ...prev,
+      user_id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone || '',
+    }));
+    setSearchQuery('');
+    setSearchResults([]);
+    setDropdownOpen(false);
   };
 
-  const handleSubmit = async (e) => {
+  // Save member from modal
+  const handleSaveMember = (e) => {
+    e.preventDefault();
+    if (!memberForm.name.trim()) {
+      showAlert({
+        title: 'Validation Error',
+        message: 'Member Full Name is required.',
+        variant: 'danger',
+      });
+      return;
+    }
+    if (!memberForm.wing.trim() || !memberForm.flat_no.trim()) {
+      showAlert({
+        title: 'Validation Error',
+        message: 'Wing and Flat Number are required for flat mapping.',
+        variant: 'danger',
+      });
+      return;
+    }
+
+    if (editingIndex !== null) {
+      // Update existing
+      setMembers(prev => {
+        const updated = [...prev];
+        updated[editingIndex] = { ...memberForm };
+        return updated;
+      });
+    } else {
+      // Add new
+      setMembers(prev => [
+        ...prev,
+        {
+          ...memberForm,
+          id: Date.now(),
+        }
+      ]);
+    }
+    setIsModalOpen(false);
+  };
+
+  // Submit Society Proposal
+  const handleSubmitProposal = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Validation
-    if (!name.trim() || !city.trim() || !address.trim() || !pincode.trim()) {
-      setError('Please fill all required society details.');
+    if (!name.trim() || !city.trim()) {
+      setError('Please provide Society Name and City.');
       setLoading(false);
       return;
     }
@@ -183,28 +223,13 @@ export default function ContributePage() {
       return;
     }
 
-    for (let i = 0; i < members.length; i++) {
-      const m = members[i];
-      if (!m.name.trim()) {
-        setError(`Please enter the full name for Committee Member #${i + 1}.`);
-        setLoading(false);
-        return;
-      }
-      if (!m.wing.trim() || !m.flat_no.trim()) {
-        setError(`Please specify Wing and Flat Number for Member #${i + 1} (${m.name}).`);
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
       await api.post('/api/society/contribute', {
         society_name: name,
-        address,
         city,
-        state: state || 'Maharashtra',
-        pincode,
-        total_flats: totalFlats,
+        state: 'Maharashtra',
+        address: '',
+        pincode: '',
         contact_name: members[0]?.name || user?.name || 'Guest Contributor',
         contact_email: members[0]?.email || user?.email || '',
         contact_phone: members[0]?.phone || user?.phone || '',
@@ -213,7 +238,7 @@ export default function ContributePage() {
           name: m.name,
           email: m.email,
           phone: m.phone,
-          role: m.role,
+          role: m.role || 'committee',
           wing: m.wing,
           floor: m.floor,
           flat_no: m.flat_no,
@@ -226,10 +251,7 @@ export default function ContributePage() {
 
       setSubmitted(true);
       setName('');
-      setAddress('');
       setCity('');
-      setPincode('');
-      setTotalFlats('');
       setMembers([
         {
           id: Date.now(),
@@ -247,10 +269,6 @@ export default function ContributePage() {
           is_primary: true,
         }
       ]);
-
-      if (user) {
-        await loadProposals();
-      }
     } catch (err) {
       const msg = err?.message || 'Failed to submit proposal.';
       setError(msg);
@@ -265,525 +283,455 @@ export default function ContributePage() {
   };
 
   return (
-    <div className={`space-y-6 sm:space-y-8 transition-colors ${
-      user ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'
-    }`}>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 sm:space-y-8 transition-colors">
       {/* Page Heading */}
       <div className="text-center space-y-2">
         <div className="w-12 h-12 rounded-2xl bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-2 shadow-sm">
           <Building2 className="w-6 h-6" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-surface-900 dark:text-white font-heading">
-          Register / Contribute a Housing Society
+          Propose / Onboard a Housing Society
         </h1>
         <p className="text-xs sm:text-sm text-surface-600 dark:text-surface-200/70 max-w-xl mx-auto leading-relaxed">
-          Submit your residential society details along with founding committee flat mappings for admin approval and instant onboarding.
+          Register a new society instance. You can search and add committee members dynamically.
         </p>
       </div>
 
-      {/* Grid: 2 columns responsive for logged in user, 1 column centered for guest */}
-      <div className={user ? 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start' : 'max-w-3xl mx-auto'}>
-        
-        {/* Column 1: Main Form */}
-        <div className={user ? 'lg:col-span-7 space-y-6' : 'w-full space-y-6'}>
-          {submitted ? (
-            <div className="p-8 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm text-center space-y-4 transition-colors">
-              <CheckCircle2 className="w-14 h-14 text-emerald-500 dark:text-emerald-400 mx-auto" />
-              <h2 className="text-xl font-bold text-surface-900 dark:text-white">Proposal Submitted Successfully!</h2>
-              <p className="text-xs text-surface-600 dark:text-surface-200/70 max-w-md mx-auto leading-relaxed">
-                Your society proposal with founding committee member and flat mapping has been routed to the system administration for review. 
-                Notifications have been dispatched to all nominated members.
-              </p>
+      {submitted ? (
+        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm text-center space-y-4 transition-colors">
+          <CheckCircle2 className="w-14 h-14 text-emerald-500 dark:text-emerald-400 mx-auto" />
+          <h2 className="text-xl font-bold text-surface-900 dark:text-white">Proposal Submitted Successfully!</h2>
+          <p className="text-xs text-surface-600 dark:text-surface-200/70 max-w-md mx-auto leading-relaxed">
+            Your housing society proposal along with founding committee members has been submitted for administrative review.
+            Notifications have been dispatched to all nominated members.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSubmitted(false)}
+            className="mt-4 px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition-all cursor-pointer shadow-md shadow-brand-500/25"
+          >
+            Submit Another Society
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmitProposal} className="space-y-6">
+          {error && (
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* MAIN CARD: Society Details & Committee Members Table */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm transition-colors space-y-6">
+            {/* Society Name & City (2 Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                  Society Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Shivneri CHS"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Pune"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Committee Members & Unit Allocation Header */}
+            <div className="pt-4 border-t border-surface-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-surface-900 dark:text-white">
+                  Committee Members & Unit Allocation
+                </h2>
+                <p className="text-xs text-surface-500 dark:text-surface-200/60 mt-0.5">
+                  Search registered users to add them to this society proposal. Minimum 1 committee member with flat mapping is required.
+                </p>
+              </div>
+
               <button
                 type="button"
-                onClick={() => setSubmitted(false)}
-                className="mt-4 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition-all cursor-pointer shadow-md shadow-brand-500/25"
+                onClick={handleOpenAddModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm shadow-brand-500/25 self-start sm:self-auto"
               >
-                Submit Another Society
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Member</span>
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
 
-              {/* CARD 1: Society Details */}
-              <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm transition-colors space-y-4">
-                <div className="flex items-center gap-2.5 pb-2 border-b border-surface-100 dark:border-white/5">
-                  <Building2 className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                  <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider">
-                    1. Housing Society Details
-                  </h2>
+            {/* Committee Members Table */}
+            <div className="overflow-x-auto rounded-2xl border border-surface-200 dark:border-white/10">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-surface-50 dark:bg-white/[0.03] text-surface-500 dark:text-surface-200/60 uppercase tracking-wider text-[10px] border-b border-surface-200 dark:border-white/10">
+                    <th className="py-3 px-4 font-bold">MEMBER</th>
+                    <th className="py-3 px-4 font-bold">CONTACT</th>
+                    <th className="py-3 px-4 font-bold">FLAT LOCATION</th>
+                    <th className="py-3 px-4 font-bold">SPECIFICATION</th>
+                    <th className="py-3 px-4 font-bold text-right">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-white/5">
+                  {members.map((m, idx) => (
+                    <tr key={m.id || idx} className="hover:bg-surface-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-surface-900 dark:text-white">
+                            {m.name || 'Unnamed Member'}
+                          </span>
+                          {m.is_primary ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                              Primary Lead
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[10px] font-semibold capitalize">
+                              {m.role || 'Committee'}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-surface-600 dark:text-surface-200/70">
+                        <p>{m.email || 'No email provided'}</p>
+                        {m.phone && <p className="text-[11px] text-surface-400 dark:text-surface-200/50">{m.phone}</p>}
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-surface-800 dark:text-surface-200">
+                        Wing {m.wing} · Flat {m.flat_no}
+                      </td>
+                      <td className="py-3.5 px-4 text-surface-600 dark:text-surface-200/70">
+                        <span>{m.flat_type} ({m.area_sqft} sq.ft)</span>
+                        <span className="mx-1.5 text-surface-300 dark:text-surface-200/30">·</span>
+                        <span className="capitalize">{m.occupancy_status ? m.occupancy_status.replace(/_/g, ' ') : 'Self occupied'}</span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(idx)}
+                            className="px-2.5 py-1 rounded-lg bg-surface-100 hover:bg-surface-200 dark:bg-white/10 dark:hover:bg-white/15 text-surface-700 dark:text-white font-medium text-xs transition-colors cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          {members.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(idx)}
+                              className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 font-medium text-xs transition-colors cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Bottom Actions: Cancel & Submit Society Proposal */}
+            <div className="pt-4 flex items-center justify-end gap-3 border-t border-surface-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setName('');
+                  setCity('');
+                }}
+                className="px-4 py-2.5 rounded-xl border border-surface-300 dark:border-white/15 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-white/5 text-xs font-semibold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs transition-all shadow-md shadow-emerald-600/25 flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{loading ? 'Submitting Proposal...' : 'Submit Society Proposal'}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* ADD / EDIT COMMITTEE MEMBER MODAL (Modeled after reference screenshot) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/15 shadow-2xl p-6 sm:p-7 space-y-4 my-auto relative transition-colors">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-surface-100 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <Home className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                <h3 className="text-base font-bold text-surface-900 dark:text-white">
+                  {editingIndex !== null ? `Manage Flat ${memberForm.wing}-${memberForm.flat_no} Occupancy` : 'Add Committee Member & Flat'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="p-1 rounded-lg text-surface-400 hover:text-surface-700 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMember} className="space-y-4">
+              {/* Select Occupancy Status (3 Segmented Cards from Screenshot) */}
+              <div>
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-2">
+                  Select Occupancy Status
+                </label>
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                  {[
+                    { key: 'self_occupied', label: 'Self occupied', icon: Home },
+                    { key: 'available_for_rent', label: 'Available for rent', icon: Key },
+                    { key: 'rented', label: 'Rented', icon: User },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = memberForm.occupancy_status === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setMemberForm(prev => ({ ...prev, occupancy_status: item.key }))}
+                        className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-50/90 dark:bg-brand-500/20 border-brand-500 text-surface-900 dark:text-white ring-2 ring-brand-500/30 font-bold shadow-xs'
+                            : 'bg-surface-50/60 dark:bg-white/[0.03] border-surface-200 dark:border-white/10 text-surface-600 dark:text-surface-300 hover:border-surface-300 dark:hover:border-white/20'
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-surface-500 dark:text-surface-400'}`} />
+                        <span className="text-xs leading-tight font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Informational Alert Banner (from Screenshot) */}
+              <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-800 dark:text-purple-300 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <span>Link an already registered member account or fill their contact details for society records.</span>
+              </div>
+
+              {/* Link Registered User Dropdown (from Screenshot) */}
+              <div className="relative">
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                  Link Registered User (Committee Member)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery !== '' ? searchQuery : (memberForm.name ? `${memberForm.name} (${memberForm.email || memberForm.phone || 'Linked'})` : '')}
+                    onChange={(e) => handleSearchUsers(e.target.value)}
+                    onFocus={() => {
+                      if (searchResults.length > 0) setDropdownOpen(true);
+                    }}
+                    placeholder="-- Choose registered member or enter details manually --"
+                    className="w-full pl-3.5 pr-8 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                  />
+                  <ChevronDown className="w-4 h-4 text-surface-400 absolute right-2.5 top-2.5 pointer-events-none" />
                 </div>
 
+                {dropdownOpen && searchResults.length > 0 && (
+                  <div className="absolute z-30 left-0 right-0 mt-1 max-h-44 overflow-y-auto rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-white/15 shadow-xl p-1 space-y-1">
+                    {searchResults.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUser(u)}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 dark:hover:bg-white/10 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                      >
+                        <div>
+                          <p className="font-semibold text-surface-900 dark:text-white">{u.name}</p>
+                          <p className="text-[11px] text-surface-500 dark:text-surface-200/60">{u.email} {u.phone ? `• ${u.phone}` : ''}</p>
+                        </div>
+                        <Check className="w-3.5 h-3.5 text-brand-500" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2 Columns: Full Name | Phone Number (from Screenshot) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                    Society Name <span className="text-red-500">*</span>
+                    Member Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Green Valley Cooperative Housing Society"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                    value={memberForm.name}
+                    onChange={(e) => setMemberForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Member Full Name"
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                    Address / Street / Locality <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    required
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Full street address and landmark"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                  ></textarea>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                      City <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Pune"
-                      className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                      State <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      placeholder="Maharashtra"
-                      className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                      PIN Code <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={pincode}
-                      onChange={(e) => setPincode(e.target.value)}
-                      placeholder="411001"
-                      className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                    Estimated Total Units / Flats
+                    Member Phone Number
                   </label>
                   <input
-                    type="number"
-                    min={1}
-                    value={totalFlats}
-                    onChange={(e) => setTotalFlats(e.target.value)}
-                    placeholder="e.g. 50"
-                    className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                    type="text"
+                    value={memberForm.phone}
+                    onChange={(e) => setMemberForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Member Phone Number"
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
                   />
                 </div>
               </div>
 
-              {/* CARD 2: Founding Committee Members with Flat Mapping */}
-              <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm transition-colors space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-surface-100 dark:border-white/5">
-                  <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                    <div>
-                      <h2 className="text-sm font-bold text-surface-900 dark:text-white uppercase tracking-wider">
-                        2. Founding Committee & Flat Mapping
-                      </h2>
-                      <p className="text-[11px] text-surface-500 dark:text-surface-200/60">
-                        Minimum 1 committee member with mapped flat is required to manage society upon approval.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addMember}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-xs font-semibold transition-all cursor-pointer self-start sm:self-auto"
+              {/* 2 Columns: Email Address | Role */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={memberForm.email}
+                    onChange={(e) => setMemberForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Email Address"
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                    Role Designation
+                  </label>
+                  <select
+                    value={memberForm.role}
+                    onChange={(e) => setMemberForm(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-surface-800 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Member</span>
-                  </button>
-                </div>
-
-                {/* Info banner matching design screenshot */}
-                <div className="p-3.5 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-700 dark:text-brand-300 text-xs flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                  <span>
-                    Link an already registered member account or fill their contact details for society records.
-                  </span>
-                </div>
-
-                {/* Member Cards */}
-                <div className="space-y-4">
-                  {members.map((member, idx) => (
-                    <div
-                      key={member.id}
-                      className="p-4 sm:p-5 rounded-2xl bg-surface-50/80 dark:bg-white/[0.02] border border-surface-200 dark:border-white/10 space-y-4 relative transition-colors"
-                    >
-                      {/* Member Header */}
-                      <div className="flex items-center justify-between pb-2 border-b border-surface-200/60 dark:border-white/5">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-400 text-xs font-bold flex items-center justify-center">
-                            {idx + 1}
-                          </span>
-                          <span className="text-xs font-bold text-surface-900 dark:text-white">
-                            {member.role ? member.role.toUpperCase() : 'COMMITTEE MEMBER'}
-                          </span>
-                          {member.is_primary && (
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
-                              Primary Lead
-                            </span>
-                          )}
-                        </div>
-                        {members.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeMember(idx)}
-                            className="p-1 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Remove Member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Select Occupancy Status - Match reference screenshot */}
-                      <div>
-                        <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-2">
-                          Select Occupancy Status
-                        </label>
-                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                          {[
-                            { key: 'self_occupied', label: 'Self occupied', icon: Home },
-                            { key: 'available_for_rent', label: 'Available for rent', icon: Key },
-                            { key: 'rented', label: 'Rented', icon: User },
-                          ].map((item) => {
-                            const Icon = item.icon;
-                            const isSelected = member.occupancy_status === item.key;
-                            return (
-                              <button
-                                key={item.key}
-                                type="button"
-                                onClick={() => updateMember(idx, 'occupancy_status', item.key)}
-                                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-brand-50/80 dark:bg-brand-500/15 border-brand-500 text-brand-700 dark:text-brand-300 ring-2 ring-brand-500/30 font-semibold shadow-sm'
-                                    : 'bg-white dark:bg-white/[0.04] border-surface-200 dark:border-white/10 text-surface-600 dark:text-surface-300 hover:border-surface-300 dark:hover:border-white/20'
-                                }`}
-                              >
-                                <Icon className={`w-5 h-5 ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-surface-500 dark:text-surface-400'}`} />
-                                <span className="text-xs leading-tight">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Link Registered User Dropdown / Autocomplete */}
-                      <div className="relative">
-                        <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                          Link Registered User (Committee Member)
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={searchQueries[idx] !== undefined ? searchQueries[idx] : (member.name ? `${member.name} (${member.email || member.phone || 'Linked'})` : '')}
-                            onChange={(e) => handleUserSearch(idx, e.target.value)}
-                            onFocus={() => {
-                              if ((searchResults[idx] || []).length > 0) setActiveDropdown(idx);
-                            }}
-                            placeholder="-- Choose registered user or enter details manually --"
-                            className="w-full pl-3.5 pr-8 py-2 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                          />
-                          <ChevronDown className="w-4 h-4 text-surface-400 absolute right-2.5 top-2.5 pointer-events-none" />
-                        </div>
-
-                        {/* Search Dropdown list */}
-                        {activeDropdown === idx && (searchResults[idx] || []).length > 0 && (
-                          <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-white/15 shadow-xl p-1 space-y-1">
-                            {searchResults[idx].map((u) => (
-                              <button
-                                key={u.id}
-                                type="button"
-                                onClick={() => selectUser(idx, u)}
-                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 dark:hover:bg-white/10 flex items-center justify-between text-xs transition-colors cursor-pointer"
-                              >
-                                <div>
-                                  <p className="font-semibold text-surface-900 dark:text-white">{u.name}</p>
-                                  <p className="text-[11px] text-surface-500 dark:text-surface-200/60">{u.email} {u.phone ? `• ${u.phone}` : ''}</p>
-                                </div>
-                                <Check className="w-3.5 h-3.5 text-brand-500" />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 2 Columns: Full Name & Phone Number */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                            Member Full Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={member.name}
-                            onChange={(e) => updateMember(idx, 'name', e.target.value)}
-                            placeholder="Full name"
-                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                            Phone Number
-                          </label>
-                          <input
-                            type="text"
-                            value={member.phone}
-                            onChange={(e) => updateMember(idx, 'phone', e.target.value)}
-                            placeholder="e.g. 9876543210"
-                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      {/* 2 Columns: Email & Committee Role */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            value={member.email}
-                            onChange={(e) => updateMember(idx, 'email', e.target.value)}
-                            placeholder="member@example.com"
-                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                            Role Designation
-                          </label>
-                          <select
-                            value={member.role}
-                            onChange={(e) => updateMember(idx, 'role', e.target.value)}
-                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-surface-800 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all cursor-pointer"
-                          >
-                            <option value="chairman">Chairman</option>
-                            <option value="secretary">Secretary</option>
-                            <option value="treasurer">Treasurer</option>
-                            <option value="committee">Committee Member</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Flat Mapping Grid: Wing, Flat No, Floor, Flat Type, Area */}
-                      <div className="pt-2 border-t border-surface-200/60 dark:border-white/5">
-                        <label className="block text-xs font-bold text-surface-800 dark:text-surface-200/90 mb-2">
-                          Flat & Unit Mapping Details
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
-                              Wing <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={member.wing}
-                              onChange={(e) => updateMember(idx, 'wing', e.target.value.toUpperCase())}
-                              placeholder="A"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center font-bold uppercase focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
-                              Flat No <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={member.flat_no}
-                              onChange={(e) => updateMember(idx, 'flat_no', e.target.value)}
-                              placeholder="101"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center font-bold focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
-                              Floor
-                            </label>
-                            <input
-                              type="text"
-                              value={member.floor}
-                              onChange={(e) => updateMember(idx, 'floor', e.target.value)}
-                              placeholder="1"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
-                              Flat Type
-                            </label>
-                            <select
-                              value={member.flat_type}
-                              onChange={(e) => updateMember(idx, 'flat_type', e.target.value)}
-                              className="w-full px-2 py-1.5 rounded-lg bg-white dark:bg-surface-800 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500/40 focus:outline-none cursor-pointer"
-                            >
-                              <option value="1 RK">1 RK</option>
-                              <option value="1 BHK">1 BHK</option>
-                              <option value="2 BHK">2 BHK</option>
-                              <option value="3 BHK">3 BHK</option>
-                              <option value="4 BHK">4 BHK</option>
-                              <option value="Penthouse">Penthouse</option>
-                            </select>
-                          </div>
-
-                          <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
-                              Area (sq.ft)
-                            </label>
-                            <input
-                              type="number"
-                              value={member.area_sqft}
-                              onChange={(e) => updateMember(idx, 'area_sqft', e.target.value)}
-                              placeholder="850"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    <option value="chairman">Chairman</option>
+                    <option value="secretary">Secretary</option>
+                    <option value="treasurer">Treasurer</option>
+                    <option value="committee">Committee Member</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-                <span>{loading ? 'Submitting Proposal & Notifying Members...' : 'Submit Society Proposal for Approval'}</span>
-              </button>
-            </form>
-          )}
-        </div>
+              {/* Flat Mapping: Wing, Flat Number, Floor, Flat Type, Area */}
+              <div className="pt-2 border-t border-surface-100 dark:border-white/10">
+                <label className="block text-xs font-bold text-surface-800 dark:text-surface-200/90 mb-2">
+                  Flat Mapping & Specifications
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
+                      Wing <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={memberForm.wing}
+                      onChange={(e) => setMemberForm(prev => ({ ...prev, wing: e.target.value.toUpperCase() }))}
+                      placeholder="A"
+                      className="w-full px-2 py-1.5 rounded-lg bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center font-bold uppercase focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
+                    />
+                  </div>
 
-        {/* Column 2: Society Contribution Status (for logged in user) */}
-        {user && (
-          <div className="lg:col-span-5 space-y-4">
-            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-white/10 shadow-sm space-y-4 transition-colors">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-surface-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                  <span>Society Contribution Status</span>
-                </h3>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
+                      Flat No <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={memberForm.flat_no}
+                      onChange={(e) => setMemberForm(prev => ({ ...prev, flat_no: e.target.value }))}
+                      placeholder="101"
+                      className="w-full px-2 py-1.5 rounded-lg bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center font-bold focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
+                      Floor
+                    </label>
+                    <input
+                      type="text"
+                      value={memberForm.floor}
+                      onChange={(e) => setMemberForm(prev => ({ ...prev, floor: e.target.value }))}
+                      placeholder="1"
+                      className="w-full px-2 py-1.5 rounded-lg bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
+                      Flat Type
+                    </label>
+                    <select
+                      value={memberForm.flat_type}
+                      onChange={(e) => setMemberForm(prev => ({ ...prev, flat_type: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500/40 focus:outline-none cursor-pointer"
+                    >
+                      <option value="1 RK">1 RK</option>
+                      <option value="1 BHK">1 BHK</option>
+                      <option value="2 BHK">2 BHK</option>
+                      <option value="3 BHK">3 BHK</option>
+                      <option value="4 BHK">4 BHK</option>
+                      <option value="Penthouse">Penthouse</option>
+                    </select>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[11px] font-semibold text-surface-600 dark:text-surface-200/70 mb-1">
+                      Area (sq.ft)
+                    </label>
+                    <input
+                      type="number"
+                      value={memberForm.area_sqft}
+                      onChange={(e) => setMemberForm(prev => ({ ...prev, area_sqft: e.target.value }))}
+                      placeholder="850"
+                      className="w-full px-2 py-1.5 rounded-lg bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs text-center focus:ring-2 focus:ring-brand-500/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Bottom Buttons (Cancel & Save from Screenshot) */}
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-surface-100 dark:border-white/10">
                 <button
                   type="button"
-                  onClick={loadProposals}
-                  disabled={loadingProposals}
-                  title="Refresh Status"
-                  className="p-1.5 rounded-lg text-surface-400 hover:text-surface-700 dark:text-surface-200/60 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-surface-300 dark:border-white/15 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-white/5 text-xs font-semibold transition-all cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loadingProposals ? 'animate-spin' : ''}`} />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition-all shadow-md shadow-brand-600/25 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>Save Member & Flat</span>
                 </button>
               </div>
-
-              {loadingProposals ? (
-                <div className="py-8 text-center">
-                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                </div>
-              ) : proposals.length > 0 ? (
-                <div className="space-y-2.5">
-                  {proposals.map((sp) => (
-                    <div
-                      key={sp.id}
-                      className="p-3.5 rounded-2xl bg-surface-50 dark:bg-white/[0.02] border border-surface-200 dark:border-white/5 flex items-center justify-between text-xs transition-colors"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <p className="font-semibold text-surface-900 dark:text-white truncate">
-                          {sp.society_name}
-                        </p>
-                        <p className="text-[11px] text-surface-500 dark:text-surface-200/60 truncate">
-                          {sp.city}, {sp.state}
-                        </p>
-                        {sp.created_at && (
-                          <p className="text-[10px] text-surface-400 dark:text-surface-200/40 mt-0.5">
-                            Submitted on {new Date(sp.created_at).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <span
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                          sp.status === 'approved'
-                            ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
-                            : sp.status === 'rejected'
-                            ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
-                            : 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
-                        }`}
-                      >
-                        {sp.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-6 text-center text-xs text-surface-400 dark:text-surface-200/40 space-y-1">
-                  <Clock className="w-8 h-8 text-surface-300 dark:text-surface-200/20 mx-auto" />
-                  <p>No society proposals submitted yet.</p>
-                  <p className="text-[11px]">Fill the form on the left to submit a new society proposal.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Note banner */}
-            <div className="p-4 rounded-2xl bg-surface-50 dark:bg-white/[0.02] border border-surface-200 dark:border-white/10 text-xs text-surface-600 dark:text-surface-200/70 space-y-1">
-              <p className="font-semibold text-surface-900 dark:text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Admin Review & Automatic Member Onboarding</span>
-              </p>
-              <p className="text-[11px] leading-relaxed">
-                Proposals are verified by platform administrators. Once approved, the society and its founding committee flats are automatically created, and committee access is granted immediately.
-              </p>
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
