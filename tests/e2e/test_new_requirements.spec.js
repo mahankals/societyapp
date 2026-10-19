@@ -96,15 +96,47 @@ test.describe('Verify New Resident Requirements', () => {
       // Click "Pay Selected with UPI"
       await page.click('button:has-text("Pay Selected with UPI")');
 
-      // Verify Modal opens with UPI QR and society name
+      // Verify Modal opens with UPI QR and "Pay with UPI App" option
       await expect(page.locator('h2:has-text("Pay via UPI QR Code")')).toBeVisible();
+      await expect(page.locator('button:has-text("Pay with UPI App")')).toBeVisible();
       await expect(page.locator('img[alt="UPI QR Code"]')).toBeVisible();
       await expect(page.locator('button:has-text("Confirm Paid")')).toBeVisible();
 
-      await page.screenshot({ path: 'test_bills_multi_upi_modal.png' });
+      // 1. Try confirming without Transaction ID (should fail validation)
+      await page.click('button:has-text("Confirm Paid")');
+      await expect(page.locator('text=Transaction ID / UTR is required')).toBeVisible();
 
-      // Close modal
-      await page.click('button:has-text("Close")');
+      // 2. Enter Transaction ID and confirm payment
+      await page.fill('input[placeholder*="12-digit UTR"]', 'UTR984120485912');
+      await page.click('button:has-text("Confirm Paid")');
+
+      // 3. Verify modal body is REPLACED with GPay-style Payment Receipt
+      await expect(page.locator('h2:has-text("Payment Successful")')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('text=UTR984120485912')).toBeVisible();
+      await expect(page.locator('button:has-text("Save / Share Image")')).toBeVisible();
+      await expect(page.locator('button:has-text("Done")')).toBeVisible();
+
+      // Test image generation / download trigger
+      await page.click('button:has-text("Save / Share Image")');
+      await page.waitForTimeout(1000);
+
+      // Close receipt
+      await page.click('button:has-text("Done")');
+      await page.waitForTimeout(1000);
+
+      // 4. Test "Pay with UPI App" auto-confirm on next unpaid bill
+      const remainingCheckboxes = page.locator('tbody input[type="checkbox"]');
+      if (await remainingCheckboxes.count() > 0) {
+        await remainingCheckboxes.first().check();
+        await page.click('button:has-text("Pay Selected with UPI")');
+        await expect(page.locator('button:has-text("Pay with UPI App")')).toBeVisible();
+
+        // Click Pay with UPI App -> auto-confirms with generated transaction ID
+        await page.click('button:has-text("Pay with UPI App")');
+        await expect(page.locator('h2:has-text("Payment Successful")')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('button:has-text("Save / Share Image")')).toBeVisible();
+        await page.click('button:has-text("Done")');
+      }
     }
 
     console.log('[TEST] All requirements successfully tested and verified!');

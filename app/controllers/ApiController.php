@@ -480,11 +480,13 @@ class ApiController
             self::json(['success' => false, 'error' => 'No bills selected for payment.'], 400);
         }
 
-        $txRef = 'UPI-' . strtoupper(bin2hex(random_bytes(4)));
+        $userTxId = trim($input['transaction_id'] ?? '');
+        $txRef = !empty($userTxId) ? $userTxId : ('UPI-' . strtoupper(bin2hex(random_bytes(4))));
         $now = date('Y-m-d H:i:s');
         $today = date('Y-m-d');
         $paidCount = 0;
         $totalPaid = 0.0;
+        $receiptNo = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $billIds[0] ?? rand(100, 999));
 
         foreach ($billIds as $bid) {
             $bill = Database::fetchOne("SELECT * FROM maintenance_bills WHERE id = ?", [$bid]);
@@ -522,6 +524,8 @@ class ApiController
             'success' => true,
             'message' => "Payment of ₹" . number_format($totalPaid, 2) . " for {$paidCount} bill(s) recorded successfully!",
             'transaction_ref' => $txRef,
+            'receipt_no' => $receiptNo,
+            'paid_at' => $now,
             'paid_count' => $paidCount,
             'total_amount' => $totalPaid,
         ]);
