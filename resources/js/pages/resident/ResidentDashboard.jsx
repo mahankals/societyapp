@@ -18,7 +18,8 @@ import {
   Phone,
   Search,
   Mail,
-  User
+  User,
+  UserMinus
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -61,6 +62,19 @@ export default function ResidentDashboard() {
       await loadData();
     } catch (err) {
       alert(err?.message || 'Failed to update rent status.');
+    }
+  };
+
+  const handleRemoveTenant = async (flatId) => {
+    if (!window.confirm('Are you sure you want to remove this tenant from the unit? The unit will be marked as self occupied.')) {
+      return;
+    }
+    try {
+      const res = await api.post(`/api/resident/flats/${flatId}/remove-tenant`);
+      setMessage(res.message || 'Tenant removed successfully!');
+      await loadData();
+    } catch (err) {
+      alert(err?.message || 'Failed to remove tenant.');
     }
   };
 
@@ -260,24 +274,39 @@ export default function ResidentDashboard() {
                     </div>
                   </div>
 
-                  {/* Tenant Details if Rented */}
+                  {/* Tenant Details & Remove Action if Rented */}
                   {isRented && (
-                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-900 dark:text-purple-200 space-y-1">
-                      <p className="font-semibold flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                        <span>Tenant: {f.tenant_name || 'Active Tenant'}</span>
-                      </p>
-                      {f.tenant_phone && (
-                        <p className="text-[11px] text-purple-700/80 dark:text-purple-300/80 flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                          <span>{f.tenant_phone}</span>
-                        </p>
-                      )}
+                    <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-900 dark:text-purple-200 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p className="font-bold flex items-center gap-1.5 text-purple-950 dark:text-purple-100">
+                            <Users className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                            <span>Tenant: {f.tenant_name || 'Active Tenant'}</span>
+                          </p>
+                          {f.tenant_phone && (
+                            <p className="text-[11px] text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                              <span>{f.tenant_phone}</span>
+                            </p>
+                          )}
+                        </div>
+                        {isOwner && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTenant(f.flat_id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/15 dark:hover:bg-red-500/25 dark:text-red-300 dark:border-red-500/30 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                            title="Remove tenant from this unit"
+                          >
+                            <UserMinus className="w-3 h-3 text-red-600 dark:text-red-400" />
+                            <span>Remove Tenant</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
-                  {/* Owner Controls: Toggle Rent / Link Tenant */}
-                  {isOwner && (
+                  {/* Owner Controls: Only visible when NO tenant is attached */}
+                  {isOwner && !isRented && (
                     <div className="flex items-center gap-2 pt-1 border-t border-surface-200 dark:border-white/5">
                       <button
                         type="button"
@@ -301,7 +330,7 @@ export default function ResidentDashboard() {
                           }}
                           className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 dark:text-purple-300 dark:border-purple-500/30 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                         >
-                          <UserCheck className="w-3 h-3" />
+                          <UserCheck className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                           <span>Link Tenant</span>
                         </button>
                       )}
@@ -338,13 +367,13 @@ export default function ResidentDashboard() {
                 <UserCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Link Tenant to Unit {selectedFlatForTenant.wing}-{selectedFlatForTenant.flat_no}</span>
               </h2>
-              <p className="text-xs text-surface-500 dark:text-surface-200/60">
+              <p className="text-xs text-surface-600 dark:text-surface-200/60 leading-relaxed">
                 Search registered users by email or phone. Only app-registered users can be tenants.
               </p>
             </div>
 
             {tenantError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{tenantError}</span>
               </div>
@@ -352,7 +381,7 @@ export default function ResidentDashboard() {
 
             {/* Search Input */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80">
+              <label className="block text-xs font-semibold text-surface-800 dark:text-surface-200/90">
                 Search Tenant by Email or Mobile <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
@@ -380,16 +409,16 @@ export default function ResidentDashboard() {
                       }
                     }}
                     placeholder="Enter email or mobile number..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs placeholder-surface-400 dark:placeholder-surface-200/30 focus:outline-none focus:border-purple-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs placeholder-surface-400 dark:placeholder-surface-200/30 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition-all shadow-xs"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => handleSearchTenant()}
                   disabled={searchingTenant || searchQuery.trim().length < 2}
-                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm"
                 >
-                  <Search className="w-3.5 h-3.5" />
+                  <Search className="w-3.5 h-3.5 text-white" />
                   <span>{searchingTenant ? 'Searching...' : 'Search'}</span>
                 </button>
               </div>
@@ -398,7 +427,7 @@ export default function ResidentDashboard() {
             {/* Search Results */}
             {hasSearched && (
               <div className="space-y-2 pt-1">
-                <div className="text-[10px] font-semibold text-surface-500 dark:text-surface-200/50 uppercase tracking-wider">
+                <div className="text-[10px] font-bold text-surface-600 dark:text-surface-200/60 uppercase tracking-wider">
                   Registered Users ({searchResults.length})
                 </div>
 
@@ -422,12 +451,12 @@ export default function ResidentDashboard() {
                           onClick={() => setSelectedTenantUser(u)}
                           className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                             isSelected
-                              ? 'bg-purple-50 dark:bg-purple-500/20 border-purple-300 dark:border-purple-500/50 ring-1 ring-purple-400/40'
-                              : 'bg-surface-50 dark:bg-white/[0.03] border-surface-200 dark:border-white/10 hover:bg-surface-100 dark:hover:bg-white/[0.06]'
+                              ? 'bg-purple-50/80 dark:bg-purple-500/20 border-purple-400 dark:border-purple-500/50 ring-2 ring-purple-400/30 shadow-xs'
+                              : 'bg-white dark:bg-white/[0.03] border-surface-200 dark:border-white/10 hover:bg-surface-50 dark:hover:bg-white/[0.06] shadow-xs'
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-sm shrink-0">
+                            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/25 text-purple-800 dark:text-purple-200 flex items-center justify-center font-extrabold text-sm shrink-0">
                               {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div className="min-w-0">
@@ -444,10 +473,10 @@ export default function ResidentDashboard() {
                               e.stopPropagation();
                               setSelectedTenantUser(u);
                             }}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                               isSelected
-                                ? 'bg-purple-600 text-white shadow-sm'
-                                : 'bg-surface-200 hover:bg-surface-300 text-surface-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white'
+                                ? 'bg-purple-600 text-white shadow-xs'
+                                : 'bg-surface-100 hover:bg-surface-200 border border-surface-200 text-surface-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-transparent dark:text-white'
                             }`}
                           >
                             {isSelected ? 'Selected' : 'Select'}
@@ -462,21 +491,21 @@ export default function ResidentDashboard() {
 
             {/* Selected Tenant Preview */}
             {selectedTenantUser && (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 space-y-1.5">
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 space-y-1.5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Registered User Selected</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                     Verified
                   </span>
                 </div>
                 <div className="text-xs space-y-0.5">
                   <p className="font-bold text-surface-900 dark:text-white text-sm">{selectedTenantUser.name}</p>
-                  <p className="text-surface-600 dark:text-surface-200/70">{selectedTenantUser.email}</p>
+                  <p className="text-surface-700 dark:text-surface-200/70">{selectedTenantUser.email}</p>
                   {selectedTenantUser.phone && (
-                    <p className="text-surface-600 dark:text-surface-200/70">{selectedTenantUser.phone}</p>
+                    <p className="text-surface-700 dark:text-surface-200/70">{selectedTenantUser.phone}</p>
                   )}
                 </div>
               </div>
@@ -490,14 +519,18 @@ export default function ResidentDashboard() {
                     setSelectedFlatForTenant(null);
                     setSelectedTenantUser(null);
                   }}
-                  className="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-medium transition-all cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 border border-surface-200 dark:border-transparent text-surface-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white text-xs font-semibold transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!selectedTenantUser || submittingTenant}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    !selectedTenantUser || submittingTenant
+                      ? 'bg-surface-200 text-surface-400 dark:bg-white/10 dark:text-surface-500 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/25 active:scale-95 cursor-pointer'
+                  }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>{submittingTenant ? 'Linking...' : 'Confirm Tenant'}</span>

@@ -9,10 +9,10 @@ export default function NotFoundPage() {
         404
       </div>
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white font-heading">
+        <h1 className="text-2xl sm:text-3xl font-bold text-surface-900 dark:text-white font-heading">
           Page Not Found
         </h1>
-        <p className="text-xs sm:text-sm text-surface-200/60 max-w-md mx-auto">
+        <p className="text-xs sm:text-sm text-surface-600 dark:text-surface-200/60 max-w-md mx-auto">
           The requested route does not exist or may have been relocated within the society management portal.
         </p>
       </div>

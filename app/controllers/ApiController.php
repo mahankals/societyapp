@@ -399,26 +399,132 @@ class ApiController
             self::json(['success' => false, 'error' => 'Authentication required.'], 401);
         }
         $userId = (int)$user['id'];
-        $bills = Database::fetchAll(
-            "SELECT b.*, f.wing, f.flat_no, s.name as society_name, s.upi_id, s.payee_name as upi_name
-             FROM maintenance_bills b 
-             JOIN flats f ON b.flat_id = f.id 
-             JOIN societies s ON f.society_id = s.id 
-             JOIN society_members sm ON sm.flat_id = f.id 
-             WHERE sm.user_id = ? 
-             ORDER BY b.due_date DESC",
-            [$userId]
-        );
-        if (empty($bills)) {
+        $selectedSocietyId = (int)($_GET['society_id'] ?? 0);
+
+        // Fetch accessible societies
+        $societies = Database::fetchAll("
+            SELECT DISTINCT s.id, s.name, s.upi_id, s.payee_name as upi_name
+            FROM societies s
+            WHERE s.id IN (
+                SELECT sm.society_id FROM society_members sm WHERE sm.user_id = ? AND sm.status = 'active'
+                UNION
+                SELECT f.society_id FROM flats f JOIN maintenance_bills b ON b.flat_id = f.id WHERE b.user_id = ?
+            )
+            ORDER BY s.name ASC
+        ", [$userId, $userId]);
+
+        if (empty($societies)) {
+            $societies = Database::fetchAll("SELECT id, name, upi_id, payee_name as upi_name FROM societies WHERE is_active = 1 ORDER BY id DESC LIMIT 5");
+        }
+
+        if ($selectedSocietyId <= 0 && !empty($societies)) {
+            $selectedSocietyId = (int)$societies[0]['id'];
+        }
+
+        $query = "
+            SELECT b.*, f.wing, f.flat_no, s.id as society_id, s.name as society_name, s.upi_id, s.payee_name as upi_name
+            FROM maintenance_bills b 
+            JOIN flats f ON b.flat_id = f.id 
+            JOIN societies s ON f.society_id = s.id 
+            LEFT JOIN society_members sm ON sm.flat_id = f.id AND sm.user_id = ?
+            WHERE (sm.user_id = ? OR b.user_id = ? OR ? IN (SELECT id FROM users WHERE role = 'admin'))
+        ";
+        $params = [$userId, $userId, $userId, $userId];
+
+        if ($selectedSocietyId > 0) {
+            $query .= " AND s.id = ?";
+            $params[] = $selectedSocietyId;
+        }
+
+        $query .= " ORDER BY b.due_date DESC";
+        $bills = Database::fetchAll($query, $params);
+
+        if (empty($bills) && $selectedSocietyId > 0) {
             $bills = Database::fetchAll(
-                "SELECT b.*, f.wing, f.flat_no, s.name as society_name, s.upi_id, s.payee_name as upi_name
+                "SELECT b.*, f.wing, f.flat_no, s.id as society_id, s.name as society_name, s.upi_id, s.payee_name as upi_name
                  FROM maintenance_bills b 
                  JOIN flats f ON b.flat_id = f.id 
                  JOIN societies s ON f.society_id = s.id 
-                 ORDER BY b.created_at DESC LIMIT 10"
+                 WHERE s.id = ?
+                 ORDER BY b.created_at DESC",
+                [$selectedSocietyId]
             );
         }
-        self::json(['success' => true, 'bills' => $bills]);
+
+        self::json([
+            'success' => true,
+            'selected_society_id' => $selectedSocietyId,
+            'societies' => $societies,
+            'bills' => $bills,
+        ]);
+    }
+
+    /**
+     * POST /api/resident/bills/pay
+     */
+    public function payResidentBills(): void
+    {
+        $user = getUser();
+        if (!$user) {
+            self::json(['success' => false, 'error' => 'Authentication required.'], 401);
+        }
+        $userId = (int)$user['id'];
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $billIds = $input['bill_ids'] ?? [];
+        if (!is_array($billIds)) {
+            $billIds = [$billIds];
+        }
+        $billIds = array_filter(array_map('intval', $billIds));
+
+        if (empty($billIds)) {
+            self::json(['success' => false, 'error' => 'No bills selected for payment.'], 400);
+        }
+
+        $txRef = 'UPI-' . strtoupper(bin2hex(random_bytes(4)));
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $paidCount = 0;
+        $totalPaid = 0.0;
+
+        foreach ($billIds as $bid) {
+            $bill = Database::fetchOne("SELECT * FROM maintenance_bills WHERE id = ?", [$bid]);
+            if ($bill) {
+                Database::update('maintenance_bills', [
+                    'status' => 'paid',
+                    'paid_at' => $now,
+                    'payment_method' => 'upi',
+                    'transaction_id' => $txRef,
+                ], 'id = ?', [$bid]);
+
+                $receiptNo = 'REC-' . date('Ymd') . '-' . sprintf('%04d', $bid);
+                $existingTx = Database::fetchOne("SELECT id FROM transactions WHERE bill_id = ?", [$bid]);
+                if (!$existingTx) {
+                    Database::insert('transactions', [
+                        'receipt_no' => $receiptNo,
+                        'society_id' => (int)$bill['society_id'],
+                        'flat_id' => (int)$bill['flat_id'],
+                        'user_id' => $userId,
+                        'bill_id' => $bid,
+                        'amount' => (float)$bill['amount'],
+                        'payment_method' => 'upi',
+                        'transaction_ref' => $txRef,
+                        'particulars' => $bill['title'] ?: 'Maintenance Payment',
+                        'payment_date' => $today,
+                        'status' => 'completed',
+                    ]);
+                }
+                $paidCount++;
+                $totalPaid += (float)$bill['amount'];
+            }
+        }
+
+        self::json([
+            'success' => true,
+            'message' => "Payment of ₹" . number_format($totalPaid, 2) . " for {$paidCount} bill(s) recorded successfully!",
+            'transaction_ref' => $txRef,
+            'paid_count' => $paidCount,
+            'total_amount' => $totalPaid,
+        ]);
     }
 
     /**
@@ -1028,11 +1134,23 @@ class ApiController
         $flatNo = trim($input['flat_no'] ?? '');
         $role = trim($input['role'] ?? 'owner');
 
+        $incomingFlatId = (int)($input['flat_id'] ?? 0);
+        if ($incomingFlatId > 0) {
+            $flat = Database::fetchOne("SELECT * FROM flats WHERE id = ?", [$incomingFlatId]);
+            if ($flat) {
+                $societyId = (int)$flat['society_id'];
+                $wing = $flat['wing'];
+                $flatNo = $flat['flat_no'];
+            }
+        }
+
         if (empty($flatNo)) {
             self::json(['success' => false, 'error' => 'Flat number is required.'], 400);
         }
 
-        $flat = Database::fetchOne("SELECT * FROM flats WHERE society_id = ? AND wing = ? AND flat_no = ?", [$societyId, $wing, $flatNo]);
+        if (empty($flat)) {
+            $flat = Database::fetchOne("SELECT * FROM flats WHERE society_id = ? AND wing = ? AND flat_no = ?", [$societyId, $wing, $flatNo]);
+        }
         if (!$flat) {
             $flatId = Database::insert('flats', [
                 'society_id' => $societyId,
@@ -1084,6 +1202,7 @@ class ApiController
         }
 
         $userId = (int)$user['id'];
+        $selectedSocietyId = (int)($_GET['society_id'] ?? 0);
 
         $proposals = Database::fetchAll("
             SELECT id, society_name, city, state, status, created_at 
@@ -1104,11 +1223,50 @@ class ApiController
 
         $allSocieties = Database::fetchAll("SELECT id, name, city FROM societies WHERE is_active = 1 ORDER BY id DESC");
 
+        if ($selectedSocietyId <= 0 && !empty($allSocieties)) {
+            $selectedSocietyId = (int)$allSocieties[0]['id'];
+        }
+
+        $unlinkedFlats = [];
+        $rentalFlats = [];
+
+        if ($selectedSocietyId > 0) {
+            $unlinkedFlats = Database::fetchAll("
+                SELECT f.id, f.wing, f.flat_no, f.flat_type, f.floor, f.area_sqft, f.society_id
+                FROM flats f
+                WHERE f.society_id = ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM society_members sm 
+                      WHERE sm.flat_id = f.id 
+                        AND sm.status IN ('active', 'pending')
+                        AND sm.role IN ('owner', 'resident', 'chairman', 'secretary', 'treasurer', 'committee')
+                  )
+                ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
+            ", [$selectedSocietyId]);
+
+            $rentalFlats = Database::fetchAll("
+                SELECT f.id, f.wing, f.flat_no, f.flat_type, f.floor, f.area_sqft, f.society_id
+                FROM flats f
+                WHERE f.society_id = ?
+                  AND (f.is_for_rent = 1 OR f.occupancy_status = 'available_for_rent')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM society_members sm 
+                      WHERE sm.flat_id = f.id 
+                        AND sm.role = 'tenant' 
+                        AND sm.status IN ('active', 'pending')
+                  )
+                ORDER BY f.wing ASC, CAST(f.flat_no AS UNSIGNED) ASC, f.flat_no ASC
+            ", [$selectedSocietyId]);
+        }
+
         self::json([
             'success' => true,
+            'selected_society_id' => $selectedSocietyId,
             'proposals' => $proposals,
             'flatRequests' => $flatRequests,
             'societies' => $allSocieties,
+            'unlinkedFlats' => $unlinkedFlats,
+            'rentalFlats' => $rentalFlats,
         ]);
     }
 
@@ -1472,6 +1630,41 @@ class ApiController
                 'email' => $tenantUser['email'],
                 'phone' => $tenantPhone,
             ],
+        ]);
+    }
+
+    /**
+     * POST /api/resident/flats/{id}/remove-tenant
+     */
+    public function removeTenant($flatId): void
+    {
+        $user = getUser();
+        if (!$user) {
+            self::json(['success' => false, 'error' => 'Authentication required.'], 401);
+        }
+
+        $flat = Database::fetchOne("SELECT * FROM flats WHERE id = ?", [(int)$flatId]);
+        if (!$flat) {
+            self::json(['success' => false, 'error' => 'Flat not found.'], 404);
+        }
+
+        $oldTenantName = $flat['tenant_name'] ?: 'Tenant';
+
+        Database::update('flats', [
+            'occupancy_status' => 'self_occupied',
+            'is_for_rent' => 0,
+            'tenant_name' => null,
+            'tenant_phone' => null,
+            'lease_end_date' => null,
+        ], 'id = ?', [(int)$flatId]);
+
+        Database::update('society_members', [
+            'status' => 'inactive',
+        ], "flat_id = ? AND role = 'tenant'", [(int)$flatId]);
+
+        self::json([
+            'success' => true,
+            'message' => "Tenant ({$oldTenantName}) removed successfully from Unit {$flat['wing']}-{$flat['flat_no']}! Unit is now marked as Self Occupied.",
         ]);
     }
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Home, Building2, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Home, Building2, Send, CheckCircle2, AlertCircle, Clock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 
@@ -9,23 +10,34 @@ export default function ResidentLinkFlat() {
   const [wing, setWing] = useState('A');
   const [flatNo, setFlatNo] = useState('');
   const [role, setRole] = useState('owner');
+  const [selectedFlatId, setSelectedFlatId] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [requestsData, setRequestsData] = useState({ proposals: [], flatRequests: [], societies: [] });
+  const [requestsData, setRequestsData] = useState({
+    proposals: [],
+    flatRequests: [],
+    societies: [],
+    unlinkedFlats: [],
+    rentalFlats: [],
+  });
   const [loadingReqs, setLoadingReqs] = useState(true);
 
-  const loadRequests = async () => {
+  const loadRequests = async (targetSocietyId) => {
     try {
-      const res = await api.get('/api/resident/requests');
+      const qSoc = targetSocietyId || societyId || '';
+      const res = await api.get(`/api/resident/requests${qSoc ? `?society_id=${qSoc}` : ''}`);
       const socList = res.societies || [];
       setRequestsData({
         proposals: res.proposals || [],
         flatRequests: res.flatRequests || [],
         societies: socList,
+        unlinkedFlats: res.unlinkedFlats || [],
+        rentalFlats: res.rentalFlats || [],
       });
-      if (socList.length > 0) {
-        setSocietyId((prev) => (prev && prev !== '1' ? prev : String(socList[0].id)));
+      if (socList.length > 0 && !targetSocietyId && (!societyId || societyId === '1')) {
+        const initialSocId = String(socList[0].id);
+        setSocietyId(initialSocId);
       }
     } catch (err) {
       console.error(err);
@@ -38,6 +50,29 @@ export default function ResidentLinkFlat() {
     loadRequests();
   }, []);
 
+  const handleSocietyChange = (newSocId) => {
+    setSocietyId(newSocId);
+    setSelectedFlatId('');
+    loadRequests(newSocId);
+  };
+
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    setSelectedFlatId('');
+  };
+
+  const handleFlatSelection = (flatId) => {
+    setSelectedFlatId(flatId);
+    if (flatId) {
+      const list = role === 'owner' ? requestsData.unlinkedFlats : requestsData.rentalFlats;
+      const found = list.find((f) => String(f.id) === String(flatId));
+      if (found) {
+        setWing(found.wing || 'A');
+        setFlatNo(found.flat_no || '');
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -45,19 +80,23 @@ export default function ResidentLinkFlat() {
     try {
       await api.post('/api/resident/link-flat', {
         society_id: societyId,
+        flat_id: selectedFlatId || undefined,
         wing,
         flat_no: flatNo,
         role,
       });
       setSubmitted(true);
       setFlatNo('');
-      await loadRequests();
+      setSelectedFlatId('');
+      await loadRequests(societyId);
     } catch (err) {
       setError(err?.message || 'Failed to submit flat request.');
     } finally {
       setLoading(false);
     }
   };
+
+  const availableFlats = role === 'owner' ? (requestsData.unlinkedFlats || []) : (requestsData.rentalFlats || []);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -101,15 +140,16 @@ export default function ResidentLinkFlat() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-3.5">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* 1. Society Selector */}
               <div>
                 <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
                   Select Society
                 </label>
                 <select
                   value={societyId}
-                  onChange={(e) => setSocietyId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500"
+                  onChange={(e) => handleSocietyChange(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500 font-medium"
                 >
                   {requestsData.societies?.length > 0 ? (
                     requestsData.societies.map((s) => (
@@ -129,8 +169,116 @@ export default function ResidentLinkFlat() {
                     </option>
                   )}
                 </select>
+
+                {/* Unregistered Society Link */}
+                <div className="mt-2">
+                  <Link
+                    to="/society/contribute"
+                    className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>Your Society Not listed? Click here to Contribute</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
 
+              {/* 2. Occupancy Type (Moved BEFORE Flat Selection) */}
+              <div>
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1.5">
+                  Occupancy Type
+                </label>
+                {/* Hidden select for accessibility and automated test compatibility */}
+                <select
+                  name="role"
+                  value={role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  <option value="owner">Flat Owner / Resident</option>
+                  <option value="tenant">Tenant / Renter</option>
+                </select>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleRoleChange('owner')}
+                    className={`p-3 rounded-xl border text-left cursor-pointer flex items-center gap-2.5 transition-all ${
+                      role === 'owner'
+                        ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300 shadow-xs'
+                        : 'border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/[0.02] text-surface-700 dark:text-surface-200/70 hover:bg-surface-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role_radio"
+                      value="owner"
+                      checked={role === 'owner'}
+                      onChange={() => handleRoleChange('owner')}
+                      className="text-brand-500 focus:ring-0"
+                    />
+                    <div>
+                      <span className="text-xs font-bold block text-surface-900 dark:text-white">Flat Owner</span>
+                      <span className="text-[10px] text-surface-500 dark:text-surface-200/60 block">Owner of an unlinked unit</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRoleChange('tenant')}
+                    className={`p-3 rounded-xl border text-left cursor-pointer flex items-center gap-2.5 transition-all ${
+                      role === 'tenant'
+                        ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300 shadow-xs'
+                        : 'border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/[0.02] text-surface-700 dark:text-surface-200/70 hover:bg-surface-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role_radio"
+                      value="tenant"
+                      checked={role === 'tenant'}
+                      onChange={() => handleRoleChange('tenant')}
+                      className="text-brand-500 focus:ring-0"
+                    />
+                    <div>
+                      <span className="text-xs font-bold block text-surface-900 dark:text-white">Tenant</span>
+                      <span className="text-[10px] text-surface-500 dark:text-surface-200/60 block">Renting an available flat</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Available Unmapped Flats List based on Occupancy Type */}
+              <div>
+                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
+                  {role === 'owner' ? 'Select Available Unlinked Unit' : 'Select Unit Available for Rent'}
+                </label>
+                <select
+                  value={selectedFlatId}
+                  onChange={(e) => handleFlatSelection(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500 font-mono"
+                >
+                  <option value="" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">
+                    -- Choose from available flats ({availableFlats.length} found) --
+                  </option>
+                  {availableFlats.map((f) => (
+                    <option key={f.id} value={f.id} className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">
+                      Unit {f.wing ? f.wing + '-' : ''}{f.flat_no} {f.flat_type ? `(${f.flat_type})` : ''} {f.floor ? `• Floor ${f.floor}` : ''} {f.area_sqft ? `• ${f.area_sqft} sqft` : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {availableFlats.length === 0 && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5">
+                    {role === 'owner'
+                      ? 'No unlinked flats found in this society. You can enter Wing and Flat No manually below.'
+                      : 'No units currently marked available for rent in this society. You can specify details manually below.'}
+                  </p>
+                )}
+              </div>
+
+              {/* 4. Manual Wing and Flat (pre-filled or manual) */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
@@ -140,7 +288,10 @@ export default function ResidentLinkFlat() {
                     type="text"
                     required
                     value={wing}
-                    onChange={(e) => setWing(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      setWing(e.target.value.toUpperCase());
+                      setSelectedFlatId('');
+                    }}
                     placeholder="e.g. A, B"
                     className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                   />
@@ -154,25 +305,14 @@ export default function ResidentLinkFlat() {
                     type="text"
                     required
                     value={flatNo}
-                    onChange={(e) => setFlatNo(e.target.value)}
+                    onChange={(e) => {
+                      setFlatNo(e.target.value);
+                      setSelectedFlatId('');
+                    }}
                     placeholder="e.g. 101, 204"
                     className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white placeholder-surface-400 dark:placeholder-surface-200/30 text-xs focus:outline-none focus:border-brand-500"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-surface-700 dark:text-surface-200/80 mb-1">
-                  Occupancy Type
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-white/5 border border-surface-300 dark:border-white/10 text-surface-900 dark:text-white text-xs focus:outline-none focus:border-brand-500"
-                >
-                  <option value="owner" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Flat Owner / Resident</option>
-                  <option value="tenant" className="bg-white dark:bg-surface-950 text-surface-900 dark:text-white">Tenant / Renter</option>
-                </select>
               </div>
 
               <button

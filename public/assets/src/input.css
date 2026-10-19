@@ -436,10 +436,41 @@ html.light nav.fixed.bottom-0,
   border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0 -1px 3px 0 rgba(0, 0, 0, 0.05) !important;
 }
+/* Primary colored buttons and badges always retain crisp white text & icons across themes */
+html.light .btn-primary,
+html.light button[class*="bg-purple-6"],
+html.light button[class*="bg-purple-7"],
+html.light button[class*="bg-brand-5"],
+html.light button[class*="bg-brand-6"],
+html.light button[class*="bg-emerald-6"],
+html.light button[class*="bg-emerald-7"],
+html.light button[class*="bg-red-6"],
+html.light button[class*="bg-red-7"],
+html.light span[class*="bg-purple-6"],
+html.light span[class*="bg-brand-5"],
+html.light span[class*="bg-emerald-6"],
+[data-theme="light"] .btn-primary,
+[data-theme="light"] button[class*="bg-purple-6"],
+[data-theme="light"] button[class*="bg-purple-7"],
+[data-theme="light"] button[class*="bg-brand-5"],
+[data-theme="light"] button[class*="bg-brand-6"],
+[data-theme="light"] button[class*="bg-emerald-6"],
+[data-theme="light"] button[class*="bg-emerald-7"],
+[data-theme="light"] button[class*="bg-red-6"],
+[data-theme="light"] button[class*="bg-red-7"] {
+  color: #ffffff !important;
+}
 
-html.light .text-white,
-[data-theme="light"] .text-white {
-  color: #0f172a !important;
+html.light button[class*="bg-purple-6"] svg,
+html.light button[class*="bg-brand-5"] svg,
+html.light button[class*="bg-emerald-6"] svg,
+html.light button[class*="bg-red-6"] svg,
+[data-theme="light"] button[class*="bg-purple-6"] svg,
+[data-theme="light"] button[class*="bg-brand-5"] svg,
+[data-theme="light"] button[class*="bg-emerald-6"] svg,
+[data-theme="light"] button[class*="bg-red-6"] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 html.light .text-surface-200,

@@ -60,6 +60,8 @@ return function (App $app) {
         $group->post('/resident/flats/{id}/toggle-rent', SlimBridge::wrap([$api, 'toggleFlatRent']));
         $group->get('/resident/search-tenant', SlimBridge::wrap([$api, 'searchTenant']));
         $group->post('/resident/flats/{id}/assign-tenant', SlimBridge::wrap([$api, 'assignTenant']));
+        $group->post('/resident/flats/{id}/remove-tenant', SlimBridge::wrap([$api, 'removeTenant']));
+        $group->post('/resident/bills/pay', SlimBridge::wrap([$api, 'payResidentBills']));
 
         // Committee Endpoints
         $group->get('/committee/dashboard', SlimBridge::wrap([$api, 'committeeDashboard']));
