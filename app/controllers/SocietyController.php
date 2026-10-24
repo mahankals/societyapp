@@ -943,19 +943,23 @@ class SocietyController
         }
 
         if (empty($membersData)) {
-            $membersData[] = [
-                'user_id' => $userId,
-                'name' => $user['name'],
-                'email' => $user['email'],
-                'phone' => $user['phone'],
-                'wing' => trim($_POST['c1_wing'] ?? 'A'),
-                'floor' => trim($_POST['c1_floor'] ?? '1'),
-                'flat_no' => trim($_POST['c1_flat'] ?? '101'),
-                'area_sqft' => trim($_POST['c1_area'] ?? '850.00'),
-                'flat_type' => trim($_POST['c1_type'] ?? '2 BHK'),
-                'is_primary' => true,
-            ];
+            Session::flash('error', 'At least 1 committee member is required to submit a society proposal.');
+            redirect('/society/contribute');
         }
+
+        // Ensure the first member is designated as primary for contact and admin approval
+        $hasPrimary = false;
+        foreach ($membersData as $m) {
+            if (!empty($m['is_primary'])) {
+                $hasPrimary = true;
+                break;
+            }
+        }
+        if (!$hasPrimary && !empty($membersData)) {
+            $membersData[0]['is_primary'] = true;
+        }
+
+        $contact1 = $membersData[0];
 
         Database::insert('society_requests', [
             'user_id' => $userId,
@@ -965,9 +969,9 @@ class SocietyController
             'pincode' => trim($_POST['pincode'] ?? ''),
             'address' => $address,
             'members_data' => json_encode($membersData),
-            'contact1_name' => $membersData[0]['name'] ?? $user['name'],
-            'contact1_phone' => $membersData[0]['phone'] ?? $user['phone'],
-            'contact1_flat' => ($membersData[0]['wing'] ?? 'A') . '-' . ($membersData[0]['flat_no'] ?? '101'),
+            'contact1_name' => $contact1['name'] ?? $user['name'],
+            'contact1_phone' => $contact1['phone'] ?? ($user['phone'] ?? ''),
+            'contact1_flat' => ($contact1['wing'] ?? 'A') . '-' . ($contact1['flat_no'] ?? '101'),
             'status' => 'pending',
         ]);
 

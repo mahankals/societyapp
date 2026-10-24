@@ -89,7 +89,7 @@
                     <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i>
                     <span>Founding Committee Members</span>
                 </h3>
-                <p class="text-xs text-slate-500 dark:text-surface-200/50 mt-1">You are prefilled as Person 1 (Primary contact) and will be assigned committee access upon approval.</p>
+                <p class="text-xs text-slate-500 dark:text-surface-200/50 mt-1">Search registered users by email, mobile number, or name to add founding committee members (minimum 1 required).</p>
             </div>
 
             <!-- Search Bar to search users -->
@@ -319,20 +319,7 @@
 </div>
 
 <script>
-let committeeMembers = [
-    {
-        user_id: {{ user.id|default(0) }},
-        name: {{ user.name|default('')|json_encode|raw }},
-        email: {{ user.email|default('')|json_encode|raw }},
-        phone: {{ user.phone|default('')|json_encode|raw }},
-        wing: 'A',
-        floor: '1',
-        flat_no: '101',
-        area_sqft: '850.00',
-        flat_type: '2 BHK',
-        is_primary: true
-    }
-];
+let committeeMembers = [];
 let pendingFoundUser = null;
 
 function renderMembersTable() {
@@ -362,14 +349,9 @@ function renderMembersTable() {
         const flatLoc = (m.wing ? (m.wing + ' wing - ') : '') + 'Floor ' + (m.floor || '1') + '<br><span class="font-semibold text-slate-900 dark:text-white">Flat ' + (m.flat_no || '101') + '</span>';
         const spec = (m.flat_type || '2 BHK') + '<br><span class="text-slate-400 text-[11px] font-mono">' + (m.area_sqft || '850.00') + ' sq. ft</span>';
 
-        const isPrimary = !!m.is_primary;
-        const roleBadge = isPrimary 
-            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 mr-1.5"><i data-lucide="crown" class="w-2.5 h-2.5"></i>Primary</span>'
-            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 mr-1.5">Committee</span>';
+        const roleBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 mr-1.5"><i data-lucide="shield" class="w-2.5 h-2.5"></i>Committee</span>';
 
-        const deleteBtnHtml = isPrimary 
-            ? `<button type="button" disabled class="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50" title="Primary contact cannot be removed"><i data-lucide="shield-check" class="w-4 h-4"></i></button>`
-            : `<button type="button" onclick="removeMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove Member"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+        const deleteBtnHtml = `<button type="button" onclick="removeMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove Member"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
 
         const actionHtml = `
             <div class="flex items-center justify-end gap-1.5">
@@ -436,19 +418,9 @@ function saveEditedMember(e) {
 }
 
 function removeMember(idx) {
-    if (committeeMembers[idx] && committeeMembers[idx].is_primary) {
-        return;
-    }
-    const memberName = committeeMembers[idx] ? committeeMembers[idx].name : 'this member';
-    if (window.appConfirm) {
-        window.appConfirm(`Are you sure you want to remove ${memberName} from the committee proposal?`, 'Remove Member', function() {
-            committeeMembers.splice(idx, 1);
-            renderMembersTable();
-        });
-    } else {
-        committeeMembers.splice(idx, 1);
-        renderMembersTable();
-    }
+    if (idx < 0 || idx >= committeeMembers.length) return;
+    committeeMembers.splice(idx, 1);
+    renderMembersTable();
 }
 
 async function searchPlatformUser() {
@@ -551,8 +523,7 @@ function confirmAddMember() {
         floor: floor,
         flat_no: flatNo,
         area_sqft: area,
-        flat_type: type,
-        is_primary: false
+        flat_type: type
     });
 
     // Reset search state
@@ -566,6 +537,29 @@ function confirmAddMember() {
 
 document.addEventListener('DOMContentLoaded', function() {
     renderMembersTable();
+
+    const form = document.getElementById('contributeSocietyForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!committeeMembers || committeeMembers.length === 0) {
+                e.preventDefault();
+                const feedback = document.getElementById('searchFeedback');
+                if (feedback) {
+                    feedback.className = 'p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2';
+                    feedback.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i><span>Please add at least 1 committee member before submitting the society proposal.</span>';
+                }
+                const searchInput = document.getElementById('memberSearchQuery');
+                if (searchInput) {
+                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    searchInput.focus();
+                }
+                if (window.lucide) { lucide.createIcons(); }
+                return false;
+            }
+            document.getElementById('membersDataJson').value = JSON.stringify(committeeMembers);
+        });
+    }
+
     if (window.lucide) { lucide.createIcons(); }
 });
 </script>
