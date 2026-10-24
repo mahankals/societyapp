@@ -319,7 +319,20 @@
 </div>
 
 <script>
-let committeeMembers = [];
+let committeeMembers = [
+    {
+        user_id: {{ user.id|default(0) }},
+        name: {{ user.name|default('')|json_encode|raw }},
+        email: {{ user.email|default('')|json_encode|raw }},
+        phone: {{ user.phone|default('')|json_encode|raw }},
+        wing: 'A',
+        floor: '1',
+        flat_no: '101',
+        area_sqft: '850.00',
+        flat_type: '2 BHK',
+        is_primary: true
+    }
+];
 let pendingFoundUser = null;
 
 function renderMembersTable() {
@@ -349,19 +362,31 @@ function renderMembersTable() {
         const flatLoc = (m.wing ? (m.wing + ' wing - ') : '') + 'Floor ' + (m.floor || '1') + '<br><span class="font-semibold text-slate-900 dark:text-white">Flat ' + (m.flat_no || '101') + '</span>';
         const spec = (m.flat_type || '2 BHK') + '<br><span class="text-slate-400 text-[11px] font-mono">' + (m.area_sqft || '850.00') + ' sq. ft</span>';
 
+        const isPrimary = !!m.is_primary;
+        const roleBadge = isPrimary 
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 mr-1.5"><i data-lucide="crown" class="w-2.5 h-2.5"></i>Primary</span>'
+            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 mr-1.5">Committee</span>';
+
+        const deleteBtnHtml = isPrimary 
+            ? `<button type="button" disabled class="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50" title="Primary contact cannot be removed"><i data-lucide="shield-check" class="w-4 h-4"></i></button>`
+            : `<button type="button" onclick="removeMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove Member"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+
         const actionHtml = `
             <div class="flex items-center justify-end gap-1.5">
                 <button type="button" onclick="editMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors" title="Edit Member Allocation">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="removeMember(${idx})" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Remove Member">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                ${deleteBtnHtml}
             </div>
         `;
 
         tr.innerHTML = `
-            <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">${m.name}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                <div class="flex items-center gap-1">
+                    ${roleBadge}
+                    <span>${m.name}</span>
+                </div>
+            </td>
             <td class="py-3 px-4 text-slate-600 dark:text-slate-400">
                 <div>${m.email}</div>
                 <div class="text-[11px] font-mono text-slate-400">${phoneDisplay}</div>
@@ -411,8 +436,12 @@ function saveEditedMember(e) {
 }
 
 function removeMember(idx) {
+    if (committeeMembers[idx] && committeeMembers[idx].is_primary) {
+        return;
+    }
+    const memberName = committeeMembers[idx] ? committeeMembers[idx].name : 'this member';
     if (window.appConfirm) {
-        window.appConfirm('Are you sure you want to remove this member from the committee proposal?', 'Remove Member', function() {
+        window.appConfirm(`Are you sure you want to remove ${memberName} from the committee proposal?`, 'Remove Member', function() {
             committeeMembers.splice(idx, 1);
             renderMembersTable();
         });
@@ -438,13 +467,27 @@ async function searchPlatformUser() {
         return;
     }
 
+    // Check if query matches a member already added in the table
+    const cleanQPhone = q.replace(/\D/g, '');
+    const alreadyAdded = committeeMembers.find(m => 
+        (m.email && m.email.toLowerCase() === q.toLowerCase()) || 
+        (cleanQPhone.length >= 10 && m.phone && m.phone.replace(/\D/g, '') === cleanQPhone) ||
+        (m.name && m.name.toLowerCase() === q.toLowerCase())
+    );
+    if (alreadyAdded) {
+        feedback.className = 'text-xs text-amber-500 font-medium';
+        feedback.textContent = `"${alreadyAdded.name}" has already been added to the committee list.`;
+        return;
+    }
+
     const btn = document.getElementById('searchUserBtn');
     btn.disabled = true;
     btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Searching…</span>';
     if (window.lucide) { lucide.createIcons(); }
 
     try {
-        const res = await fetch('/society/contribute/search-user?q=' + encodeURIComponent(q));
+        const excludeParam = committeeMembers.map(m => m.user_id).filter(Boolean).join(',');
+        const res = await fetch('/society/contribute/search-user?q=' + encodeURIComponent(q) + '&exclude=' + encodeURIComponent(excludeParam));
         const data = await res.json();
 
         if (data.success && data.user) {
@@ -452,7 +495,7 @@ async function searchPlatformUser() {
             const exists = committeeMembers.some(m => m.user_id === data.user.id);
             if (exists) {
                 feedback.className = 'text-xs text-amber-500 font-medium';
-                feedback.textContent = 'This member has already been added to the committee list.';
+                feedback.textContent = `"${data.user.name}" has already been added to the committee list.`;
                 return;
             }
 
@@ -509,7 +552,7 @@ function confirmAddMember() {
         flat_no: flatNo,
         area_sqft: area,
         flat_type: type,
-        is_primary: committeeMembers.length === 0
+        is_primary: false
     });
 
     // Reset search state

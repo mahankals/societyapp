@@ -825,13 +825,71 @@ class SocietyController
             exit;
         }
 
+        $excludeParam = trim($_GET['exclude'] ?? '');
+        $excludeIds = [];
+        if (!empty($excludeParam)) {
+            foreach (explode(',', $excludeParam) as $val) {
+                $id = (int)trim($val);
+                if ($id > 0) {
+                    $excludeIds[] = $id;
+                }
+            }
+        }
+
         $cleanPhone = preg_replace('/[^\d]/', '', $q);
+
+        $conditions = [];
+        $params = [];
+
+        // Exact email
+        $conditions[] = "email = ?";
+        $params[] = $q;
+
+        // Partial email
+        $conditions[] = "email LIKE ?";
+        $params[] = '%' . $q . '%';
+
+        // Name match
+        $conditions[] = "name LIKE ?";
+        $params[] = '%' . $q . '%';
+
+        // Phone match only if cleanPhone has at least 3 digits
+        if (strlen($cleanPhone) >= 3) {
+            $conditions[] = "phone = ?";
+            $params[] = $cleanPhone;
+
+            $conditions[] = "phone LIKE ?";
+            $params[] = '%' . $cleanPhone . '%';
+        }
+
+        $whereSql = '(' . implode(' OR ', $conditions) . ') AND is_active = 1';
+
+        if (!empty($excludeIds)) {
+            $inPlaceholders = implode(',', array_fill(0, count($excludeIds), '?'));
+            $whereSql .= " AND id NOT IN ($inPlaceholders)";
+            $params = array_merge($params, $excludeIds);
+        }
+
+        $qEscaped = Database::quote($q);
+        $phoneClause = (strlen($cleanPhone) >= 3) ? "WHEN phone = " . Database::quote($cleanPhone) . " THEN 2" : "";
+
+        $orderBy = "
+            CASE 
+                WHEN email = {$qEscaped} THEN 1
+                {$phoneClause}
+                WHEN email LIKE " . Database::quote($q . '%') . " THEN 3
+                WHEN name LIKE " . Database::quote($q . '%') . " THEN 4
+                ELSE 5
+            END ASC, id ASC
+        ";
+
         $user = Database::fetchOne("
             SELECT id, name, email, phone 
             FROM users 
-            WHERE (email = ? OR phone = ? OR phone LIKE ?) AND is_active = 1 
+            WHERE {$whereSql}
+            ORDER BY {$orderBy}
             LIMIT 1
-        ", [$q, $q, '%' . $cleanPhone]);
+        ", $params);
 
         if ($user) {
             echo json_encode([
@@ -846,7 +904,7 @@ class SocietyController
         } else {
             echo json_encode([
                 'success' => false,
-                'error' => 'No registered user found matching this email or phone number.'
+                'error' => 'No registered user found matching "' . htmlspecialchars($q) . '".'
             ]);
         }
         exit;

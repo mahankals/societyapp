@@ -36,6 +36,10 @@ class Database {
         self::$instance = null;
     }
 
+    public static function quote(string $string): string {
+        return self::getInstance()->quote($string);
+    }
+
 
     public static function query(string $sql, array $params = []): PDOStatement {
         $stmt = self::getInstance()->prepare($sql);
