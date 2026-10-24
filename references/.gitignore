@@ -3,5 +3,11 @@
 !changes.md
 !societyapp-prototype.html
 !capture-screenshots.js
+!capture-live-screenshots.js
 !Screenshots/
 !Screenshots/**
+Screenshots/old/
+Screenshots/old/**
+references/Screenshots/old/
+references/Screenshots/old/**
+*.zip
