@@ -195,6 +195,15 @@ function view(string $name, array $data = []): string {
     if (!isset($data['error']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'error') {
         $data['error'] = $data['flash']['message'];
     }
+    if (!isset($data['success']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'success') {
+        $data['success'] = $data['flash']['message'];
+    }
+    if (!isset($data['warning']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'warning') {
+        $data['warning'] = $data['flash']['message'];
+    }
+    if (!isset($data['info']) && isset($data['flash']) && ($data['flash']['type'] ?? '') === 'info') {
+        $data['info'] = $data['flash']['message'];
+    }
 
     // Dynamic Application Branding (Logo, Favicon, Name, Description)
     $brandingVersion = getSetting('branding_updated_at', '1');
