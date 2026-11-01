@@ -541,6 +541,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('contributeSocietyForm');
     if (form) {
         form.addEventListener('submit', function(e) {
+            // If user has a pending searched member card open, automatically confirm and add them
+            if (pendingFoundUser) {
+                confirmAddMember();
+            }
+
             if (!committeeMembers || committeeMembers.length === 0) {
                 e.preventDefault();
                 const feedback = document.getElementById('searchFeedback');

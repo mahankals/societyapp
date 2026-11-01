@@ -670,7 +670,7 @@ class SocietyController
         }
 
         $memberReq = Database::fetchOne("
-            SELECT sm.*, f.flat_number, f.wing 
+            SELECT sm.*, f.flat_no, f.wing 
             FROM society_members sm 
             LEFT JOIN flats f ON sm.flat_id = f.id 
             WHERE sm.id = ? AND sm.society_id = ?
@@ -688,7 +688,7 @@ class SocietyController
         ], 'id = ? AND society_id = ?', [$id, $societyId]);
 
         // Notify user about rejection with remark
-        $flatStr = !empty($memberReq['flat_number']) ? (($memberReq['wing'] ? $memberReq['wing'] . '-' : '') . $memberReq['flat_number']) : 'Unit';
+        $flatStr = !empty($memberReq['flat_no']) ? (($memberReq['wing'] ? $memberReq['wing'] . '-' : '') . $memberReq['flat_no']) : 'Unit';
         Database::insert('notifications', [
             'user_id' => (int)$memberReq['user_id'],
             'title' => 'Flat Linking Request Rejected',

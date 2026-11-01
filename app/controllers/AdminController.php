@@ -375,7 +375,7 @@ class AdminController
             foreach ($members as $m) {
                 $wing = !empty($m['wing']) ? trim($m['wing']) : 'A';
                 $floor = !empty($m['floor']) ? trim($m['floor']) : null;
-                $flatNo = !empty($m['flat_no']) ? trim($m['flat_no']) : '101';
+                $flatNo = !empty($m['flat_no']) ? trim($m['flat_no']) : (!empty($m['flat_number']) ? trim($m['flat_number']) : '101');
                 $area = !empty($m['area_sqft']) ? (float)$m['area_sqft'] : 0.00;
                 $type = !empty($m['flat_type']) ? trim($m['flat_type']) : '2 BHK';
                 $mUserId = !empty($m['user_id']) ? (int)$m['user_id'] : null;
